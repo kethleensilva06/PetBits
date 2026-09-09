@@ -2,7 +2,6 @@
 
 import reflex as rx
 
-from petbits.database import create_db_and_tables
 from petbits.pages.agendamentos import agendamentos_page
 from petbits.pages.clientes import clientes_page
 from petbits.pages.funcionarios import funcionarios_page
@@ -21,8 +20,6 @@ from petbits.states.pet_state import PetState
 from petbits.states.produto_state import ProdutoState
 from petbits.states.prontuario_state import ProntuarioState
 from petbits.states.servico_state import ServicoState
-
-create_db_and_tables()
 
 app = rx.App()
 

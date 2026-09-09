@@ -3,15 +3,16 @@
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import Servico
+from petbits import models
+from petbits.states.conversores import formatar_moeda
+from petbits.xano import XanoError
 
 
 class ServicoState(rx.State):
     servicos: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
@@ -47,21 +48,26 @@ class ServicoState(rx.State):
             return self.servicos
         return [s for s in self.servicos if term in s["nome_servico"].lower()]
 
-    def load_servicos(self):
-        with get_session() as session:
-            servicos = session.exec(
-                select(Servico).order_by(Servico.nome_servico)
-            ).all()
+    async def load_servicos(self):
+        self.load_error = ""
+        try:
+            registros = await models.servicos.listar()
+        except XanoError as erro:
+            self.servicos = []
+            self.load_error = str(erro)
+            return
 
         self.servicos = [
             {
-                "id": s.id,
-                "nome_servico": s.nome_servico,
-                "descricao": s.descricao or "-",
-                "preco": f"{s.preco:.2f}",
-                "duracao_estimada": s.duracao_estimada or 0,
+                "id": s.get("id"),
+                "nome_servico": s.get("nome_servico") or "",
+                "descricao": s.get("descricao") or "-",
+                "preco": formatar_moeda(s.get("preco")),
+                "duracao_estimada": s.get("duracao_estimada") or 0,
             }
-            for s in servicos
+            for s in sorted(
+                registros, key=lambda s: (s.get("nome_servico") or "").lower()
+            )
         ]
 
     def open_new(self):
@@ -85,7 +91,7 @@ class ServicoState(rx.State):
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not self.nome_servico.strip():
             self.form_error = "Nome do serviço é obrigatório."
             return
@@ -102,32 +108,30 @@ class ServicoState(rx.State):
             self.form_error = "Duração deve ser maior que zero."
             return
 
-        with get_session() as session:
+        dados = {
+            "nome_servico": self.nome_servico.strip(),
+            "descricao": self.descricao.strip() or None,
+            "preco": preco,
+            "duracao_estimada": duracao,
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Servico(
-                        nome_servico=self.nome_servico.strip(),
-                        descricao=self.descricao.strip() or None,
-                        preco=preco,
-                        duracao_estimada=duracao,
-                    )
-                )
+                await models.servicos.criar(dados)
             else:
-                servico = session.get(Servico, self.editing_id)
-                servico.nome_servico = self.nome_servico.strip()
-                servico.descricao = self.descricao.strip() or None
-                servico.preco = preco
-                servico.duracao_estimada = duracao
-                session.add(servico)
-            session.commit()
+                await models.servicos.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_servicos()
+        await self.load_servicos()
 
-    def delete(self, servico_id: int):
-        with get_session() as session:
-            servico = session.get(Servico, servico_id)
-            if servico is not None:
-                session.delete(servico)
-                session.commit()
-        self.load_servicos()
+    async def delete(self, servico_id: int):
+        try:
+            await models.servicos.remover(servico_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_servicos()

@@ -2,22 +2,29 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
-from petbits.models import CARGOS_FUNCIONARIO, Funcionario
+from petbits import models
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.funcionario_state import FuncionarioState
 
 
-def _row(funcionario: Funcionario) -> rx.Component:
+def _row(funcionario: dict) -> rx.Component:
     return rx.table.row(
-        rx.table.cell(funcionario.nome),
-        rx.table.cell(funcionario.cpf),
-        rx.table.cell(rx.badge(funcionario.cargo, variant="soft")),
-        rx.table.cell(rx.cond(funcionario.telefone, funcionario.telefone, "-")),
-        rx.table.cell(rx.cond(funcionario.email, funcionario.email, "-")),
+        rx.table.cell(funcionario["nome"]),
+        rx.table.cell(funcionario["cpf"]),
+        rx.table.cell(rx.badge(funcionario["cargo"], variant="soft")),
+        rx.table.cell(funcionario["telefone"]),
+        rx.table.cell(funcionario["email"]),
         rx.table.cell(
             row_actions(
                 on_edit=FuncionarioState.open_edit(funcionario),
-                on_delete=FuncionarioState.delete(funcionario.id),
+                on_delete=FuncionarioState.delete(funcionario["id"]),
             )
         ),
     )
@@ -55,7 +62,7 @@ def _dialog() -> rx.Component:
                     form_field(
                         "Cargo *",
                         rx.select(
-                            CARGOS_FUNCIONARIO,
+                            models.CARGOS_FUNCIONARIO,
                             value=FuncionarioState.cargo,
                             on_change=FuncionarioState.set_cargo,
                             width="100%",
@@ -136,6 +143,7 @@ def funcionarios_page() -> rx.Component:
             on_new_click=FuncionarioState.open_new,
             new_label="Novo funcionário",
         ),
+        error_banner(FuncionarioState.load_error),
         rx.card(
             rx.cond(
                 FuncionarioState.filtered_funcionarios,

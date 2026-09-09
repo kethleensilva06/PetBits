@@ -3,15 +3,15 @@
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import Cliente
+from petbits import models
+from petbits.xano import XanoError
 
 
 class ClienteState(rx.State):
-    clientes: list[Cliente] = []
+    clientes: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
@@ -45,21 +45,36 @@ class ClienteState(rx.State):
         self.endereco = value
 
     @rx.var
-    def filtered_clientes(self) -> list[Cliente]:
+    def filtered_clientes(self) -> list[dict]:
         term = self.search.strip().lower()
         if not term:
             return self.clientes
         return [
             c
             for c in self.clientes
-            if term in c.nome.lower() or term in c.cpf.lower()
+            if term in c["nome"].lower() or term in c["cpf"].lower()
         ]
 
-    def load_clientes(self):
-        with get_session() as session:
-            self.clientes = list(
-                session.exec(select(Cliente).order_by(Cliente.nome)).all()
-            )
+    async def load_clientes(self):
+        self.load_error = ""
+        try:
+            registros = await models.clientes.listar()
+        except XanoError as erro:
+            self.clientes = []
+            self.load_error = str(erro)
+            return
+
+        self.clientes = [
+            {
+                "id": c.get("id"),
+                "nome": c.get("nome") or "",
+                "cpf": c.get("cpf") or "",
+                "email": c.get("email") or "-",
+                "telefone": c.get("telefone") or "-",
+                "endereco": c.get("endereco") or "-",
+            }
+            for c in sorted(registros, key=lambda c: (c.get("nome") or "").lower())
+        ]
 
     def open_new(self):
         self.editing_id = None
@@ -71,52 +86,49 @@ class ClienteState(rx.State):
         self.form_error = ""
         self.show_dialog = True
 
-    def open_edit(self, cliente: Cliente):
-        self.editing_id = cliente.id
-        self.nome = cliente.nome
-        self.cpf = cliente.cpf
-        self.email = cliente.email or ""
-        self.telefone = cliente.telefone or ""
-        self.endereco = cliente.endereco or ""
+    def open_edit(self, cliente: dict):
+        self.editing_id = cliente["id"]
+        self.nome = cliente["nome"]
+        self.cpf = cliente["cpf"]
+        self.email = cliente["email"] if cliente["email"] != "-" else ""
+        self.telefone = cliente["telefone"] if cliente["telefone"] != "-" else ""
+        self.endereco = cliente["endereco"] if cliente["endereco"] != "-" else ""
         self.form_error = ""
         self.show_dialog = True
 
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not self.nome.strip() or not self.cpf.strip():
             self.form_error = "Nome e CPF são obrigatórios."
             return
 
-        with get_session() as session:
+        dados = {
+            "nome": self.nome.strip(),
+            "cpf": self.cpf.strip(),
+            "email": self.email.strip() or None,
+            "telefone": self.telefone.strip() or None,
+            "endereco": self.endereco.strip() or None,
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Cliente(
-                        nome=self.nome.strip(),
-                        cpf=self.cpf.strip(),
-                        email=self.email.strip() or None,
-                        telefone=self.telefone.strip() or None,
-                        endereco=self.endereco.strip() or None,
-                    )
-                )
+                await models.clientes.criar(dados)
             else:
-                cliente = session.get(Cliente, self.editing_id)
-                cliente.nome = self.nome.strip()
-                cliente.cpf = self.cpf.strip()
-                cliente.email = self.email.strip() or None
-                cliente.telefone = self.telefone.strip() or None
-                cliente.endereco = self.endereco.strip() or None
-                session.add(cliente)
-            session.commit()
+                await models.clientes.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_clientes()
+        await self.load_clientes()
 
-    def delete(self, cliente_id: int):
-        with get_session() as session:
-            cliente = session.get(Cliente, cliente_id)
-            if cliente is not None:
-                session.delete(cliente)
-                session.commit()
-        self.load_clientes()
+    async def delete(self, cliente_id: int):
+        try:
+            await models.clientes.remover(cliente_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_clientes()

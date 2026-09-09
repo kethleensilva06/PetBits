@@ -1,15 +1,10 @@
-import os
-
 import reflex as rx
 
-# Banco local (SQLite) por padrão. Para apontar para o SQL Server da disciplina,
-# defina a variável de ambiente DB_URL, por exemplo:
-# mssql+pyodbc://usuario:senha@servidor/Petshop_DQL?driver=ODBC+Driver+17+for+SQL+Server
-DB_URL = os.getenv("DB_URL", "sqlite:///petbits.db")
-
+# O banco de dados do PetBits fica no Xano e é acessado por HTTP
+# (petbits/xano.py). O Reflex, portanto, não recebe db_url: nada neste projeto
+# usa o ORM interno dele. As credenciais do Xano vêm do arquivo .env.
 config = rx.Config(
     app_name="petbits",
-    db_url=DB_URL,
     plugins=[
         rx.plugins.SitemapPlugin(),
         rx.plugins.TailwindV4Plugin(),

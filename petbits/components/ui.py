@@ -32,6 +32,19 @@ def row_actions(on_edit, on_delete) -> rx.Component:
     )
 
 
+def error_banner(message) -> rx.Component:
+    """Aviso exibido quando o Xano não responde ou recusa a requisição."""
+    return rx.cond(
+        message,
+        rx.callout(
+            message,
+            icon="triangle_alert",
+            color_scheme="red",
+            width="100%",
+        ),
+    )
+
+
 def empty_state(message) -> rx.Component:
     return rx.center(
         rx.vstack(

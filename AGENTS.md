@@ -64,6 +64,19 @@ páginas e interação. Não introduza outra tecnologia de frontend para substit
 ou complementar o Reflex, salvo quando houver uma alteração arquitetural
 explicitamente aprovada.
 
+## Banco de dados
+
+O banco de dados fica hospedado no **Xano** e é acessado por HTTP. O projeto
+não tem banco local nem ORM: não reintroduza SQLModel, SQLAlchemy, Alembic nem
+o ORM interno do Reflex (`rx.Model`, `rx.session`).
+
+Toda comunicação com o Xano passa por `petbits/xano.py`. Nenhum outro módulo
+deve falar HTTP nem montar URLs.
+
+As credenciais vêm do arquivo `.env` (modelo em `.env.example`), que **não é
+versionado**. A estrutura das tabelas e o passo a passo de configuração estão
+em `docs/xano-setup.md`.
+
 ## Ambiente
 
 O projeto usa `venv` + `pip` (não usar `uv`). Sempre ative `.venv` antes de
@@ -72,12 +85,25 @@ rodar comandos e registre novas dependências em `requirements.txt` com
 
 ## Convenções deste projeto
 
-- `petbits/models.py` — tabelas SQLModel espelhando o schema `Petshop_DQL`.
-- `petbits/database.py` — engine e sessão; a URL vem da variável `DB_URL`.
+- `petbits/xano.py` — cliente HTTP do Xano (`TabelaXano`, `XanoError`); o base
+  URL vem de `XANO_BASE_URL`.
+- `petbits/models.py` — descreve as tabelas do Xano e expõe um acessor por
+  tabela (`models.clientes`, `models.pets`, ...), além das constantes de
+  domínio fechado (cargos e status).
 - `petbits/states/` — um State por entidade, com a lógica de CRUD.
+- `petbits/states/conversores.py` — tradução entre os valores dos formulários
+  HTML e o JSON do Xano (datas, horas e moeda).
 - `petbits/pages/` — uma página por rota, apenas montagem de componentes.
 - `petbits/components/` — componentes reutilizáveis (layout, sidebar, UI).
 - Setters de estado são declarados explicitamente (`def set_x`), porque os
   setters automáticos do Reflex estão desativados desde a versão 0.9.
-- Listas exibidas em tabelas que envolvem join são montadas como `list[dict]`
-  no State, já com os nomes das entidades relacionadas resolvidos.
+- Registros do Xano circulam como `dict` (nunca como objeto de modelo). As
+  listas exibidas em tabelas são montadas no State como `list[dict]`, já com
+  os nomes das entidades relacionadas resolvidos e os valores formatados.
+- Event handlers que falam com o Xano são `async` e usam `await`. Os `@rx.var`
+  permanecem sincronos: eles apenas filtram listas já carregadas.
+- Falhas de rede não devem quebrar a tela. Cada State expõe `load_error`, e
+  cada página mostra esse texto com `error_banner(...)`.
+- O Xano não impõe `CHECK`, `UNIQUE` nem `ON DELETE CASCADE`: essas regras são
+  responsabilidade dos States (validação antes de gravar e remoção explícita
+  dos registros dependentes).

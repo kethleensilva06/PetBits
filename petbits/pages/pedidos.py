@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.models import STATUS_PEDIDO
 from petbits.states.pedido_state import PedidoState
 
@@ -80,7 +87,9 @@ def _pedido_dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 PedidoState.cliente_options,
-                                lambda c: rx.select.item(c.nome, value=c.id.to_string()),
+                                lambda c: rx.select.item(
+                                    c["nome"], value=c["id"].to_string()
+                                ),
                             )
                         ),
                         value=PedidoState.id_cliente,
@@ -154,7 +163,7 @@ def _itens_dialog() -> rx.Component:
                                 rx.foreach(
                                     PedidoState.produto_options,
                                     lambda p: rx.select.item(
-                                        p.nome, value=p.id.to_string()
+                                        p["nome"], value=p["id"].to_string()
                                     ),
                                 )
                             ),
@@ -239,6 +248,7 @@ def pedidos_page() -> rx.Component:
             on_new_click=PedidoState.open_new,
             new_label="Novo pedido",
         ),
+        error_banner(PedidoState.load_error),
         rx.card(
             rx.cond(
                 PedidoState.filtered_pedidos,

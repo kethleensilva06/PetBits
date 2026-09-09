@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.produto_state import ProdutoState
 
 
@@ -123,6 +130,7 @@ def produtos_page() -> rx.Component:
             on_new_click=ProdutoState.open_new,
             new_label="Novo produto",
         ),
+        error_banner(ProdutoState.load_error),
         rx.card(
             rx.cond(
                 ProdutoState.filtered_produtos,

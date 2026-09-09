@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.servico_state import ServicoState
 
 
@@ -109,6 +116,7 @@ def servicos_page() -> rx.Component:
             on_new_click=ServicoState.open_new,
             new_label="Novo serviço",
         ),
+        error_banner(ServicoState.load_error),
         rx.card(
             rx.cond(
                 ServicoState.filtered_servicos,

@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.pet_state import PetState
 
 
@@ -34,7 +41,9 @@ def _dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 PetState.cliente_options,
-                                lambda c: rx.select.item(c.nome, value=c.id.to_string()),
+                                lambda c: rx.select.item(
+                                    c["nome"], value=c["id"].to_string()
+                                ),
                             )
                         ),
                         value=PetState.id_cliente,
@@ -146,6 +155,7 @@ def pets_page() -> rx.Component:
             on_new_click=PetState.open_new,
             new_label="Novo pet",
         ),
+        error_banner(PetState.load_error),
         rx.card(
             rx.cond(
                 PetState.filtered_pets,

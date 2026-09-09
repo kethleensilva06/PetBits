@@ -3,19 +3,23 @@
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import STATUS_AGENDAMENTO, Agendamento, Funcionario, Pet, Servico
-from petbits.states.conversores import para_data_hora
+from petbits import models
+from petbits.states.conversores import (
+    formatar_data_hora,
+    para_data_hora,
+    para_input_data_hora,
+)
+from petbits.xano import XanoError
 
 
 class AgendamentoState(rx.State):
     agendamentos: list[dict] = []
-    pet_options: list[Pet] = []
-    servico_options: list[Servico] = []
-    funcionario_options: list[Funcionario] = []
+    pet_options: list[dict] = []
+    servico_options: list[dict] = []
+    funcionario_options: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
@@ -25,7 +29,7 @@ class AgendamentoState(rx.State):
     id_servico: str = ""
     id_funcionario: str = ""
     data_hora: str = ""
-    status: str = STATUS_AGENDAMENTO[0]
+    status: str = models.STATUS_AGENDAMENTO[0]
     observacoes: str = ""
 
     def set_search(self, value: str):
@@ -63,49 +67,74 @@ class AgendamentoState(rx.State):
             if term in a["pet_nome"].lower() or term in a["servico_nome"].lower()
         ]
 
-    def load_agendamentos(self):
-        with get_session() as session:
-            agendamentos = session.exec(
-                select(Agendamento).order_by(Agendamento.data_hora.desc())
-            ).all()
-            self.pet_options = list(session.exec(select(Pet).order_by(Pet.nome)).all())
-            self.servico_options = list(
-                session.exec(select(Servico).order_by(Servico.nome_servico)).all()
-            )
-            self.funcionario_options = list(
-                session.exec(select(Funcionario).order_by(Funcionario.nome)).all()
-            )
+    async def load_agendamentos(self):
+        self.load_error = ""
+        try:
+            registros = await models.agendamentos.listar()
+            pets = await models.pets.listar()
+            servicos = await models.servicos.listar()
+            funcionarios = await models.funcionarios.listar()
+        except XanoError as erro:
+            self.agendamentos = []
+            self.pet_options = []
+            self.servico_options = []
+            self.funcionario_options = []
+            self.load_error = str(erro)
+            return
 
-        pets_by_id = {p.id: p.nome for p in self.pet_options}
-        servicos_by_id = {s.id: s.nome_servico for s in self.servico_options}
-        funcionarios_by_id = {f.id: f.nome for f in self.funcionario_options}
+        self.pet_options = [
+            {"id": p.get("id"), "nome": p.get("nome") or ""}
+            for p in sorted(pets, key=lambda p: (p.get("nome") or "").lower())
+        ]
+        self.servico_options = [
+            {"id": s.get("id"), "nome_servico": s.get("nome_servico") or ""}
+            for s in sorted(
+                servicos, key=lambda s: (s.get("nome_servico") or "").lower()
+            )
+        ]
+        self.funcionario_options = [
+            {"id": f.get("id"), "nome": f.get("nome") or ""}
+            for f in sorted(funcionarios, key=lambda f: (f.get("nome") or "").lower())
+        ]
+
+        pets_by_id = {p["id"]: p["nome"] for p in self.pet_options}
+        servicos_by_id = {s["id"]: s["nome_servico"] for s in self.servico_options}
+        funcionarios_by_id = {f["id"]: f["nome"] for f in self.funcionario_options}
 
         self.agendamentos = [
             {
-                "id": a.id,
-                "pet_nome": pets_by_id.get(a.id_pet, "Pet removido"),
-                "servico_nome": servicos_by_id.get(a.id_servico, "Serviço removido"),
-                "funcionario_nome": funcionarios_by_id.get(
-                    a.id_funcionario, "Funcionário removido"
+                "id": a.get("id"),
+                "pet_nome": pets_by_id.get(a.get("id_pet"), "Pet removido"),
+                "servico_nome": servicos_by_id.get(
+                    a.get("id_servico"), "Serviço removido"
                 ),
-                "data_hora": a.data_hora.strftime("%d/%m/%Y %H:%M"),
-                "status": a.status,
-                "id_pet": a.id_pet,
-                "id_servico": a.id_servico,
-                "id_funcionario": a.id_funcionario,
+                "funcionario_nome": funcionarios_by_id.get(
+                    a.get("id_funcionario"), "Funcionário removido"
+                ),
+                "data_hora": formatar_data_hora(a.get("data_hora")),
+                "status": a.get("status") or "",
+                "id_pet": a.get("id_pet"),
+                "id_servico": a.get("id_servico"),
+                "id_funcionario": a.get("id_funcionario"),
+                "data_hora_input": para_input_data_hora(a.get("data_hora")),
+                "observacoes": a.get("observacoes") or "",
             }
-            for a in agendamentos
+            for a in sorted(
+                registros, key=lambda a: a.get("data_hora") or 0, reverse=True
+            )
         ]
 
     def open_new(self):
         self.editing_id = None
-        self.id_pet = str(self.pet_options[0].id) if self.pet_options else ""
-        self.id_servico = str(self.servico_options[0].id) if self.servico_options else ""
+        self.id_pet = str(self.pet_options[0]["id"]) if self.pet_options else ""
+        self.id_servico = (
+            str(self.servico_options[0]["id"]) if self.servico_options else ""
+        )
         self.id_funcionario = (
-            str(self.funcionario_options[0].id) if self.funcionario_options else ""
+            str(self.funcionario_options[0]["id"]) if self.funcionario_options else ""
         )
         self.data_hora = ""
-        self.status = STATUS_AGENDAMENTO[0]
+        self.status = models.STATUS_AGENDAMENTO[0]
         self.observacoes = ""
         self.form_error = ""
         self.show_dialog = True
@@ -116,51 +145,45 @@ class AgendamentoState(rx.State):
         self.id_servico = str(agendamento["id_servico"])
         self.id_funcionario = str(agendamento["id_funcionario"])
         self.status = agendamento["status"]
-        with get_session() as session:
-            full = session.get(Agendamento, agendamento["id"])
-            self.observacoes = (full.observacoes or "") if full else ""
-            self.data_hora = full.data_hora.strftime("%Y-%m-%dT%H:%M") if full else ""
+        self.data_hora = agendamento["data_hora_input"]
+        self.observacoes = agendamento["observacoes"]
         self.form_error = ""
         self.show_dialog = True
 
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not (self.id_pet and self.id_servico and self.id_funcionario and self.data_hora):
             self.form_error = "Pet, serviço, funcionário e data/hora são obrigatórios."
             return
 
-        with get_session() as session:
+        dados = {
+            "id_pet": int(self.id_pet),
+            "id_servico": int(self.id_servico),
+            "id_funcionario": int(self.id_funcionario),
+            "data_hora": para_data_hora(self.data_hora),
+            "status": self.status,
+            "observacoes": self.observacoes.strip() or None,
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Agendamento(
-                        id_pet=int(self.id_pet),
-                        id_servico=int(self.id_servico),
-                        id_funcionario=int(self.id_funcionario),
-                        data_hora=para_data_hora(self.data_hora),
-                        status=self.status,
-                        observacoes=self.observacoes.strip() or None,
-                    )
-                )
+                await models.agendamentos.criar(dados)
             else:
-                agendamento = session.get(Agendamento, self.editing_id)
-                agendamento.id_pet = int(self.id_pet)
-                agendamento.id_servico = int(self.id_servico)
-                agendamento.id_funcionario = int(self.id_funcionario)
-                agendamento.data_hora = para_data_hora(self.data_hora)
-                agendamento.status = self.status
-                agendamento.observacoes = self.observacoes.strip() or None
-                session.add(agendamento)
-            session.commit()
+                await models.agendamentos.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_agendamentos()
+        await self.load_agendamentos()
 
-    def delete(self, agendamento_id: int):
-        with get_session() as session:
-            agendamento = session.get(Agendamento, agendamento_id)
-            if agendamento is not None:
-                session.delete(agendamento)
-                session.commit()
-        self.load_agendamentos()
+    async def delete(self, agendamento_id: int):
+        try:
+            await models.agendamentos.remover(agendamento_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_agendamentos()

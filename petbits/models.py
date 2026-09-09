@@ -1,135 +1,64 @@
-"""Modelos de dados do PetBits, espelhando o schema Petshop_DQL (SQL Server).
+"""Tabelas do PetBits no Xano.
 
-Cada classe representa uma tabela do banco de dados. Os tipos e restrições
-seguem o script SQL original, adaptados para o ORM SQLModel.
+O banco de dados fica hospedado no Xano. Este módulo é o único lugar que
+descreve as tabelas do projeto e expõe um acessor para cada uma delas.
+
+Os registros circulam pelo projeto como dicionários JSON, exatamente como o
+Xano os devolve — sempre com `id` e `created_at`, que ele gera sozinho.
+
+Para criar essas tabelas no painel do Xano, siga `docs/xano-setup.md`.
 """
 
-from datetime import date, datetime
-from typing import Optional
+from petbits.xano import TabelaXano
 
-from sqlmodel import Field, SQLModel
-
+# Valores aceitos nos campos de domínio fechado. O Xano não impõe CHECK
+# constraints como o SQL Server, então estas listas alimentam os selects da
+# interface e a validação feita nos States.
 CARGOS_FUNCIONARIO = ["veterinario", "tosador", "atendente"]
 STATUS_PEDIDO = ["pendente", "pago", "enviado", "entregue"]
 STATUS_AGENDAMENTO = ["agendado", "em_andamento", "concluido", "cancelado"]
 
+# Tutor responsável pelos pets.
+# nome (text), cpf (text), email (text), telefone (text), endereco (text),
+# data_cadastro (timestamp)
+clientes = TabelaXano("cliente")
 
-class Cliente(SQLModel, table=True):
-    """Tutor responsável pelos pets cadastrados."""
+# Colaborador da clínica.
+# nome (text), cpf (text), cargo (text), telefone (text), email (text),
+# data_contratacao (date)
+funcionarios = TabelaXano("funcionario")
 
-    __tablename__ = "cliente"
+# Item vendável do petshop.
+# nome (text), categoria (text), marca (text), unidade (text),
+# preco_venda (decimal)
+produtos = TabelaXano("produto")
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    nome: str
-    cpf: str = Field(unique=True, index=True)
-    email: Optional[str] = Field(default=None, unique=True)
-    telefone: Optional[str] = None
-    endereco: Optional[str] = None
-    data_cadastro: datetime = Field(default_factory=datetime.now)
+# Serviço prestado pela clínica.
+# nome_servico (text), descricao (text), preco (decimal),
+# duracao_estimada (int)
+servicos = TabelaXano("servico")
 
+# Animal de estimação, vinculado a um cliente.
+# id_cliente (int), nome (text), especie (text), raca (text),
+# data_nascimento (date), peso (decimal), observacoes (text)
+pets = TabelaXano("pet")
 
-class Funcionario(SQLModel, table=True):
-    """Colaborador da clínica (veterinário, tosador ou atendente)."""
+# Pedido de compra de produtos feito por um cliente.
+# id_cliente (int), data_pedido (timestamp), status (text),
+# valor_total (decimal)
+pedidos = TabelaXano("pedido")
 
-    __tablename__ = "funcionario"
+# Horário marcado para um pet realizar um serviço com um funcionário.
+# id_pet (int), id_servico (int), id_funcionario (int), data_hora (timestamp),
+# status (text), observacoes (text)
+agendamentos = TabelaXano("agendamento")
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    nome: str
-    cpf: str = Field(unique=True, index=True)
-    cargo: str
-    telefone: Optional[str] = None
-    email: Optional[str] = Field(default=None, unique=True)
-    data_contratacao: Optional[date] = None
+# Item (produto + quantidade) que compõe um pedido.
+# id_pedido (int), id_produto (int), quantidade (int),
+# valor_unitario (decimal), valor_total (decimal)
+itens_pedido = TabelaXano("itens_pedido")
 
-
-class Produto(SQLModel, table=True):
-    """Item vendável do petshop (ração, brinquedo, medicamento etc.)."""
-
-    __tablename__ = "produto"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    nome: str
-    categoria: Optional[str] = None
-    marca: Optional[str] = None
-    unidade: Optional[str] = None
-    preco_venda: float = 0.0
-
-
-class Servico(SQLModel, table=True):
-    """Serviço prestado pela clínica (banho, tosa, consulta etc.)."""
-
-    __tablename__ = "servico"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    nome_servico: str
-    descricao: Optional[str] = None
-    preco: float = 0.0
-    duracao_estimada: Optional[int] = None
-
-
-class Pet(SQLModel, table=True):
-    """Animal de estimação vinculado a um cliente."""
-
-    __tablename__ = "pet"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    id_cliente: int = Field(foreign_key="cliente.id")
-    nome: str
-    especie: str
-    raca: Optional[str] = None
-    data_nascimento: Optional[date] = None
-    peso: Optional[float] = None
-    observacoes: Optional[str] = None
-
-
-class Pedido(SQLModel, table=True):
-    """Pedido de compra de produtos feito por um cliente."""
-
-    __tablename__ = "pedido"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    id_cliente: int = Field(foreign_key="cliente.id")
-    data_pedido: datetime = Field(default_factory=datetime.now)
-    status: str = "pendente"
-    valor_total: float = 0.0
-
-
-class Agendamento(SQLModel, table=True):
-    """Horário marcado para um pet realizar um serviço com um funcionário."""
-
-    __tablename__ = "agendamento"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    id_pet: int = Field(foreign_key="pet.id")
-    id_servico: int = Field(foreign_key="servico.id")
-    id_funcionario: int = Field(foreign_key="funcionario.id")
-    data_hora: datetime
-    status: str = "agendado"
-    observacoes: Optional[str] = None
-
-
-class ItensPedido(SQLModel, table=True):
-    """Item (produto + quantidade) que compõe um pedido."""
-
-    __tablename__ = "itens_pedido"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    id_pedido: int = Field(foreign_key="pedido.id")
-    id_produto: int = Field(foreign_key="produto.id")
-    quantidade: int = 1
-    valor_unitario: float = 0.0
-    valor_total: float = 0.0
-
-
-class Prontuario(SQLModel, table=True):
-    """Registro de atendimento clínico de um pet."""
-
-    __tablename__ = "prontuario"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    id_pet: int = Field(foreign_key="pet.id")
-    id_funcionario: int = Field(foreign_key="funcionario.id")
-    data_atendimento: datetime = Field(default_factory=datetime.now)
-    diagnostico: Optional[str] = None
-    tratamento_realizado: Optional[str] = None
-    proxima_consulta: Optional[date] = None
+# Registro de atendimento clínico de um pet.
+# id_pet (int), id_funcionario (int), data_atendimento (timestamp),
+# diagnostico (text), tratamento_realizado (text), proxima_consulta (date)
+prontuarios = TabelaXano("prontuario")

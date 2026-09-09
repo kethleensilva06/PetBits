@@ -6,3 +6,6 @@ assets/external/
 .states
 __pycache__/
 reflex.lock/
+
+# Credenciais do Xano — nunca versionar. Use .env.example como modelo.
+.env

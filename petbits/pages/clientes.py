@@ -2,22 +2,28 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
-from petbits.models import Cliente
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.cliente_state import ClienteState
 
 
-def _row(cliente: Cliente) -> rx.Component:
+def _row(cliente: dict) -> rx.Component:
     return rx.table.row(
-        rx.table.cell(cliente.nome),
-        rx.table.cell(cliente.cpf),
-        rx.table.cell(rx.cond(cliente.email, cliente.email, "-")),
-        rx.table.cell(rx.cond(cliente.telefone, cliente.telefone, "-")),
-        rx.table.cell(rx.cond(cliente.endereco, cliente.endereco, "-")),
+        rx.table.cell(cliente["nome"]),
+        rx.table.cell(cliente["cpf"]),
+        rx.table.cell(cliente["email"]),
+        rx.table.cell(cliente["telefone"]),
+        rx.table.cell(cliente["endereco"]),
         rx.table.cell(
             row_actions(
                 on_edit=ClienteState.open_edit(cliente),
-                on_delete=ClienteState.delete(cliente.id),
+                on_delete=ClienteState.delete(cliente["id"]),
             )
         ),
     )
@@ -117,6 +123,7 @@ def clientes_page() -> rx.Component:
             on_new_click=ClienteState.open_new,
             new_label="Novo cliente",
         ),
+        error_banner(ClienteState.load_error),
         rx.card(
             rx.cond(
                 ClienteState.filtered_clientes,

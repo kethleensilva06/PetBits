@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, layout
+from petbits.components import empty_state, error_banner, layout
 from petbits.states.dashboard_state import DashboardState
 
 
@@ -45,6 +45,7 @@ def _agendamento_row(agendamento: dict) -> rx.Component:
 
 def index() -> rx.Component:
     return layout(
+        error_banner(DashboardState.load_error),
         rx.grid(
             _stat_card("Clientes", DashboardState.total_clientes, "users", "/clientes"),
             _stat_card("Pets", DashboardState.total_pets, "paw-print", "/pets"),

@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.models import STATUS_AGENDAMENTO
 from petbits.states.agendamento_state import AgendamentoState
 
@@ -52,7 +59,9 @@ def _dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 AgendamentoState.pet_options,
-                                lambda p: rx.select.item(p.nome, value=p.id.to_string()),
+                                lambda p: rx.select.item(
+                                    p["nome"], value=p["id"].to_string()
+                                ),
                             )
                         ),
                         value=AgendamentoState.id_pet,
@@ -70,7 +79,7 @@ def _dialog() -> rx.Component:
                             rx.foreach(
                                 AgendamentoState.servico_options,
                                 lambda s: rx.select.item(
-                                    s.nome_servico, value=s.id.to_string()
+                                    s["nome_servico"], value=s["id"].to_string()
                                 ),
                             )
                         ),
@@ -88,7 +97,9 @@ def _dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 AgendamentoState.funcionario_options,
-                                lambda f: rx.select.item(f.nome, value=f.id.to_string()),
+                                lambda f: rx.select.item(
+                                    f["nome"], value=f["id"].to_string()
+                                ),
                             )
                         ),
                         value=AgendamentoState.id_funcionario,
@@ -167,6 +178,7 @@ def agendamentos_page() -> rx.Component:
             on_new_click=AgendamentoState.open_new,
             new_label="Novo agendamento",
         ),
+        error_banner(AgendamentoState.load_error),
         rx.card(
             rx.cond(
                 AgendamentoState.filtered_agendamentos,

@@ -3,16 +3,16 @@
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import CARGOS_FUNCIONARIO, Funcionario
-from petbits.states.conversores import para_data
+from petbits import models
+from petbits.states.conversores import formatar_data, para_data, para_input_data
+from petbits.xano import XanoError
 
 
 class FuncionarioState(rx.State):
-    funcionarios: list[Funcionario] = []
+    funcionarios: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
@@ -20,7 +20,7 @@ class FuncionarioState(rx.State):
 
     nome: str = ""
     cpf: str = ""
-    cargo: str = CARGOS_FUNCIONARIO[0]
+    cargo: str = models.CARGOS_FUNCIONARIO[0]
     telefone: str = ""
     email: str = ""
     data_contratacao: str = ""
@@ -50,86 +50,97 @@ class FuncionarioState(rx.State):
         self.data_contratacao = value
 
     @rx.var
-    def filtered_funcionarios(self) -> list[Funcionario]:
+    def filtered_funcionarios(self) -> list[dict]:
         term = self.search.strip().lower()
         if not term:
             return self.funcionarios
         return [
             f
             for f in self.funcionarios
-            if term in f.nome.lower() or term in f.cargo.lower()
+            if term in f["nome"].lower() or term in f["cargo"].lower()
         ]
 
-    def load_funcionarios(self):
-        with get_session() as session:
-            self.funcionarios = list(
-                session.exec(select(Funcionario).order_by(Funcionario.nome)).all()
-            )
+    async def load_funcionarios(self):
+        self.load_error = ""
+        try:
+            registros = await models.funcionarios.listar()
+        except XanoError as erro:
+            self.funcionarios = []
+            self.load_error = str(erro)
+            return
+
+        self.funcionarios = [
+            {
+                "id": f.get("id"),
+                "nome": f.get("nome") or "",
+                "cpf": f.get("cpf") or "",
+                "cargo": f.get("cargo") or "",
+                "telefone": f.get("telefone") or "-",
+                "email": f.get("email") or "-",
+                "data_contratacao": formatar_data(f.get("data_contratacao")),
+                "data_contratacao_input": para_input_data(f.get("data_contratacao")),
+            }
+            for f in sorted(registros, key=lambda f: (f.get("nome") or "").lower())
+        ]
 
     def open_new(self):
         self.editing_id = None
         self.nome = ""
         self.cpf = ""
-        self.cargo = CARGOS_FUNCIONARIO[0]
+        self.cargo = models.CARGOS_FUNCIONARIO[0]
         self.telefone = ""
         self.email = ""
         self.data_contratacao = ""
         self.form_error = ""
         self.show_dialog = True
 
-    def open_edit(self, funcionario: Funcionario):
-        self.editing_id = funcionario.id
-        self.nome = funcionario.nome
-        self.cpf = funcionario.cpf
-        self.cargo = funcionario.cargo
-        self.telefone = funcionario.telefone or ""
-        self.email = funcionario.email or ""
-        self.data_contratacao = (
-            funcionario.data_contratacao.isoformat()
-            if funcionario.data_contratacao
-            else ""
+    def open_edit(self, funcionario: dict):
+        self.editing_id = funcionario["id"]
+        self.nome = funcionario["nome"]
+        self.cpf = funcionario["cpf"]
+        self.cargo = funcionario["cargo"]
+        self.telefone = (
+            funcionario["telefone"] if funcionario["telefone"] != "-" else ""
         )
+        self.email = funcionario["email"] if funcionario["email"] != "-" else ""
+        self.data_contratacao = funcionario["data_contratacao_input"]
         self.form_error = ""
         self.show_dialog = True
 
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not self.nome.strip() or not self.cpf.strip():
             self.form_error = "Nome e CPF são obrigatórios."
             return
 
-        with get_session() as session:
+        dados = {
+            "nome": self.nome.strip(),
+            "cpf": self.cpf.strip(),
+            "cargo": self.cargo,
+            "telefone": self.telefone.strip() or None,
+            "email": self.email.strip() or None,
+            "data_contratacao": para_data(self.data_contratacao),
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Funcionario(
-                        nome=self.nome.strip(),
-                        cpf=self.cpf.strip(),
-                        cargo=self.cargo,
-                        telefone=self.telefone.strip() or None,
-                        email=self.email.strip() or None,
-                        data_contratacao=para_data(self.data_contratacao),
-                    )
-                )
+                await models.funcionarios.criar(dados)
             else:
-                funcionario = session.get(Funcionario, self.editing_id)
-                funcionario.nome = self.nome.strip()
-                funcionario.cpf = self.cpf.strip()
-                funcionario.cargo = self.cargo
-                funcionario.telefone = self.telefone.strip() or None
-                funcionario.email = self.email.strip() or None
-                funcionario.data_contratacao = para_data(self.data_contratacao)
-                session.add(funcionario)
-            session.commit()
+                await models.funcionarios.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_funcionarios()
+        await self.load_funcionarios()
 
-    def delete(self, funcionario_id: int):
-        with get_session() as session:
-            funcionario = session.get(Funcionario, funcionario_id)
-            if funcionario is not None:
-                session.delete(funcionario)
-                session.commit()
-        self.load_funcionarios()
+    async def delete(self, funcionario_id: int):
+        try:
+            await models.funcionarios.remover(funcionario_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_funcionarios()

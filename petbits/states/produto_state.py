@@ -3,15 +3,16 @@
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import Produto
+from petbits import models
+from petbits.states.conversores import formatar_moeda
+from petbits.xano import XanoError
 
 
 class ProdutoState(rx.State):
     produtos: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
@@ -55,20 +56,25 @@ class ProdutoState(rx.State):
             if term in p["nome"].lower() or term in p["categoria"].lower()
         ]
 
-    def load_produtos(self):
-        with get_session() as session:
-            produtos = session.exec(select(Produto).order_by(Produto.nome)).all()
+    async def load_produtos(self):
+        self.load_error = ""
+        try:
+            registros = await models.produtos.listar()
+        except XanoError as erro:
+            self.produtos = []
+            self.load_error = str(erro)
+            return
 
         self.produtos = [
             {
-                "id": p.id,
-                "nome": p.nome,
-                "categoria": p.categoria or "-",
-                "marca": p.marca or "-",
-                "unidade": p.unidade or "-",
-                "preco_venda": f"{p.preco_venda:.2f}",
+                "id": p.get("id"),
+                "nome": p.get("nome") or "",
+                "categoria": p.get("categoria") or "-",
+                "marca": p.get("marca") or "-",
+                "unidade": p.get("unidade") or "-",
+                "preco_venda": formatar_moeda(p.get("preco_venda")),
             }
-            for p in produtos
+            for p in sorted(registros, key=lambda p: (p.get("nome") or "").lower())
         ]
 
     def open_new(self):
@@ -94,7 +100,7 @@ class ProdutoState(rx.State):
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not self.nome.strip():
             self.form_error = "Nome é obrigatório."
             return
@@ -107,34 +113,31 @@ class ProdutoState(rx.State):
             self.form_error = "Preço não pode ser negativo."
             return
 
-        with get_session() as session:
+        dados = {
+            "nome": self.nome.strip(),
+            "categoria": self.categoria.strip() or None,
+            "marca": self.marca.strip() or None,
+            "unidade": self.unidade.strip() or None,
+            "preco_venda": preco,
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Produto(
-                        nome=self.nome.strip(),
-                        categoria=self.categoria.strip() or None,
-                        marca=self.marca.strip() or None,
-                        unidade=self.unidade.strip() or None,
-                        preco_venda=preco,
-                    )
-                )
+                await models.produtos.criar(dados)
             else:
-                produto = session.get(Produto, self.editing_id)
-                produto.nome = self.nome.strip()
-                produto.categoria = self.categoria.strip() or None
-                produto.marca = self.marca.strip() or None
-                produto.unidade = self.unidade.strip() or None
-                produto.preco_venda = preco
-                session.add(produto)
-            session.commit()
+                await models.produtos.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_produtos()
+        await self.load_produtos()
 
-    def delete(self, produto_id: int):
-        with get_session() as session:
-            produto = session.get(Produto, produto_id)
-            if produto is not None:
-                session.delete(produto)
-                session.commit()
-        self.load_produtos()
+    async def delete(self, produto_id: int):
+        try:
+            await models.produtos.remover(produto_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_produtos()

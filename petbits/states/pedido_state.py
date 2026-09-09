@@ -1,32 +1,35 @@
 """Estado e regras da página de Pedidos e seus itens."""
 
+from datetime import datetime
 from typing import Optional
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import STATUS_PEDIDO, Cliente, ItensPedido, Pedido, Produto
+from petbits import models
+from petbits.states.conversores import formatar_data_hora, formatar_moeda
+from petbits.xano import XanoError
 
 
 class PedidoState(rx.State):
     pedidos: list[dict] = []
-    cliente_options: list[Cliente] = []
-    produto_options: list[Produto] = []
+    cliente_options: list[dict] = []
+    produto_options: list[dict] = []
     search: str = ""
+    load_error: str = ""
 
     show_dialog: bool = False
     editing_id: Optional[int] = None
     form_error: str = ""
 
     id_cliente: str = ""
-    status: str = STATUS_PEDIDO[0]
+    status: str = models.STATUS_PEDIDO[0]
 
     show_itens_dialog: bool = False
     selected_pedido_id: Optional[int] = None
     selected_pedido_cliente: str = ""
     itens: list[dict] = []
     itens_total: str = "0.00"
+    itens_total_valor: float = 0.0
     item_error: str = ""
     item_id_produto: str = ""
     item_quantidade: str = "1"
@@ -63,35 +66,55 @@ class PedidoState(rx.State):
             if term in p["cliente_nome"].lower() or term in p["status"].lower()
         ]
 
-    def load_pedidos(self):
-        with get_session() as session:
-            pedidos = session.exec(
-                select(Pedido).order_by(Pedido.data_pedido.desc())
-            ).all()
-            self.cliente_options = list(
-                session.exec(select(Cliente).order_by(Cliente.nome)).all()
-            )
-            self.produto_options = list(
-                session.exec(select(Produto).order_by(Produto.nome)).all()
-            )
+    async def load_pedidos(self):
+        self.load_error = ""
+        try:
+            pedidos = await models.pedidos.listar()
+            clientes = await models.clientes.listar()
+            produtos = await models.produtos.listar()
+        except XanoError as erro:
+            self.pedidos = []
+            self.cliente_options = []
+            self.produto_options = []
+            self.load_error = str(erro)
+            return
 
-        clientes_by_id = {c.id: c.nome for c in self.cliente_options}
+        self.cliente_options = [
+            {"id": c.get("id"), "nome": c.get("nome") or ""}
+            for c in sorted(clientes, key=lambda c: (c.get("nome") or "").lower())
+        ]
+        self.produto_options = [
+            {
+                "id": p.get("id"),
+                "nome": p.get("nome") or "",
+                "preco_venda": float(p.get("preco_venda") or 0),
+            }
+            for p in sorted(produtos, key=lambda p: (p.get("nome") or "").lower())
+        ]
+
+        clientes_by_id = {c["id"]: c["nome"] for c in self.cliente_options}
         self.pedidos = [
             {
-                "id": p.id,
-                "cliente_nome": clientes_by_id.get(p.id_cliente, "Cliente removido"),
-                "id_cliente": p.id_cliente,
-                "data_pedido": p.data_pedido.strftime("%d/%m/%Y %H:%M"),
-                "status": p.status,
-                "valor_total": f"{p.valor_total:.2f}",
+                "id": p.get("id"),
+                "cliente_nome": clientes_by_id.get(
+                    p.get("id_cliente"), "Cliente removido"
+                ),
+                "id_cliente": p.get("id_cliente"),
+                "data_pedido": formatar_data_hora(p.get("data_pedido")),
+                "status": p.get("status") or "",
+                "valor_total": formatar_moeda(p.get("valor_total")),
             }
-            for p in pedidos
+            for p in sorted(
+                pedidos, key=lambda p: p.get("data_pedido") or 0, reverse=True
+            )
         ]
 
     def open_new(self):
         self.editing_id = None
-        self.id_cliente = str(self.cliente_options[0].id) if self.cliente_options else ""
-        self.status = STATUS_PEDIDO[0]
+        self.id_cliente = (
+            str(self.cliente_options[0]["id"]) if self.cliente_options else ""
+        )
+        self.status = models.STATUS_PEDIDO[0]
         self.form_error = ""
         self.show_dialog = True
 
@@ -105,82 +128,97 @@ class PedidoState(rx.State):
     def close_dialog(self):
         self.show_dialog = False
 
-    def save(self):
+    async def save(self):
         if not self.id_cliente:
             self.form_error = "Selecione o cliente do pedido."
             return
 
-        with get_session() as session:
+        dados = {
+            "id_cliente": int(self.id_cliente),
+            "status": self.status,
+        }
+
+        try:
             if self.editing_id is None:
-                session.add(
-                    Pedido(id_cliente=int(self.id_cliente), status=self.status)
-                )
+                # O Xano não preenche estes campos sozinho: o pedido nasce com
+                # a data do momento e o total zerado, que os itens recalculam.
+                dados["data_pedido"] = datetime.now().isoformat()
+                dados["valor_total"] = 0.0
+                await models.pedidos.criar(dados)
             else:
-                pedido = session.get(Pedido, self.editing_id)
-                pedido.id_cliente = int(self.id_cliente)
-                pedido.status = self.status
-                session.add(pedido)
-            session.commit()
+                await models.pedidos.atualizar(self.editing_id, dados)
+        except XanoError as erro:
+            self.form_error = str(erro)
+            return
 
+        self.form_error = ""
         self.show_dialog = False
-        self.load_pedidos()
+        await self.load_pedidos()
 
-    def delete(self, pedido_id: int):
-        with get_session() as session:
-            for item in session.exec(
-                select(ItensPedido).where(ItensPedido.id_pedido == pedido_id)
-            ).all():
-                session.delete(item)
-            pedido = session.get(Pedido, pedido_id)
-            if pedido is not None:
-                session.delete(pedido)
-            session.commit()
-        self.load_pedidos()
+    async def delete(self, pedido_id: int):
+        try:
+            # O Xano não tem ON DELETE CASCADE: os itens saem antes do pedido.
+            for item in await models.itens_pedido.listar_por("id_pedido", pedido_id):
+                item_id = item.get("id")
+                if item_id is not None:
+                    await models.itens_pedido.remover(item_id)
+            await models.pedidos.remover(pedido_id)
+        except XanoError as erro:
+            self.load_error = str(erro)
+            return
+        await self.load_pedidos()
 
-    def open_itens(self, pedido: dict):
+    async def open_itens(self, pedido: dict):
         self.selected_pedido_id = pedido["id"]
         self.selected_pedido_cliente = pedido["cliente_nome"]
         self.item_id_produto = (
-            str(self.produto_options[0].id) if self.produto_options else ""
+            str(self.produto_options[0]["id"]) if self.produto_options else ""
         )
         self.item_quantidade = "1"
         self.item_error = ""
         self.show_itens_dialog = True
-        self.load_itens()
+        await self.load_itens()
 
     def close_itens(self):
         self.show_itens_dialog = False
 
-    def load_itens(self):
+    async def load_itens(self):
         if self.selected_pedido_id is None:
             self.itens = []
             self.itens_total = "0.00"
+            self.itens_total_valor = 0.0
             return
 
-        with get_session() as session:
-            itens = session.exec(
-                select(ItensPedido).where(
-                    ItensPedido.id_pedido == self.selected_pedido_id
-                )
-            ).all()
-            produtos_by_id = {
-                p.id: p.nome
-                for p in session.exec(select(Produto)).all()
-            }
+        try:
+            itens = await models.itens_pedido.listar_por(
+                "id_pedido", self.selected_pedido_id
+            )
+        except XanoError as erro:
+            self.itens = []
+            self.itens_total = "0.00"
+            self.itens_total_valor = 0.0
+            self.item_error = str(erro)
+            return
 
+        produtos_by_id = {
+            p.get("id"): p.get("nome") or "" for p in self.produto_options
+        }
         self.itens = [
             {
-                "id": i.id,
-                "produto_nome": produtos_by_id.get(i.id_produto, "Produto removido"),
-                "quantidade": i.quantidade,
-                "valor_unitario": f"{i.valor_unitario:.2f}",
-                "valor_total": f"{i.valor_total:.2f}",
+                "id": i.get("id"),
+                "produto_nome": produtos_by_id.get(
+                    i.get("id_produto"), "Produto removido"
+                ),
+                "quantidade": i.get("quantidade") or 0,
+                "valor_unitario": formatar_moeda(i.get("valor_unitario")),
+                "valor_total": formatar_moeda(i.get("valor_total")),
             }
-            for i in itens
+            for i in sorted(itens, key=lambda i: i.get("id") or 0)
         ]
-        self.itens_total = f"{sum(i.valor_total for i in itens):.2f}"
+        self.itens_total_valor = sum(float(i.get("valor_total") or 0) for i in itens)
+        self.itens_total = formatar_moeda(self.itens_total_valor)
 
-    def add_item(self):
+    async def add_item(self):
         if self.selected_pedido_id is None or not self.item_id_produto:
             self.item_error = "Selecione um produto."
             return
@@ -193,51 +231,75 @@ class PedidoState(rx.State):
             self.item_error = "Quantidade deve ser maior que zero."
             return
 
-        with get_session() as session:
-            produto = session.get(Produto, int(self.item_id_produto))
-            if produto is None:
-                self.item_error = "Produto não encontrado."
-                return
-            session.add(
-                ItensPedido(
-                    id_pedido=self.selected_pedido_id,
-                    id_produto=produto.id,
-                    quantidade=quantidade,
-                    valor_unitario=produto.preco_venda,
-                    valor_total=quantidade * produto.preco_venda,
-                )
-            )
-            session.commit()
+        id_produto = int(self.item_id_produto)
+        produto = next(
+            (p for p in self.produto_options if p.get("id") == id_produto), None
+        )
+        if produto is None:
+            self.item_error = "Produto não encontrado."
+            return
+
+        valor_unitario = float(produto.get("preco_venda") or 0)
+        dados = {
+            "id_pedido": self.selected_pedido_id,
+            "id_produto": id_produto,
+            "quantidade": quantidade,
+            "valor_unitario": valor_unitario,
+            "valor_total": quantidade * valor_unitario,
+        }
+
+        try:
+            await models.itens_pedido.criar(dados)
+        except XanoError as erro:
+            self.item_error = str(erro)
+            return
 
         self.item_error = ""
         self.item_quantidade = "1"
-        self.load_itens()
-        self._recalcular_total()
+        await self.load_itens()
+        await self._recalcular_total()
 
-    def remove_item(self, item_id: int):
-        with get_session() as session:
-            item = session.get(ItensPedido, item_id)
-            if item is not None:
-                session.delete(item)
-                session.commit()
-        self.load_itens()
-        self._recalcular_total()
+    async def remove_item(self, item_id: int):
+        try:
+            await models.itens_pedido.remover(item_id)
+        except XanoError as erro:
+            self.item_error = str(erro)
+            return
+        await self.load_itens()
+        await self._recalcular_total()
 
-    def _recalcular_total(self):
+    async def _recalcular_total(self):
         """Atualiza o valor_total do pedido a partir da soma dos seus itens."""
         if self.selected_pedido_id is None:
             return
 
-        with get_session() as session:
-            itens = session.exec(
-                select(ItensPedido).where(
-                    ItensPedido.id_pedido == self.selected_pedido_id
-                )
-            ).all()
-            pedido = session.get(Pedido, self.selected_pedido_id)
-            if pedido is not None:
-                pedido.valor_total = sum(i.valor_total for i in itens)
-                session.add(pedido)
-                session.commit()
+        try:
+            # A soma sai de uma leitura própria, sobre os valores crus do Xano:
+            # se a listagem falhar, o total gravado não é zerado por engano.
+            itens = await models.itens_pedido.listar_por(
+                "id_pedido", self.selected_pedido_id
+            )
+            total = float(sum(float(i.get("valor_total") or 0) for i in itens))
 
-        self.load_pedidos()
+            # O endpoint de edição do Xano grava todos os campos que recebe,
+            # então o pedido é reenviado inteiro: mandar só o valor_total
+            # apagaria id_cliente e status.
+            pedido = await models.pedidos.obter(self.selected_pedido_id)
+            if pedido is None:
+                self.item_error = "Pedido não encontrado no Xano."
+                return
+            await models.pedidos.atualizar(
+                self.selected_pedido_id,
+                {
+                    "id_cliente": pedido.get("id_cliente"),
+                    "status": pedido.get("status"),
+                    "valor_total": total,
+                },
+            )
+        except XanoError as erro:
+            self.item_error = str(erro)
+            return
+
+        self.itens_total_valor = total
+        self.itens_total = formatar_moeda(total)
+        await self.load_pedidos()

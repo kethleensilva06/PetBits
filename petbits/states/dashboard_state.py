@@ -1,20 +1,13 @@
 """Estado da página inicial: indicadores e próximos agendamentos."""
 
+import asyncio
 from datetime import datetime
 
 import reflex as rx
-from sqlmodel import select
 
-from petbits.database import get_session
-from petbits.models import (
-    Agendamento,
-    Cliente,
-    Funcionario,
-    Pedido,
-    Pet,
-    Produto,
-    Servico,
-)
+from petbits import models
+from petbits.states.conversores import de_data_hora, formatar_data_hora
+from petbits.xano import XanoError
 
 
 class DashboardState(rx.State):
@@ -26,25 +19,49 @@ class DashboardState(rx.State):
     agendamentos_hoje: int = 0
     pedidos_pendentes: int = 0
     proximos_agendamentos: list[dict] = []
+    load_error: str = ""
 
-    def load_dashboard(self):
-        with get_session() as session:
-            clientes = session.exec(select(Cliente)).all()
-            pets = session.exec(select(Pet)).all()
-            funcionarios = session.exec(select(Funcionario)).all()
-            produtos = session.exec(select(Produto)).all()
-            servicos = session.exec(select(Servico)).all()
-            pedidos = session.exec(select(Pedido)).all()
-            agendamentos = session.exec(
-                select(Agendamento).order_by(Agendamento.data_hora)
-            ).all()
+    async def load_dashboard(self):
+        self.load_error = ""
+        try:
+            (
+                clientes,
+                pets,
+                funcionarios,
+                produtos,
+                servicos,
+                pedidos,
+                agendamentos,
+            ) = await asyncio.gather(
+                models.clientes.listar(),
+                models.pets.listar(),
+                models.funcionarios.listar(),
+                models.produtos.listar(),
+                models.servicos.listar(),
+                models.pedidos.listar(),
+                models.agendamentos.listar(),
+            )
+        except XanoError as erro:
+            self.total_clientes = 0
+            self.total_pets = 0
+            self.total_funcionarios = 0
+            self.total_produtos = 0
+            self.total_servicos = 0
+            self.agendamentos_hoje = 0
+            self.pedidos_pendentes = 0
+            self.proximos_agendamentos = []
+            self.load_error = str(erro)
+            return
 
-            pets_by_id = {p.id: p.nome for p in pets}
-            servicos_by_id = {s.id: s.nome_servico for s in servicos}
-            funcionarios_by_id = {f.id: f.nome for f in funcionarios}
+        pets_por_id = {p.get("id"): p.get("nome") for p in pets}
+        servicos_por_id = {s.get("id"): s.get("nome_servico") for s in servicos}
+        funcionarios_por_id = {f.get("id"): f.get("nome") for f in funcionarios}
 
         hoje = datetime.now().date()
         agora = datetime.now()
+
+        # A data e hora de cada agendamento é convertida uma única vez.
+        marcados = [(de_data_hora(a.get("data_hora")), a) for a in agendamentos]
 
         self.total_clientes = len(clientes)
         self.total_pets = len(pets)
@@ -52,21 +69,36 @@ class DashboardState(rx.State):
         self.total_produtos = len(produtos)
         self.total_servicos = len(servicos)
         self.agendamentos_hoje = len(
-            [a for a in agendamentos if a.data_hora.date() == hoje]
+            [a for momento, a in marcados if momento and momento.date() == hoje]
         )
-        self.pedidos_pendentes = len([p for p in pedidos if p.status == "pendente"])
+        self.pedidos_pendentes = len(
+            [p for p in pedidos if p.get("status") == "pendente"]
+        )
+
+        futuros = sorted(
+            (
+                a
+                for momento, a in marcados
+                if momento
+                and momento >= agora
+                and a.get("status") in ("agendado", "em_andamento")
+            ),
+            key=lambda a: a.get("data_hora") or 0,
+        )
 
         self.proximos_agendamentos = [
             {
-                "id": a.id,
-                "pet_nome": pets_by_id.get(a.id_pet, "Pet removido"),
-                "servico_nome": servicos_by_id.get(a.id_servico, "Serviço removido"),
-                "funcionario_nome": funcionarios_by_id.get(
-                    a.id_funcionario, "Funcionário removido"
+                "id": a.get("id"),
+                "pet_nome": pets_por_id.get(a.get("id_pet")) or "Pet removido",
+                "servico_nome": (
+                    servicos_por_id.get(a.get("id_servico")) or "Serviço removido"
                 ),
-                "data_hora": a.data_hora.strftime("%d/%m/%Y %H:%M"),
-                "status": a.status,
+                "funcionario_nome": (
+                    funcionarios_por_id.get(a.get("id_funcionario"))
+                    or "Funcionário removido"
+                ),
+                "data_hora": formatar_data_hora(a.get("data_hora")),
+                "status": a.get("status") or "-",
             }
-            for a in agendamentos
-            if a.data_hora >= agora and a.status in ("agendado", "em_andamento")
-        ][:8]
+            for a in futuros[:8]
+        ]

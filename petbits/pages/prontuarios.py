@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from petbits.components import empty_state, form_field, layout, page_toolbar, row_actions
+from petbits.components import (
+    empty_state,
+    error_banner,
+    form_field,
+    layout,
+    page_toolbar,
+    row_actions,
+)
 from petbits.states.prontuario_state import ProntuarioState
 
 
@@ -38,7 +45,9 @@ def _dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 ProntuarioState.pet_options,
-                                lambda p: rx.select.item(p.nome, value=p.id.to_string()),
+                                lambda p: rx.select.item(
+                                    p["nome"], value=p["id"].to_string()
+                                ),
                             )
                         ),
                         value=ProntuarioState.id_pet,
@@ -55,7 +64,9 @@ def _dialog() -> rx.Component:
                         rx.select.content(
                             rx.foreach(
                                 ProntuarioState.funcionario_options,
-                                lambda f: rx.select.item(f.nome, value=f.id.to_string()),
+                                lambda f: rx.select.item(
+                                    f["nome"], value=f["id"].to_string()
+                                ),
                             )
                         ),
                         value=ProntuarioState.id_funcionario,
@@ -130,6 +141,7 @@ def prontuarios_page() -> rx.Component:
             on_new_click=ProntuarioState.open_new,
             new_label="Novo prontuário",
         ),
+        error_banner(ProntuarioState.load_error),
         rx.card(
             rx.cond(
                 ProntuarioState.filtered_prontuarios,
