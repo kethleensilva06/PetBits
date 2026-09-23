@@ -1,37 +1,30 @@
-table "funcionario" {
+table funcionario {
   auth = false
+
   schema {
-    int id {
-      description = "Identificador do registro"
-    }
-
-    text nome filters=trim {
-      description = "Nome do colaborador"
-    }
-
-    text cpf filters=trim {
-      description = "CPF do colaborador"
-    }
-
-    text cargo filters=trim {
-      description = "veterinario, tosador ou atendente"
-    }
-
-    text telefone? filters=trim {
-      description = "Telefone de contato"
-    }
-
-    text email? filters=trim {
-      description = "E-mail de contato"
-    }
-
-    date data_contratacao? {
-      description = "Data de contratacao"
-    }
-
-    timestamp created_at?=now {
-      description = "Criado automaticamente pelo Xano"
-    }
+    // Identificador do registro
+    int id
+  
+    // Nome do colaborador
+    text nome filters=trim
+  
+    // CPF do colaborador
+    text cpf filters=trim
+  
+    // veterinario, tosador ou atendente
+    text cargo filters=trim
+  
+    // Telefone de contato
+    text telefone? filters=trim
+  
+    // E-mail de contato
+    text email? filters=trim
+  
+    // Data de contratacao
+    date data_contratacao?
+  
+    // Criado automaticamente pelo Xano
+    timestamp created_at?=now
   }
 
   index = [

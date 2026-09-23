@@ -1,29 +1,24 @@
-table "servico" {
+table servico {
   auth = false
+
   schema {
-    int id {
-      description = "Identificador do registro"
-    }
-
-    text nome_servico filters=trim {
-      description = "Nome do servico"
-    }
-
-    text descricao? filters=trim {
-      description = "Descricao do servico"
-    }
-
-    decimal preco filters=min:0 {
-      description = "Preco do servico"
-    }
-
-    int duracao_estimada? filters=min:0 {
-      description = "Duracao estimada em minutos"
-    }
-
-    timestamp created_at?=now {
-      description = "Criado automaticamente pelo Xano"
-    }
+    // Identificador do registro
+    int id
+  
+    // Nome do servico
+    text nome_servico filters=trim
+  
+    // Descricao do servico
+    text descricao? filters=trim
+  
+    // Preco do servico
+    decimal preco filters=min:0
+  
+    // Duracao estimada em minutos
+    int duracao_estimada? filters=min:0
+  
+    // Criado automaticamente pelo Xano
+    timestamp created_at?=now
   }
 
   index = [

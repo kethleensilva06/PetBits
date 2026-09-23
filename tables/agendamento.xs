@@ -1,40 +1,36 @@
-table "agendamento" {
+table agendamento {
   auth = false
+
   schema {
-    int id {
-      description = "Identificador do registro"
-    }
-
+    // Identificador do registro
+    int id
+  
+    // Pet atendido
     int id_pet {
-      table = "pet"
-      description = "Pet atendido"
+      table = ""
     }
-
+  
+    // Servico agendado
     int id_servico {
-      table = "servico"
-      description = "Servico agendado"
+      table = ""
     }
-
+  
+    // Responsavel pelo atendimento
     int id_funcionario {
-      table = "funcionario"
-      description = "Responsavel pelo atendimento"
+      table = ""
     }
-
-    timestamp data_hora {
-      description = "Data e hora do agendamento"
-    }
-
-    text status filters=trim {
-      description = "agendado, em_andamento, concluido ou cancelado"
-    }
-
-    text observacoes? filters=trim {
-      description = "Observacoes do agendamento"
-    }
-
-    timestamp created_at?=now {
-      description = "Criado automaticamente pelo Xano"
-    }
+  
+    // Data e hora do agendamento
+    timestamp data_hora
+  
+    // agendado, em_andamento, concluido ou cancelado
+    text status filters=trim
+  
+    // Observacoes do agendamento
+    text observacoes? filters=trim
+  
+    // Criado automaticamente pelo Xano
+    timestamp created_at?=now
   }
 
   index = [

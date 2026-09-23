@@ -1,16 +1,18 @@
+// Remove um registro de servico
 query "servico/{id}" verb=DELETE {
   api_group = "PetBits"
-  description = "Remove um registro de servico"
+
   input {
-    int id {
-      description = "Identificador do registro"
-    }
+    // Identificador do registro
+    int id
   }
+
   stack {
-    db.del "servico" {
+    db.del servico {
       field_name = "id"
       field_value = $input.id
     }
   }
+
   response = {success: true}
 }

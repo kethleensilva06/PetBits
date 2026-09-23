@@ -1,42 +1,39 @@
-query "agendamento" verb=POST {
+// Cria um registro em agendamento
+query agendamento verb=POST {
   api_group = "PetBits"
-  description = "Cria um registro em agendamento"
+
   input {
-    int id_pet {
-      description = "Pet atendido"
-    }
-
-    int id_servico {
-      description = "Servico agendado"
-    }
-
-    int id_funcionario {
-      description = "Responsavel pelo atendimento"
-    }
-
-    timestamp data_hora {
-      description = "Data e hora do agendamento"
-    }
-
-    text status filters=trim {
-      description = "agendado, em_andamento, concluido ou cancelado"
-    }
-
-    text observacoes? filters=trim {
-      description = "Observacoes do agendamento"
-    }
+    // Pet atendido
+    int id_pet
+  
+    // Servico agendado
+    int id_servico
+  
+    // Responsavel pelo atendimento
+    int id_funcionario
+  
+    // Data e hora do agendamento
+    timestamp data_hora
+  
+    // agendado, em_andamento, concluido ou cancelado
+    text status filters=trim
+  
+    // Observacoes do agendamento
+    text observacoes? filters=trim
   }
+
   stack {
-    db.add "agendamento" {
+    db.add agendamento {
       data = {
-        id_pet: $input.id_pet,
-        id_servico: $input.id_servico,
-        id_funcionario: $input.id_funcionario,
-        data_hora: $input.data_hora,
-        status: $input.status,
-        observacoes: $input.observacoes
+        id_pet        : $input.id_pet
+        id_servico    : $input.id_servico
+        id_funcionario: $input.id_funcionario
+        data_hora     : $input.data_hora
+        status        : $input.status
+        observacoes   : $input.observacoes
       }
     } as $registro
   }
+
   response = $registro
 }

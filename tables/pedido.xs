@@ -1,30 +1,26 @@
-table "pedido" {
+table pedido {
   auth = false
-  schema {
-    int id {
-      description = "Identificador do registro"
-    }
 
+  schema {
+    // Identificador do registro
+    int id
+  
+    // Cliente do pedido
     int id_cliente {
       table = "cliente"
-      description = "Cliente do pedido"
     }
-
-    text status filters=trim {
-      description = "pendente, pago, enviado ou entregue"
-    }
-
-    decimal valor_total? filters=min:0 {
-      description = "Soma dos itens do pedido"
-    }
-
-    timestamp data_pedido?=now {
-      description = "Momento do pedido"
-    }
-
-    timestamp created_at?=now {
-      description = "Criado automaticamente pelo Xano"
-    }
+  
+    // pendente, pago, enviado ou entregue
+    text status filters=trim
+  
+    // Soma dos itens do pedido
+    decimal valor_total? filters=min:0
+  
+    // Momento do pedido
+    timestamp data_pedido?=now
+  
+    // Criado automaticamente pelo Xano
+    timestamp created_at?=now
   }
 
   index = [

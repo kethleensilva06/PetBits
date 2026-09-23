@@ -1,37 +1,35 @@
-query "itens_pedido" verb=POST {
+// Cria um registro em itens_pedido
+query itens_pedido verb=POST {
   api_group = "PetBits"
-  description = "Cria um registro em itens_pedido"
+
   input {
-    int id_pedido {
-      description = "Pedido ao qual o item pertence"
-    }
-
-    int id_produto {
-      description = "Produto vendido"
-    }
-
-    int quantidade {
-      description = "Quantidade vendida"
-    }
-
-    decimal valor_unitario {
-      description = "Preco unitario no momento da venda"
-    }
-
-    decimal valor_total {
-      description = "Quantidade multiplicada pelo valor unitario"
-    }
+    // Pedido ao qual o item pertence
+    int id_pedido
+  
+    // Produto vendido
+    int id_produto
+  
+    // Quantidade vendida
+    int quantidade
+  
+    // Preco unitario no momento da venda
+    decimal valor_unitario
+  
+    // Quantidade multiplicada pelo valor unitario
+    decimal valor_total
   }
+
   stack {
-    db.add "itens_pedido" {
+    db.add itens_pedido {
       data = {
-        id_pedido: $input.id_pedido,
-        id_produto: $input.id_produto,
-        quantidade: $input.quantidade,
-        valor_unitario: $input.valor_unitario,
-        valor_total: $input.valor_total
+        id_pedido     : $input.id_pedido
+        id_produto    : $input.id_produto
+        quantidade    : $input.quantidade
+        valor_unitario: $input.valor_unitario
+        valor_total   : $input.valor_total
       }
     } as $registro
   }
+
   response = $registro
 }

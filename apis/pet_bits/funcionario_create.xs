@@ -1,42 +1,39 @@
-query "funcionario" verb=POST {
+// Cria um registro em funcionario
+query funcionario verb=POST {
   api_group = "PetBits"
-  description = "Cria um registro em funcionario"
+
   input {
-    text nome filters=trim {
-      description = "Nome do colaborador"
-    }
-
-    text cpf filters=trim {
-      description = "CPF do colaborador"
-    }
-
-    text cargo filters=trim {
-      description = "veterinario, tosador ou atendente"
-    }
-
-    text telefone? filters=trim {
-      description = "Telefone de contato"
-    }
-
-    text email? filters=trim {
-      description = "E-mail de contato"
-    }
-
-    date data_contratacao? {
-      description = "Data de contratacao"
-    }
+    // Nome do colaborador
+    text nome filters=trim
+  
+    // CPF do colaborador
+    text cpf filters=trim
+  
+    // veterinario, tosador ou atendente
+    text cargo filters=trim
+  
+    // Telefone de contato
+    text telefone? filters=trim
+  
+    // E-mail de contato
+    text email? filters=trim
+  
+    // Data de contratacao
+    date data_contratacao?
   }
+
   stack {
-    db.add "funcionario" {
+    db.add funcionario {
       data = {
-        nome: $input.nome,
-        cpf: $input.cpf,
-        cargo: $input.cargo,
-        telefone: $input.telefone,
-        email: $input.email,
+        nome            : $input.nome
+        cpf             : $input.cpf
+        cargo           : $input.cargo
+        telefone        : $input.telefone
+        email           : $input.email
         data_contratacao: $input.data_contratacao
       }
     } as $registro
   }
+
   response = $registro
 }

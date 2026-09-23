@@ -1,16 +1,18 @@
+// Remove um registro de prontuario
 query "prontuario/{id}" verb=DELETE {
   api_group = "PetBits"
-  description = "Remove um registro de prontuario"
+
   input {
-    int id {
-      description = "Identificador do registro"
-    }
+    // Identificador do registro
+    int id
   }
+
   stack {
-    db.del "prontuario" {
+    db.del prontuario {
       field_name = "id"
       field_value = $input.id
     }
   }
+
   response = {success: true}
 }

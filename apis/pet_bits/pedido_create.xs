@@ -1,27 +1,27 @@
-query "pedido" verb=POST {
+// Cria um registro em pedido
+query pedido verb=POST {
   api_group = "PetBits"
-  description = "Cria um registro em pedido"
+
   input {
-    int id_cliente {
-      description = "Cliente do pedido"
-    }
-
-    text status filters=trim {
-      description = "pendente, pago, enviado ou entregue"
-    }
-
-    decimal valor_total? {
-      description = "Soma dos itens do pedido"
-    }
+    // Cliente do pedido
+    int id_cliente
+  
+    // pendente, pago, enviado ou entregue
+    text status filters=trim
+  
+    // Soma dos itens do pedido
+    decimal valor_total?
   }
+
   stack {
-    db.add "pedido" {
+    db.add pedido {
       data = {
-        id_cliente: $input.id_cliente,
-        status: $input.status,
+        id_cliente : $input.id_cliente
+        status     : $input.status
         valor_total: $input.valor_total
       }
     } as $registro
   }
+
   response = $registro
 }

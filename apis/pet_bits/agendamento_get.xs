@@ -1,16 +1,18 @@
+// Busca um registro de agendamento pelo id
 query "agendamento/{id}" verb=GET {
   api_group = "PetBits"
-  description = "Busca um registro de agendamento pelo id"
+
   input {
-    int id {
-      description = "Identificador do registro"
-    }
+    // Identificador do registro
+    int id
   }
+
   stack {
-    db.get "agendamento" {
+    db.get agendamento {
       field_name = "id"
       field_value = $input.id
     } as $registro
   }
+
   response = $registro
 }

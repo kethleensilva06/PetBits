@@ -1,16 +1,18 @@
+// Remove um registro de produto
 query "produto/{id}" verb=DELETE {
   api_group = "PetBits"
-  description = "Remove um registro de produto"
+
   input {
-    int id {
-      description = "Identificador do registro"
-    }
+    // Identificador do registro
+    int id
   }
+
   stack {
-    db.del "produto" {
+    db.del produto {
       field_name = "id"
       field_value = $input.id
     }
   }
+
   response = {success: true}
 }
