@@ -77,6 +77,15 @@ async def _requisitar(metodo: str, caminho: str, **kwargs) -> Any:
         ) from erro
 
     if resposta.status_code == 404:
+        # O Xano usa 404 para dois casos bem diferentes: o endpoint não existe
+        # (e aí a mensagem é "Unable to locate request.") ou o registro pedido
+        # não existe. O primeiro é erro de configuração e precisa aparecer na
+        # tela; o segundo é resultado normal de uma busca por id.
+        if "unable to locate request" in _detalhe(resposta).lower():
+            raise XanoError(
+                f"O endpoint {caminho} não existe no Xano. Confira se o CRUD "
+                "da tabela foi criado no API group (veja xano/README.md)."
+            )
         return None
     if resposta.status_code in (401, 403):
         raise XanoError(

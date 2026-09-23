@@ -7,8 +7,19 @@ que criar tabela por tabela e campo por campo no painel do Xano.
 ```
 xano/
 ├── tables/            9 tabelas
-└── apis/petbits/      45 endpoints (5 por tabela)
+└── apis/pet_bits/     45 endpoints (5 por tabela)
 ```
+
+O API group deste projeto já existe no Xano e se chama **PetBits**:
+
+```
+https://x8ki-letl-twmt.n7.xano.io/api:Xj7KkS4w
+```
+
+Esse endereço já está no `.env` da raiz. A pasta é `pet_bits` porque a
+extensão usa o nome do grupo em `snake_case` para nomear o diretório, e cada
+query declara `api_group = "PetBits"` — assim o push cai nesse grupo, e não em
+um novo.
 
 Os nomes de tabela, de campo e os caminhos dos endpoints são exatamente os que
 `petbits/xano.py` espera. Se você alterar algo aqui, altere também lá.
@@ -38,33 +49,31 @@ Você precisa fazer o login — eu não tenho como entrar na sua conta.
 A pasta `apis/petbits/` é o que define o API group: no XanoScript, criar uma
 pasta sob `apis/` cria um API group com aquele nome.
 
-## Pegando a URL da API
+## Conferindo depois do push
 
-Depois do push, o Xano gera o endereço do API group. Ele tem este formato:
+Para saber se os endpoints chegaram ao grupo certo, peça a especificação
+OpenAPI do grupo — ela lista tudo que existe nele:
 
-```
-https://<workspace>.<regiao>.xano.io/api:<canonical>
-```
-
-O `<canonical>` é um identificador curto e aleatório (algo como `HZ4jLtdc`)
-que **o Xano gera** — não é possível saber ou escolher antes de o grupo
-existir. Copie o endereço no painel do Xano, na tela do API group, e cole no
-`.env` da raiz do projeto:
-
-```
-XANO_BASE_URL=https://x8ki-letl-twmt.n7.xano.io/api:HZ4jLtdc
-XANO_TOKEN=
+```bash
+curl -s "https://x8ki-letl-twmt.n7.xano.io/apispec:Xj7KkS4w?type=json"
 ```
 
-Se quiser fixar o canonical em vez de aceitar o gerado, o XanoScript permite
-declarar as configurações do grupo:
+Se o push funcionou, aparecem 45 caminhos. Se continuar em zero, o push
+provavelmente criou um grupo novo em vez de usar o `PetBits` — nesse caso
+confira em **API** se surgiu um segundo grupo e, se surgiu, use o base URL
+dele no `.env`.
 
-```xs
-api_group petbits {
-  description = "Endpoints CRUD do PetBits"
-  canonical = "HZ4jLtdc"
-}
+Um teste direto de um endpoint:
+
+```bash
+curl -s "https://x8ki-letl-twmt.n7.xano.io/api:Xj7KkS4w/cliente"
 ```
+
+| Resposta | Significado |
+|---|---|
+| `[]` ou uma lista JSON | funcionando |
+| `Unable to locate request.` | o endpoint não existe: falta o push |
+| `401` / `403` | o grupo exige token; preencha `XANO_TOKEN` no `.env` |
 
 ## O que cada endpoint faz
 
