@@ -4,11 +4,16 @@ Estes 54 arquivos `.xs` descrevem o backend do PetBits: as 9 tabelas e os 45
 endpoints CRUD que o frontend Reflex consome. Eles existem para você não ter
 que criar tabela por tabela e campo por campo no painel do Xano.
 
+Eles ficam nas pastas que a extensão usa, declaradas em `.xano/config.json`:
+
 ```
-xano/
-├── tables/            9 tabelas
-└── apis/pet_bits/     45 endpoints (5 por tabela)
+tables/             9 tabelas do PetBits (+ as que vieram do pull do Xano)
+apis/pet_bits/      45 endpoints (5 por tabela) + api_group.xs
 ```
+
+> **Atenção:** os caminhos vêm de `.xano/config.json` (`paths.tables` e
+> `paths.apis`). Se esses valores mudarem, os arquivos precisam acompanhar —
+> a extensão só enxerga o que estiver nos caminhos configurados.
 
 O API group deste projeto já existe no Xano e se chama **PetBits**:
 
@@ -17,9 +22,15 @@ https://x8ki-letl-twmt.n7.xano.io/api:Xj7KkS4w
 ```
 
 Esse endereço já está no `.env` da raiz. A pasta é `pet_bits` porque a
-extensão usa o nome do grupo em `snake_case` para nomear o diretório, e cada
-query declara `api_group = "PetBits"` — assim o push cai nesse grupo, e não em
-um novo.
+extensão usa o nome do grupo em `snake_case` para nomear o diretório;
+`apis/pet_bits/api_group.xs` declara o `canonical = "Xj7KkS4w"` e cada query
+declara `api_group = "PetBits"` — assim o push cai nesse grupo, e não em um
+novo.
+
+As outras pastas na raiz (`functions/`, `tasks/`, `addons/`, `agents/`,
+`mcp_servers/`, `middlewares/`) e os arquivos de `tables/` e `apis/` com
+prefixo numérico (`770882_user.xs`, `apis/authentication/`, ...) vieram do
+pull do workspace e **não fazem parte do PetBits** — não mexa neles.
 
 Os nomes de tabela, de campo e os caminhos dos endpoints são exatamente os que
 `petbits/xano.py` espera. Se você alterar algo aqui, altere também lá.
@@ -29,25 +40,18 @@ embutido na extensão `xano.xanoscript`).
 
 ## Como enviar para o Xano
 
-Você precisa fazer o login — eu não tenho como entrar na sua conta.
+O push só pode ser feito de dentro do VS Code: ele depende das ferramentas da
+extensão `xano.xanoscript`, que exigem a sua sessão autenticada no Xano.
 
-1. Instale a extensão (já instalada nesta máquina):
-   `xano.xanoscript`
-2. No VS Code, abra a paleta de comandos (`Ctrl+Shift+P`) e rode
-   **Xano: Sign Up for Xano** (se ainda não tem conta) ou
-   **Xano: Login to Xano**.
-3. Rode **Xano: Select instance** e depois **Xano: Select workspace**.
-4. A extensão cria o arquivo `.xano/config.json`. Nele há uma seção `paths`
-   com as pastas onde ela procura cada tipo de objeto (`tables`, `apis`,
-   `functions`, `tasks`, ...). Faça uma das duas coisas:
-   - aponte `paths.tables` para `xano/tables` e `paths.apis` para `xano/apis`; **ou**
-   - mova as pastas `tables/` e `apis/` de dentro de `xano/` para onde o
-     `config.json` estiver apontando.
-5. Rode **Xano: stage all changed files** e depois
-   **Xano: Push Stage Changes to Xano**.
+A extensão já está instalada e o login já foi feito (`.xano/config.json`
+aponta para a instância `x8ki-letl-twmt`, workspace `Kethleen's Workspace`,
+branch `v1`). Falta só publicar:
 
-A pasta `apis/petbits/` é o que define o API group: no XanoScript, criar uma
-pasta sob `apis/` cria um API group com aquele nome.
+1. `Ctrl+Shift+P` → **Xano: stage all changed files**
+2. `Ctrl+Shift+P` → **Xano: Push Stage Changes to Xano**
+
+Se preferir, o Copilot em modo Agent dentro do VS Code também consegue fazer o
+push, porque é lá que as ferramentas `xano.xanoscript/*` ficam disponíveis.
 
 ## Conferindo depois do push
 

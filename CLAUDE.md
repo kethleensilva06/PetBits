@@ -14,6 +14,18 @@ tools:
   ]
 ---
 
+> **Regras do projeto PetBits: veja @AGENTS.md.**
+>
+> O documento abaixo foi gerado pela extensão `xano.xanoscript` e trata apenas
+> do lado XanoScript (tabelas, endpoints e demais objetos do backend no Xano).
+> Ele **não substitui** as regras do projeto, que continuam em `AGENTS.md`:
+> frontend exclusivamente em Reflex, ambiente `venv` + `pip`, e as convenções
+> de `petbits/`. Em caso de conflito, `AGENTS.md` prevalece.
+>
+> Se você rodar de novo o comando **Xano: Setup Agent Instructions**, ele
+> sobrescreve este arquivo e o `AGENTS.md` — restaure as regras do projeto
+> depois (elas estão no histórico do git).
+
 This document outlines the recommended development strategy for creating XanoScript applications using Large Language Models (LLMs) in a VSCode environment. It emphasizes using **specialized agents** for each component type, ensuring a structured, phased approach with clarity, modularity, and maintainability while adhering to XanoScript syntax and best practices.
 
 ## CRITICAL: Agent Responsibility

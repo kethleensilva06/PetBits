@@ -8,11 +8,11 @@ Este documento descreve o que precisa existir no Xano para a aplicação
 funcionar.
 
 > **Caminho rápido:** as tabelas e os endpoints já estão escritos em
-> XanoScript na pasta [`xano/`](../xano/README.md). Se você usar a extensão
-> `xano.xanoscript` no VS Code, basta fazer login e dar push — não precisa
-> criar nada à mão. As seções abaixo descrevem a estrutura para quem preferir
-> montar pelo painel do Xano, e servem como referência do que os arquivos
-> `.xs` definem.
+> XanoScript, em `tables/` e `apis/pet_bits/` — veja
+> [`docs/xanoscript.md`](xanoscript.md). Com a extensão `xano.xanoscript` no
+> VS Code, basta dar push; não precisa criar nada à mão. As seções abaixo
+> descrevem a estrutura para quem preferir montar pelo painel do Xano, e
+> servem como referência do que os arquivos `.xs` definem.
 
 ## 1. Criar o workspace e as tabelas
 
