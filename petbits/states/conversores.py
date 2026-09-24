@@ -18,13 +18,22 @@ def para_data(valor: str) -> Optional[str]:
 
 
 def para_data_hora(valor: str) -> Optional[str]:
-    """Input `type="datetime-local"` para ISO 8601."""
+    """Input `type="datetime-local"` para ISO 8601 **com fuso**.
+
+    O input HTML não informa fuso nenhum: o que chega é a hora local de quem
+    digitou. Se mandarmos assim, o Xano interpreta como UTC — uma consulta
+    marcada para as 09:00 é gravada como 09:00 UTC e volta para a tela como
+    06:00. Por isso o horário local é declarado explicitamente antes de enviar.
+    """
     if not valor:
         return None
     try:
-        return datetime.fromisoformat(valor).isoformat()
+        momento = datetime.fromisoformat(valor)
     except ValueError:
         return None
+    if momento.tzinfo is None:
+        momento = momento.astimezone()
+    return momento.isoformat()
 
 
 # --- do Xano para a interface --------------------------------------------------

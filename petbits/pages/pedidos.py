@@ -3,12 +3,15 @@
 import reflex as rx
 
 from petbits.components import (
+    STATUS_PEDIDO_CORES,
     empty_state,
     error_banner,
     form_field,
     layout,
+    money,
     page_toolbar,
     row_actions,
+    status_badge,
 )
 from petbits.models import STATUS_PEDIDO
 from petbits.states.pedido_state import PedidoState
@@ -19,21 +22,8 @@ def _row(pedido: dict) -> rx.Component:
         rx.table.cell(f"#{pedido['id']}"),
         rx.table.cell(pedido["cliente_nome"]),
         rx.table.cell(pedido["data_pedido"]),
-        rx.table.cell(
-            rx.badge(
-                pedido["status"],
-                color_scheme=rx.match(
-                    pedido["status"],
-                    ("pendente", "amber"),
-                    ("pago", "blue"),
-                    ("enviado", "purple"),
-                    ("entregue", "green"),
-                    "gray",
-                ),
-                variant="soft",
-            )
-        ),
-        rx.table.cell(f"R$ {pedido['valor_total']}"),
+        rx.table.cell(status_badge(pedido["status"], STATUS_PEDIDO_CORES)),
+        rx.table.cell(money(pedido["valor_total"])),
         rx.table.cell(
             rx.hstack(
                 rx.button(

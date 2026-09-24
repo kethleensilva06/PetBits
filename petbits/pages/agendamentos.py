@@ -3,12 +3,14 @@
 import reflex as rx
 
 from petbits.components import (
+    STATUS_AGENDAMENTO_CORES,
     empty_state,
     error_banner,
     form_field,
     layout,
     page_toolbar,
     row_actions,
+    status_badge,
 )
 from petbits.models import STATUS_AGENDAMENTO
 from petbits.states.agendamento_state import AgendamentoState
@@ -21,18 +23,7 @@ def _row(agendamento: dict) -> rx.Component:
         rx.table.cell(agendamento["servico_nome"]),
         rx.table.cell(agendamento["funcionario_nome"]),
         rx.table.cell(
-            rx.badge(
-                agendamento["status"],
-                color_scheme=rx.match(
-                    agendamento["status"],
-                    ("agendado", "blue"),
-                    ("em_andamento", "amber"),
-                    ("concluido", "green"),
-                    ("cancelado", "red"),
-                    "gray",
-                ),
-                variant="soft",
-            )
+            status_badge(agendamento["status"], STATUS_AGENDAMENTO_CORES)
         ),
         rx.table.cell(
             row_actions(
