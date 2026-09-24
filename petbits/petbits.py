@@ -21,7 +21,29 @@ from petbits.states.produto_state import ProdutoState
 from petbits.states.prontuario_state import ProntuarioState
 from petbits.states.servico_state import ServicoState
 
-app = rx.App()
+# Inter para corpo e tabelas (altura de x alta, dígitos tabulares, 1/l/I
+# distinguíveis — o que importa em CPF e preço); Nunito para títulos e marca,
+# que é onde a leitura é lenta e cabe personalidade.
+FONTES = (
+    "https://fonts.googleapis.com/css2"
+    "?family=Inter:wght@400;500;600"
+    "&family=Nunito:wght@600;700;800"
+    "&display=swap"
+)
+
+app = rx.App(
+    stylesheets=["/petbits.css"],
+    head_components=[
+        rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
+        rx.el.link(
+            rel="preconnect",
+            href="https://fonts.gstatic.com",
+            cross_origin="anonymous",
+        ),
+        rx.el.link(rel="stylesheet", href=FONTES),
+    ],
+    html_lang="pt-BR",
+)
 
 app.add_page(
     index,
