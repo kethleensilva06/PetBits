@@ -91,17 +91,35 @@ Para cada tabela `<t>`:
 | `<t>_update.xs` | `PATCH /<t>/{id}` | `TabelaXano.atualizar(id, dados)` |
 | `<t>_delete.xs` | `DELETE /<t>/{id}` | `TabelaXano.remover(id)` |
 
-Duas decisões que valem registro:
+Os endpoints de escrita (`_create` e `_update`) seguem o padrão que o próprio
+Xano gera: o bloco `input` usa `dblink { table = "..." }` em vez de listar
+campo a campo. Isso importa por três motivos, todos verificados contra a API:
 
-- **O endpoint de edição substitui todos os campos que recebe.** Ele não faz
-  merge com o registro existente: o campo que não vier na requisição é gravado
-  como nulo. Isso é intencional — é o que permite limpar um campo opcional
-  (apagar o e-mail de um cliente, por exemplo). Por isso o frontend sempre
-  envia o registro completo no update. Se você criar outro cliente dessa API,
-  siga a mesma regra.
-- **A listagem já vem ordenada** (`nome` para cadastros, data decrescente para
-  agendamentos, pedidos e prontuários), mas o frontend reordena por conta
-  própria, porque isso não é garantido pelo CRUD do Xano.
+- **Campos `date` não aceitam `null` quando listados manualmente.** Com o
+  `input` campo a campo, enviar `data_nascimento: null` — ou omitir a chave —
+  devolvia `500 Unable to locate input: data_nascimento`. Com `dblink`
+  funciona. Afetava `funcionario`, `pet` e `prontuario`.
+- **O update exige o registro completo.** O `dblink` transforma os campos
+  obrigatórios da tabela em inputs obrigatórios, então um PATCH parcial devolve
+  `400 Missing param: <campo>`. O frontend sempre envia o registro inteiro; se
+  você chamar essa API de outro lugar, faça o mesmo. `PedidoState`, por
+  exemplo, lê o pedido antes de regravar o `valor_total`.
+- **Nulos viram o default do tipo.** Texto vira `""` e decimal vira `0` — não
+  ficam nulos. Os States tratam isso na exibição (`valor or "-"`), então a
+  interface mostra `-` do mesmo jeito.
+
+A rota do update usa `{<tabela>_id}` em vez de `{id}` (ex.:
+`PATCH /cliente/{cliente_id}`), porque o `dblink` já expõe um input `id` vindo
+do schema e dois inputs com o mesmo nome colidiriam. A URL chamada continua
+sendo `/cliente/5`, então o cliente HTTP não muda.
+
+**A listagem já vem ordenada** (`nome` para cadastros, data decrescente para
+agendamentos, pedidos e prontuários), mas o frontend reordena por conta
+própria, porque isso não é garantido pelo CRUD do Xano.
+
+**Limite do plano gratuito:** 10 requisições a cada 20 segundos. O painel
+sozinho consulta sete tabelas, então `petbits/xano.py` controla o ritmo com uma
+janela deslizante e tenta de novo quando o Xano devolve 429.
 
 ## Diferenças em relação ao schema SQL original
 

@@ -14,7 +14,7 @@ query "pedido/{pedido_id}" verb=PATCH {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-
+  
     db.patch pedido {
       field_name = "id"
       field_value = $input.pedido_id

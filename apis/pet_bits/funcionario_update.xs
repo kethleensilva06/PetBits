@@ -14,7 +14,7 @@ query "funcionario/{funcionario_id}" verb=PATCH {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-
+  
     db.patch funcionario {
       field_name = "id"
       field_value = $input.funcionario_id

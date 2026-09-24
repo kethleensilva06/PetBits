@@ -14,7 +14,7 @@ query "prontuario/{prontuario_id}" verb=PATCH {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-
+  
     db.patch prontuario {
       field_name = "id"
       field_value = $input.prontuario_id
