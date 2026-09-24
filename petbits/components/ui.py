@@ -79,7 +79,51 @@ def form_field(label: str, input_component: rx.Component) -> rx.Component:
     )
 
 
-def row_actions(on_edit, on_delete) -> rx.Component:
+def confirm_delete(
+    gatilho: rx.Component,
+    on_confirm,
+    titulo: str = "Excluir registro?",
+    descricao: str = "Esta ação não pode ser desfeita.",
+) -> rx.Component:
+    """Envolve um gatilho num diálogo de confirmação antes de excluir."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.trigger(gatilho),
+        rx.alert_dialog.content(
+            rx.alert_dialog.title(titulo),
+            rx.alert_dialog.description(descricao),
+            rx.hstack(
+                rx.alert_dialog.cancel(
+                    rx.button("Cancelar", variant="soft", color_scheme="gray")
+                ),
+                rx.alert_dialog.action(
+                    rx.button("Excluir", color_scheme="red", on_click=on_confirm)
+                ),
+                justify="end",
+                spacing="3",
+                padding_top="1rem",
+            ),
+            max_width="26rem",
+        ),
+    )
+
+
+def row_actions(
+    on_edit,
+    on_delete,
+    confirmar: bool = True,
+    descricao_exclusao: str = "Esta ação não pode ser desfeita.",
+) -> rx.Component:
+    """Editar e excluir de uma linha de tabela.
+
+    A exclusão pede confirmação por padrão: o botão fica a um clique de
+    distância de dados que não têm como voltar.
+    """
+    botao_excluir = rx.icon_button(
+        rx.icon("trash-2", size=16),
+        variant="soft",
+        color_scheme="red",
+        size="1",
+    )
     return rx.hstack(
         rx.icon_button(
             rx.icon("pencil", size=16),
@@ -87,7 +131,9 @@ def row_actions(on_edit, on_delete) -> rx.Component:
             variant="soft",
             size="1",
         ),
-        rx.icon_button(
+        confirm_delete(botao_excluir, on_delete, descricao=descricao_exclusao)
+        if confirmar
+        else rx.icon_button(
             rx.icon("trash-2", size=16),
             on_click=on_delete,
             variant="soft",
@@ -95,6 +141,119 @@ def row_actions(on_edit, on_delete) -> rx.Component:
             size="1",
         ),
         spacing="2",
+    )
+
+
+def data_table(
+    colunas: list[str],
+    linhas,
+    render_linha,
+    vazio: str,
+    vazio_busca: str = "Nenhum resultado para a busca.",
+    busca=None,
+) -> rx.Component:
+    """Cartão com a tabela, ou o estado vazio quando não há o que mostrar.
+
+    Substitui o bloco card+tabela+empty_state que era idêntico em oito páginas.
+    Quando `busca` é informado, o texto do estado vazio distingue "não há nada
+    cadastrado" de "a busca não achou nada".
+    """
+    sem_dados = (
+        rx.cond(busca, vazio_busca, vazio) if busca is not None else vazio
+    )
+    return rx.card(
+        rx.cond(
+            linhas,
+            rx.table.root(
+                rx.table.header(
+                    rx.table.row(
+                        *[rx.table.column_header_cell(c) for c in colunas]
+                    )
+                ),
+                rx.table.body(rx.foreach(linhas, render_linha)),
+                width="100%",
+                size="2",
+            ),
+            empty_state(sem_dados),
+        ),
+        width="100%",
+    )
+
+
+def form_dialog(
+    *campos,
+    aberto,
+    on_open_change,
+    titulo,
+    erro,
+    on_cancel,
+    on_save,
+    largura: str = "32rem",
+    rotulo_salvar: str = "Salvar",
+) -> rx.Component:
+    """A casca do diálogo de formulário: título, campos, erro e rodapé.
+
+    Os oito diálogos do projeto só diferiam pelos campos — título, callout de
+    erro e o par Cancelar/Salvar eram copiados à mão em cada um.
+    """
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(titulo),
+            rx.vstack(
+                *campos,
+                error_banner(erro),
+                rx.hstack(
+                    rx.button(
+                        "Cancelar",
+                        on_click=on_cancel,
+                        variant="soft",
+                        color_scheme="gray",
+                    ),
+                    rx.button(rotulo_salvar, on_click=on_save),
+                    justify="end",
+                    spacing="3",
+                    width="100%",
+                    padding_top="0.5rem",
+                ),
+                spacing="3",
+                width="100%",
+            ),
+            max_width=largura,
+        ),
+        open=aberto,
+        on_open_change=on_open_change,
+    )
+
+
+def select_fk(
+    rotulo: str,
+    opcoes,
+    campo_rotulo: str,
+    valor,
+    on_change,
+    placeholder: str,
+) -> rx.Component:
+    """Select de chave estrangeira.
+
+    As opções são `list[dict]` com `id` e o campo de exibição; o valor
+    trafega como string, que é o que o select do Radix entende.
+    """
+    return form_field(
+        rotulo,
+        rx.select.root(
+            rx.select.trigger(placeholder=placeholder, width="100%"),
+            rx.select.content(
+                rx.foreach(
+                    opcoes,
+                    lambda o: rx.select.item(
+                        o[campo_rotulo], value=o["id"].to_string()
+                    ),
+                )
+            ),
+            value=valor,
+            on_change=on_change,
+            width="100%",
+        ),
     )
 
 
