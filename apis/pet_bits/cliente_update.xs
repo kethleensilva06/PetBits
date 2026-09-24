@@ -2,10 +2,16 @@
 query "cliente/{cliente_id}" verb=PATCH {
   api_group = "PetBits"
 
+  // Ver a nota em cliente_create.xs: id_user nunca entra pelo corpo da
+  // requisicao. Aqui o risco e maior, porque reapontar uma ficha ja existente
+  // para outro login e o ataque direto.
   input {
     int cliente_id? filters=min:1
     dblink {
       table = "cliente"
+      override = {
+        id_user: {hidden: true}
+      }
     }
   }
 
