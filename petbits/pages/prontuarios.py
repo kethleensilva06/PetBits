@@ -3,14 +3,25 @@
 import reflex as rx
 
 from petbits.components import (
-    empty_state,
+    data_table,
     error_banner,
+    form_dialog,
     form_field,
     layout,
     page_toolbar,
     row_actions,
+    select_fk,
 )
 from petbits.states.prontuario_state import ProntuarioState
+
+COLUNAS = [
+    "Atendimento",
+    "Pet",
+    "Responsável",
+    "Diagnóstico",
+    "Próxima consulta",
+    "Ações",
+]
 
 
 def _row(prontuario: dict) -> rx.Component:
@@ -24,112 +35,69 @@ def _row(prontuario: dict) -> rx.Component:
             row_actions(
                 on_edit=ProntuarioState.open_edit(prontuario),
                 on_delete=ProntuarioState.delete(prontuario["id"]),
+                descricao_exclusao=(
+                    "O atendimento sai do histórico clínico do pet, junto com "
+                    "o diagnóstico e o tratamento registrados."
+                ),
             )
         ),
     )
 
 
 def _dialog() -> rx.Component:
-    return rx.dialog.root(
-        rx.dialog.content(
-            rx.dialog.title(
-                rx.cond(
-                    ProntuarioState.editing_id, "Editar prontuário", "Novo prontuário"
-                )
-            ),
-            rx.vstack(
-                form_field(
-                    "Pet *",
-                    rx.select.root(
-                        rx.select.trigger(placeholder="Selecione o pet", width="100%"),
-                        rx.select.content(
-                            rx.foreach(
-                                ProntuarioState.pet_options,
-                                lambda p: rx.select.item(
-                                    p["nome"], value=p["id"].to_string()
-                                ),
-                            )
-                        ),
-                        value=ProntuarioState.id_pet,
-                        on_change=ProntuarioState.set_id_pet,
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Responsável pelo atendimento *",
-                    rx.select.root(
-                        rx.select.trigger(
-                            placeholder="Selecione o funcionário", width="100%"
-                        ),
-                        rx.select.content(
-                            rx.foreach(
-                                ProntuarioState.funcionario_options,
-                                lambda f: rx.select.item(
-                                    f["nome"], value=f["id"].to_string()
-                                ),
-                            )
-                        ),
-                        value=ProntuarioState.id_funcionario,
-                        on_change=ProntuarioState.set_id_funcionario,
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Diagnóstico",
-                    rx.text_area(
-                        value=ProntuarioState.diagnostico,
-                        on_change=ProntuarioState.set_diagnostico,
-                        placeholder="Quadro clínico observado",
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Tratamento realizado",
-                    rx.text_area(
-                        value=ProntuarioState.tratamento_realizado,
-                        on_change=ProntuarioState.set_tratamento_realizado,
-                        placeholder="Medicações, procedimentos, orientações",
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Próxima consulta",
-                    rx.input(
-                        value=ProntuarioState.proxima_consulta,
-                        on_change=ProntuarioState.set_proxima_consulta,
-                        type="date",
-                        width="100%",
-                    ),
-                ),
-                rx.cond(
-                    ProntuarioState.form_error,
-                    rx.callout(
-                        ProntuarioState.form_error,
-                        icon="triangle_alert",
-                        color_scheme="red",
-                        width="100%",
-                    ),
-                ),
-                rx.hstack(
-                    rx.button(
-                        "Cancelar",
-                        on_click=ProntuarioState.close_dialog,
-                        variant="soft",
-                        color_scheme="gray",
-                    ),
-                    rx.button("Salvar", on_click=ProntuarioState.save),
-                    justify="end",
-                    spacing="3",
-                    width="100%",
-                    padding_top="0.5rem",
-                ),
-                spacing="3",
+    return form_dialog(
+        select_fk(
+            "Pet *",
+            ProntuarioState.pet_options,
+            "nome",
+            ProntuarioState.id_pet,
+            ProntuarioState.set_id_pet,
+            placeholder="Selecione o pet",
+        ),
+        select_fk(
+            "Responsável pelo atendimento *",
+            ProntuarioState.funcionario_options,
+            "nome",
+            ProntuarioState.id_funcionario,
+            ProntuarioState.set_id_funcionario,
+            placeholder="Selecione o funcionário",
+        ),
+        form_field(
+            "Diagnóstico",
+            rx.text_area(
+                value=ProntuarioState.diagnostico,
+                on_change=ProntuarioState.set_diagnostico,
+                placeholder="Quadro clínico observado",
                 width="100%",
             ),
-            max_width="36rem",
         ),
-        open=ProntuarioState.show_dialog,
+        form_field(
+            "Tratamento realizado",
+            rx.text_area(
+                value=ProntuarioState.tratamento_realizado,
+                on_change=ProntuarioState.set_tratamento_realizado,
+                placeholder="Medicações, procedimentos, orientações",
+                width="100%",
+            ),
+        ),
+        form_field(
+            "Próxima consulta",
+            rx.input(
+                value=ProntuarioState.proxima_consulta,
+                on_change=ProntuarioState.set_proxima_consulta,
+                type="date",
+                width="100%",
+            ),
+        ),
+        aberto=ProntuarioState.show_dialog,
         on_open_change=ProntuarioState.set_show_dialog,
+        titulo=rx.cond(
+            ProntuarioState.editing_id, "Editar prontuário", "Novo prontuário"
+        ),
+        erro=ProntuarioState.form_error,
+        on_cancel=ProntuarioState.close_dialog,
+        on_save=ProntuarioState.save,
+        largura="36rem",
     )
 
 
@@ -142,34 +110,12 @@ def prontuarios_page() -> rx.Component:
             new_label="Novo prontuário",
         ),
         error_banner(ProntuarioState.load_error),
-        rx.card(
-            rx.cond(
-                ProntuarioState.filtered_prontuarios,
-                rx.table.root(
-                    rx.table.header(
-                        rx.table.row(
-                            rx.table.column_header_cell("Atendimento"),
-                            rx.table.column_header_cell("Pet"),
-                            rx.table.column_header_cell("Responsável"),
-                            rx.table.column_header_cell("Diagnóstico"),
-                            rx.table.column_header_cell("Próxima consulta"),
-                            rx.table.column_header_cell("Ações"),
-                        )
-                    ),
-                    rx.table.body(
-                        rx.foreach(ProntuarioState.filtered_prontuarios, _row)
-                    ),
-                    width="100%",
-                ),
-                empty_state(
-                    rx.cond(
-                        ProntuarioState.search,
-                        "Nenhum resultado para a busca.",
-                        "Nenhum prontuário registrado ainda.",
-                    )
-                ),
-            ),
-            width="100%",
+        data_table(
+            COLUNAS,
+            ProntuarioState.filtered_prontuarios,
+            _row,
+            vazio="Nenhum prontuário registrado ainda.",
+            busca=ProntuarioState.search,
         ),
         _dialog(),
         title="Prontuários",

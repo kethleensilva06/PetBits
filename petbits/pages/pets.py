@@ -3,14 +3,18 @@
 import reflex as rx
 
 from petbits.components import (
-    empty_state,
+    data_table,
     error_banner,
+    form_dialog,
     form_field,
     layout,
     page_toolbar,
     row_actions,
+    select_fk,
 )
 from petbits.states.pet_state import PetState
+
+COLUNAS = ["Nome", "Espécie", "Raça", "Peso", "Tutor", "Ações"]
 
 
 def _row(pet: dict) -> rx.Component:
@@ -24,126 +28,96 @@ def _row(pet: dict) -> rx.Component:
             row_actions(
                 on_edit=PetState.open_edit(pet),
                 on_delete=PetState.delete(pet["id"]),
+                descricao_exclusao=(
+                    "O pet sai da ficha do tutor. Agendamentos já registrados "
+                    "continuam no histórico."
+                ),
             )
         ),
     )
 
 
 def _dialog() -> rx.Component:
-    return rx.dialog.root(
-        rx.dialog.content(
-            rx.dialog.title(rx.cond(PetState.editing_id, "Editar pet", "Novo pet")),
-            rx.vstack(
-                form_field(
-                    "Tutor *",
-                    rx.select.root(
-                        rx.select.trigger(placeholder="Selecione o tutor", width="100%"),
-                        rx.select.content(
-                            rx.foreach(
-                                PetState.cliente_options,
-                                lambda c: rx.select.item(
-                                    c["nome"], value=c["id"].to_string()
-                                ),
-                            )
-                        ),
-                        value=PetState.id_cliente,
-                        on_change=PetState.set_id_cliente,
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Nome *",
-                    rx.input(
-                        value=PetState.nome,
-                        on_change=PetState.set_nome,
-                        placeholder="Nome do pet",
-                        width="100%",
-                    ),
-                ),
-                rx.hstack(
-                    form_field(
-                        "Espécie *",
-                        rx.input(
-                            value=PetState.especie,
-                            on_change=PetState.set_especie,
-                            placeholder="Cão, gato...",
-                            width="100%",
-                        ),
-                    ),
-                    form_field(
-                        "Raça",
-                        rx.input(
-                            value=PetState.raca,
-                            on_change=PetState.set_raca,
-                            placeholder="SRD, Poodle...",
-                            width="100%",
-                        ),
-                    ),
-                    spacing="3",
-                    width="100%",
-                ),
-                rx.hstack(
-                    form_field(
-                        "Data de nascimento",
-                        rx.input(
-                            value=PetState.data_nascimento,
-                            on_change=PetState.set_data_nascimento,
-                            type="date",
-                            width="100%",
-                        ),
-                    ),
-                    form_field(
-                        "Peso (kg)",
-                        rx.input(
-                            value=PetState.peso,
-                            on_change=PetState.set_peso,
-                            placeholder="0.0",
-                            type="number",
-                            step="0.1",
-                            width="100%",
-                        ),
-                    ),
-                    spacing="3",
-                    width="100%",
-                ),
-                form_field(
-                    "Observações",
-                    rx.text_area(
-                        value=PetState.observacoes,
-                        on_change=PetState.set_observacoes,
-                        placeholder="Alergias, comportamento, cuidados especiais...",
-                        width="100%",
-                    ),
-                ),
-                rx.cond(
-                    PetState.form_error,
-                    rx.callout(
-                        PetState.form_error,
-                        icon="triangle_alert",
-                        color_scheme="red",
-                        width="100%",
-                    ),
-                ),
-                rx.hstack(
-                    rx.button(
-                        "Cancelar",
-                        on_click=PetState.close_dialog,
-                        variant="soft",
-                        color_scheme="gray",
-                    ),
-                    rx.button("Salvar", on_click=PetState.save),
-                    justify="end",
-                    spacing="3",
-                    width="100%",
-                    padding_top="0.5rem",
-                ),
-                spacing="3",
+    return form_dialog(
+        select_fk(
+            "Tutor *",
+            PetState.cliente_options,
+            "nome",
+            PetState.id_cliente,
+            PetState.set_id_cliente,
+            placeholder="Selecione o tutor",
+        ),
+        form_field(
+            "Nome *",
+            rx.input(
+                value=PetState.nome,
+                on_change=PetState.set_nome,
+                placeholder="Nome do pet",
                 width="100%",
             ),
-            max_width="34rem",
         ),
-        open=PetState.show_dialog,
+        rx.hstack(
+            form_field(
+                "Espécie *",
+                rx.input(
+                    value=PetState.especie,
+                    on_change=PetState.set_especie,
+                    placeholder="Cão, gato...",
+                    width="100%",
+                ),
+            ),
+            form_field(
+                "Raça",
+                rx.input(
+                    value=PetState.raca,
+                    on_change=PetState.set_raca,
+                    placeholder="SRD, Poodle...",
+                    width="100%",
+                ),
+            ),
+            spacing="3",
+            width="100%",
+        ),
+        rx.hstack(
+            form_field(
+                "Data de nascimento",
+                rx.input(
+                    value=PetState.data_nascimento,
+                    on_change=PetState.set_data_nascimento,
+                    type="date",
+                    width="100%",
+                ),
+            ),
+            form_field(
+                "Peso (kg)",
+                rx.input(
+                    value=PetState.peso,
+                    on_change=PetState.set_peso,
+                    placeholder="0.0",
+                    type="number",
+                    step="0.1",
+                    width="100%",
+                ),
+            ),
+            spacing="3",
+            width="100%",
+        ),
+        form_field(
+            "Observações",
+            rx.text_area(
+                value=PetState.observacoes,
+                on_change=PetState.set_observacoes,
+                placeholder="Alergias, comportamento, cuidados especiais...",
+                width="100%",
+            ),
+        ),
+        aberto=PetState.show_dialog,
         on_open_change=PetState.set_show_dialog,
+        titulo=rx.cond(PetState.editing_id, "Editar pet", "Novo pet"),
+        erro=PetState.form_error,
+        on_cancel=PetState.close_dialog,
+        on_save=PetState.save,
+        largura="34rem",
     )
 
 
@@ -156,32 +130,12 @@ def pets_page() -> rx.Component:
             new_label="Novo pet",
         ),
         error_banner(PetState.load_error),
-        rx.card(
-            rx.cond(
-                PetState.filtered_pets,
-                rx.table.root(
-                    rx.table.header(
-                        rx.table.row(
-                            rx.table.column_header_cell("Nome"),
-                            rx.table.column_header_cell("Espécie"),
-                            rx.table.column_header_cell("Raça"),
-                            rx.table.column_header_cell("Peso"),
-                            rx.table.column_header_cell("Tutor"),
-                            rx.table.column_header_cell("Ações"),
-                        )
-                    ),
-                    rx.table.body(rx.foreach(PetState.filtered_pets, _row)),
-                    width="100%",
-                ),
-                empty_state(
-                    rx.cond(
-                        PetState.search,
-                        "Nenhum resultado para a busca.",
-                        "Nenhum pet cadastrado ainda.",
-                    )
-                ),
-            ),
-            width="100%",
+        data_table(
+            COLUNAS,
+            PetState.filtered_pets,
+            _row,
+            vazio="Nenhum pet cadastrado ainda.",
+            busca=PetState.search,
         ),
         _dialog(),
         title="Pets",

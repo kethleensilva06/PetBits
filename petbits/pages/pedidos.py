@@ -4,17 +4,22 @@ import reflex as rx
 
 from petbits.components import (
     STATUS_PEDIDO_CORES,
+    data_table,
     empty_state,
     error_banner,
+    form_dialog,
     form_field,
     layout,
     money,
     page_toolbar,
     row_actions,
+    select_fk,
     status_badge,
 )
 from petbits.models import STATUS_PEDIDO
 from petbits.states.pedido_state import PedidoState
+
+COLUNAS = ["Pedido", "Cliente", "Data", "Status", "Valor total", "Ações"]
 
 
 def _row(pedido: dict) -> rx.Component:
@@ -36,6 +41,9 @@ def _row(pedido: dict) -> rx.Component:
                 row_actions(
                     on_edit=PedidoState.open_edit(pedido),
                     on_delete=PedidoState.delete(pedido["id"]),
+                    descricao_exclusao=(
+                        "O pedido sai da lista junto com todos os seus itens."
+                    ),
                 ),
                 spacing="2",
             )
@@ -47,8 +55,8 @@ def _item_row(item: dict) -> rx.Component:
     return rx.table.row(
         rx.table.cell(item["produto_nome"]),
         rx.table.cell(item["quantidade"]),
-        rx.table.cell(f"R$ {item['valor_unitario']}"),
-        rx.table.cell(f"R$ {item['valor_total']}"),
+        rx.table.cell(money(item["valor_unitario"])),
+        rx.table.cell(money(item["valor_total"])),
         rx.table.cell(
             rx.icon_button(
                 rx.icon("trash-2", size=16),
@@ -62,74 +70,36 @@ def _item_row(item: dict) -> rx.Component:
 
 
 def _pedido_dialog() -> rx.Component:
-    return rx.dialog.root(
-        rx.dialog.content(
-            rx.dialog.title(
-                rx.cond(PedidoState.editing_id, "Editar pedido", "Novo pedido")
-            ),
-            rx.vstack(
-                form_field(
-                    "Cliente *",
-                    rx.select.root(
-                        rx.select.trigger(
-                            placeholder="Selecione o cliente", width="100%"
-                        ),
-                        rx.select.content(
-                            rx.foreach(
-                                PedidoState.cliente_options,
-                                lambda c: rx.select.item(
-                                    c["nome"], value=c["id"].to_string()
-                                ),
-                            )
-                        ),
-                        value=PedidoState.id_cliente,
-                        on_change=PedidoState.set_id_cliente,
-                        width="100%",
-                    ),
-                ),
-                form_field(
-                    "Status",
-                    rx.select(
-                        STATUS_PEDIDO,
-                        value=PedidoState.status,
-                        on_change=PedidoState.set_status,
-                        width="100%",
-                    ),
-                ),
-                rx.cond(
-                    PedidoState.form_error,
-                    rx.callout(
-                        PedidoState.form_error,
-                        icon="triangle_alert",
-                        color_scheme="red",
-                        width="100%",
-                    ),
-                ),
-                rx.text(
-                    "O valor total é calculado automaticamente a partir dos itens do pedido.",
-                    size="1",
-                    color=rx.color("gray", 10),
-                ),
-                rx.hstack(
-                    rx.button(
-                        "Cancelar",
-                        on_click=PedidoState.close_dialog,
-                        variant="soft",
-                        color_scheme="gray",
-                    ),
-                    rx.button("Salvar", on_click=PedidoState.save),
-                    justify="end",
-                    spacing="3",
-                    width="100%",
-                    padding_top="0.5rem",
-                ),
-                spacing="3",
+    return form_dialog(
+        select_fk(
+            "Cliente *",
+            PedidoState.cliente_options,
+            "nome",
+            PedidoState.id_cliente,
+            PedidoState.set_id_cliente,
+            placeholder="Selecione o cliente",
+        ),
+        form_field(
+            "Status",
+            rx.select(
+                STATUS_PEDIDO,
+                value=PedidoState.status,
+                on_change=PedidoState.set_status,
                 width="100%",
             ),
-            max_width="30rem",
         ),
-        open=PedidoState.show_dialog,
+        rx.text(
+            "O valor total é calculado automaticamente a partir dos itens do pedido.",
+            size="1",
+            color=rx.color("gray", 10),
+        ),
+        aberto=PedidoState.show_dialog,
         on_open_change=PedidoState.set_show_dialog,
+        titulo=rx.cond(PedidoState.editing_id, "Editar pedido", "Novo pedido"),
+        erro=PedidoState.form_error,
+        on_cancel=PedidoState.close_dialog,
+        on_save=PedidoState.save,
+        largura="30rem",
     )
 
 
@@ -143,24 +113,13 @@ def _itens_dialog() -> rx.Component:
             ),
             rx.vstack(
                 rx.hstack(
-                    form_field(
+                    select_fk(
                         "Produto",
-                        rx.select.root(
-                            rx.select.trigger(
-                                placeholder="Selecione o produto", width="100%"
-                            ),
-                            rx.select.content(
-                                rx.foreach(
-                                    PedidoState.produto_options,
-                                    lambda p: rx.select.item(
-                                        p["nome"], value=p["id"].to_string()
-                                    ),
-                                )
-                            ),
-                            value=PedidoState.item_id_produto,
-                            on_change=PedidoState.set_item_id_produto,
-                            width="100%",
-                        ),
+                        PedidoState.produto_options,
+                        "nome",
+                        PedidoState.item_id_produto,
+                        PedidoState.set_item_id_produto,
+                        placeholder="Selecione o produto",
                     ),
                     form_field(
                         "Qtd.",
@@ -182,15 +141,7 @@ def _itens_dialog() -> rx.Component:
                     width="100%",
                     align="start",
                 ),
-                rx.cond(
-                    PedidoState.item_error,
-                    rx.callout(
-                        PedidoState.item_error,
-                        icon="triangle_alert",
-                        color_scheme="red",
-                        width="100%",
-                    ),
-                ),
+                error_banner(PedidoState.item_error),
                 rx.cond(
                     PedidoState.itens,
                     rx.table.root(
@@ -211,7 +162,16 @@ def _itens_dialog() -> rx.Component:
                 rx.hstack(
                     rx.spacer(),
                     rx.text("Total: ", weight="bold"),
-                    rx.text(f"R$ {PedidoState.itens_total}", weight="bold"),
+                    # money() já devolve um rx.text; aninhar um dentro do outro
+                    # geraria texto dentro de texto e o negrito não chegaria ao
+                    # valor. Aqui o total é montado direto, com o mesmo
+                    # alinhamento de dígitos.
+                    rx.text(
+                        "R$ ",
+                        PedidoState.itens_total,
+                        weight="bold",
+                        font_variant_numeric="tabular-nums",
+                    ),
                     width="100%",
                 ),
                 rx.hstack(
@@ -239,32 +199,12 @@ def pedidos_page() -> rx.Component:
             new_label="Novo pedido",
         ),
         error_banner(PedidoState.load_error),
-        rx.card(
-            rx.cond(
-                PedidoState.filtered_pedidos,
-                rx.table.root(
-                    rx.table.header(
-                        rx.table.row(
-                            rx.table.column_header_cell("Pedido"),
-                            rx.table.column_header_cell("Cliente"),
-                            rx.table.column_header_cell("Data"),
-                            rx.table.column_header_cell("Status"),
-                            rx.table.column_header_cell("Valor total"),
-                            rx.table.column_header_cell("Ações"),
-                        )
-                    ),
-                    rx.table.body(rx.foreach(PedidoState.filtered_pedidos, _row)),
-                    width="100%",
-                ),
-                empty_state(
-                    rx.cond(
-                        PedidoState.search,
-                        "Nenhum resultado para a busca.",
-                        "Nenhum pedido registrado ainda.",
-                    )
-                ),
-            ),
-            width="100%",
+        data_table(
+            COLUNAS,
+            PedidoState.filtered_pedidos,
+            _row,
+            vazio="Nenhum pedido registrado ainda.",
+            busca=PedidoState.search,
         ),
         _pedido_dialog(),
         _itens_dialog(),
