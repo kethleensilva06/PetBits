@@ -3,23 +3,15 @@ query pedido verb=POST {
   api_group = "PetBits"
 
   input {
-    // Cliente do pedido
-    int id_cliente
-  
-    // pendente, pago, enviado ou entregue
-    text status filters=trim
-  
-    // Soma dos itens do pedido
-    decimal valor_total?
+    dblink {
+      table = "pedido"
+    }
   }
 
   stack {
     db.add pedido {
-      data = {
-        id_cliente : $input.id_cliente
-        status     : $input.status
-        valor_total: $input.valor_total
-      }
+      enforce_hidden_fields = false
+      data = {created_at: "now", data_pedido: "now"}
     } as $registro
   }
 

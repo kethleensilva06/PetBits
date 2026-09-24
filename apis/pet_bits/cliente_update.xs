@@ -1,38 +1,24 @@
-// Substitui os campos de um registro de cliente; envie o registro completo
-query "cliente/{id}" verb=PATCH {
+// Atualiza apenas os campos enviados de um registro de cliente
+query "cliente/{cliente_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Nome completo do tutor
-    text nome? filters=trim
-  
-    // CPF do tutor
-    text cpf? filters=trim
-  
-    // E-mail de contato
-    text email? filters=trim
-  
-    // Telefone de contato
-    text telefone? filters=trim
-  
-    // Endereco do tutor
-    text endereco? filters=trim
+    int cliente_id? filters=min:1
+    dblink {
+      table = "cliente"
+    }
   }
 
   stack {
-    db.edit cliente {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch cliente {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        nome    : $input.nome
-        cpf     : $input.cpf
-        email   : $input.email
-        telefone: $input.telefone
-        endereco: $input.endereco
-      }
+      field_value = $input.cliente_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 

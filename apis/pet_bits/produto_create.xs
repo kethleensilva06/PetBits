@@ -3,31 +3,15 @@ query produto verb=POST {
   api_group = "PetBits"
 
   input {
-    // Nome do produto
-    text nome filters=trim
-  
-    // Categoria do produto
-    text categoria? filters=trim
-  
-    // Marca do produto
-    text marca? filters=trim
-  
-    // Unidade de medida
-    text unidade? filters=trim
-  
-    // Preco de venda
-    decimal preco_venda
+    dblink {
+      table = "produto"
+    }
   }
 
   stack {
     db.add produto {
-      data = {
-        nome       : $input.nome
-        categoria  : $input.categoria
-        marca      : $input.marca
-        unidade    : $input.unidade
-        preco_venda: $input.preco_venda
-      }
+      enforce_hidden_fields = false
+      data = {created_at: "now"}
     } as $registro
   }
 

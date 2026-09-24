@@ -1,38 +1,24 @@
-// Substitui os campos de um registro de produto; envie o registro completo
-query "produto/{id}" verb=PATCH {
+// Atualiza um registro de produto; grava apenas os campos enviados na requisicao
+query "produto/{produto_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Nome do produto
-    text nome? filters=trim
-  
-    // Categoria do produto
-    text categoria? filters=trim
-  
-    // Marca do produto
-    text marca? filters=trim
-  
-    // Unidade de medida
-    text unidade? filters=trim
-  
-    // Preco de venda
-    decimal preco_venda?
+    int produto_id? filters=min:1
+    dblink {
+      table = "produto"
+    }
   }
 
   stack {
-    db.edit produto {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch produto {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        nome       : $input.nome
-        categoria  : $input.categoria
-        marca      : $input.marca
-        unidade    : $input.unidade
-        preco_venda: $input.preco_venda
-      }
+      field_value = $input.produto_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 

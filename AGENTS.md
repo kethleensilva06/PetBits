@@ -104,6 +104,10 @@ rodar comandos e registre novas dependências em `requirements.txt` com
   permanecem sincronos: eles apenas filtram listas já carregadas.
 - Falhas de rede não devem quebrar a tela. Cada State expõe `load_error`, e
   cada página mostra esse texto com `error_banner(...)`.
+- O plano gratuito do Xano aceita **10 requisições a cada 20 segundos**.
+  `petbits/xano.py` controla isso sozinho (janela deslizante + retry no 429),
+  mas evite acrescentar chamadas desnecessárias: o painel já consulta sete
+  tabelas. Prefira reaproveitar dados já carregados no State a refazer a busca.
 - O Xano não impõe `CHECK`, `UNIQUE` nem `ON DELETE CASCADE`: essas regras são
   responsabilidade dos States (validação antes de gravar e remoção explícita
   dos registros dependentes).

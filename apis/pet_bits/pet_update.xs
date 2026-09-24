@@ -1,46 +1,24 @@
-// Substitui os campos de um registro de pet; envie o registro completo
-query "pet/{id}" verb=PATCH {
+// Atualiza apenas os campos enviados de um registro de pet
+query "pet/{pet_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Tutor do pet
-    int id_cliente?
-  
-    // Nome do pet
-    text nome? filters=trim
-  
-    // Especie do pet
-    text especie? filters=trim
-  
-    // Raca do pet
-    text raca? filters=trim
-  
-    // Data de nascimento
-    date data_nascimento?
-  
-    // Peso em quilos
-    decimal peso?
-  
-    // Observacoes gerais
-    text observacoes? filters=trim
+    int pet_id? filters=min:1
+    dblink {
+      table = "pet"
+    }
   }
 
   stack {
-    db.edit pet {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch pet {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        id_cliente     : $input.id_cliente
-        nome           : $input.nome
-        especie        : $input.especie
-        raca           : $input.raca
-        data_nascimento: $input.data_nascimento
-        peso           : $input.peso
-        observacoes    : $input.observacoes
-      }
+      field_value = $input.pet_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 

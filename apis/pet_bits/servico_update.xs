@@ -1,34 +1,24 @@
-// Substitui os campos de um registro de servico; envie o registro completo
-query "servico/{id}" verb=PATCH {
+// Atualiza um registro de servico gravando apenas os campos enviados
+query "servico/{servico_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Nome do servico
-    text nome_servico? filters=trim
-  
-    // Descricao do servico
-    text descricao? filters=trim
-  
-    // Preco do servico
-    decimal preco?
-  
-    // Duracao estimada em minutos
-    int duracao_estimada?
+    int servico_id? filters=min:1
+    dblink {
+      table = "servico"
+    }
   }
 
   stack {
-    db.edit servico {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch servico {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        nome_servico    : $input.nome_servico
-        descricao       : $input.descricao
-        preco           : $input.preco
-        duracao_estimada: $input.duracao_estimada
-      }
+      field_value = $input.servico_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 

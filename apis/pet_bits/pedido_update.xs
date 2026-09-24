@@ -1,30 +1,24 @@
-// Substitui os campos de um registro de pedido; envie o registro completo
-query "pedido/{id}" verb=PATCH {
+// Atualiza um registro de pedido; envie apenas os campos que deseja alterar
+query "pedido/{pedido_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Cliente do pedido
-    int id_cliente?
-  
-    // pendente, pago, enviado ou entregue
-    text status? filters=trim
-  
-    // Soma dos itens do pedido
-    decimal valor_total?
+    int pedido_id? filters=min:1
+    dblink {
+      table = "pedido"
+    }
   }
 
   stack {
-    db.edit pedido {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch pedido {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        id_cliente : $input.id_cliente
-        status     : $input.status
-        valor_total: $input.valor_total
-      }
+      field_value = $input.pedido_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 

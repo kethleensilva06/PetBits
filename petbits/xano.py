@@ -15,7 +15,11 @@ Consulte `docs/xano-setup.md` para criar as tabelas e obter esse endereço.
 
 from __future__ import annotations
 
+import asyncio
 import os
+import time
+from collections import deque
+from contextlib import asynccontextmanager
 from typing import Any, Optional
 
 import httpx
@@ -24,6 +28,38 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TIMEOUT = httpx.Timeout(15.0)
+
+# O plano gratuito do Xano aceita 10 requisições a cada 20 segundos. O painel
+# sozinho consulta sete tabelas, então sem controle o limite estoura na
+# navegação normal. Pedimos até nove por janela (uma de folga) e, se mesmo
+# assim o Xano responder 429, tentamos de novo depois de esperar.
+LIMITE_REQUISICOES = 9
+JANELA_SEGUNDOS = 20.0
+TENTATIVAS_LIMITE = 2
+ESPERA_LIMITE = 6.0
+
+_historico: deque[float] = deque()
+_trava = asyncio.Lock()
+
+
+@asynccontextmanager
+async def _permissao_para_requisitar():
+    """Segura a chamada até caber na janela de requisições do plano."""
+    async with _trava:
+        def _descartar_antigas():
+            agora = time.monotonic()
+            while _historico and agora - _historico[0] >= JANELA_SEGUNDOS:
+                _historico.popleft()
+            return agora
+
+        agora = _descartar_antigas()
+        if len(_historico) >= LIMITE_REQUISICOES:
+            espera = JANELA_SEGUNDOS - (agora - _historico[0])
+            if espera > 0:
+                await asyncio.sleep(espera)
+            _descartar_antigas()
+        _historico.append(time.monotonic())
+    yield
 
 # Método HTTP do endpoint "Edit record" do Xano. Workspaces mais antigos geram
 # esse endpoint como POST em vez de PATCH; nesse caso basta trocar esta
@@ -65,16 +101,29 @@ def _detalhe(resposta: httpx.Response) -> str:
 async def _requisitar(metodo: str, caminho: str, **kwargs) -> Any:
     """Executa uma requisição no Xano e devolve o JSON da resposta."""
     url = f"{_base_url()}{caminho}"
-    try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as cliente:
-            resposta = await cliente.request(
-                metodo, url, headers=_headers(), **kwargs
+
+    for tentativa in range(TENTATIVAS_LIMITE + 1):
+        async with _permissao_para_requisitar():
+            try:
+                async with httpx.AsyncClient(timeout=TIMEOUT) as cliente:
+                    resposta = await cliente.request(
+                        metodo, url, headers=_headers(), **kwargs
+                    )
+            except httpx.HTTPError as erro:
+                raise XanoError(
+                    f"Não foi possível falar com o Xano ({type(erro).__name__}). "
+                    "Verifique a conexão e o valor de XANO_BASE_URL."
+                ) from erro
+
+        if resposta.status_code != 429:
+            break
+        if tentativa == TENTATIVAS_LIMITE:
+            raise XanoError(
+                "O Xano recusou a requisição por excesso de chamadas. O plano "
+                "gratuito aceita 10 requisições a cada 20 segundos. Espere "
+                "alguns segundos e recarregue a página."
             )
-    except httpx.HTTPError as erro:
-        raise XanoError(
-            f"Não foi possível falar com o Xano ({type(erro).__name__}). "
-            "Verifique a conexão e o valor de XANO_BASE_URL."
-        ) from erro
+        await asyncio.sleep(ESPERA_LIMITE)
 
     if resposta.status_code == 404:
         # O Xano usa 404 para dois casos bem diferentes: o endpoint não existe

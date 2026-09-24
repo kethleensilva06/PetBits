@@ -1,42 +1,24 @@
-// Substitui os campos de um registro de agendamento; envie o registro completo
-query "agendamento/{id}" verb=PATCH {
+// Atualiza um registro de agendamento; apenas os campos enviados sao gravados
+query "agendamento/{agendamento_id}" verb=PATCH {
   api_group = "PetBits"
 
   input {
-    // Identificador do registro
-    int id
-  
-    // Pet atendido
-    int id_pet?
-  
-    // Servico agendado
-    int id_servico?
-  
-    // Responsavel pelo atendimento
-    int id_funcionario?
-  
-    // Data e hora do agendamento
-    timestamp data_hora?
-  
-    // agendado, em_andamento, concluido ou cancelado
-    text status? filters=trim
-  
-    // Observacoes do agendamento
-    text observacoes? filters=trim
+    int agendamento_id? filters=min:1
+    dblink {
+      table = "agendamento"
+    }
   }
 
   stack {
-    db.edit agendamento {
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
+    db.patch agendamento {
       field_name = "id"
-      field_value = $input.id
-      data = {
-        id_pet        : $input.id_pet
-        id_servico    : $input.id_servico
-        id_funcionario: $input.id_funcionario
-        data_hora     : $input.data_hora
-        status        : $input.status
-        observacoes   : $input.observacoes
-      }
+      field_value = $input.agendamento_id
+      data = `$input|pick:($raw_input|keys)`|filter_null|filter_empty_text
     } as $registro
   }
 
