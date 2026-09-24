@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>PetBits</title>
+  <!-- Versao reduzida da marca: 3 dedos em vez de 4. A 16px quatro dedos
+       se fundem numa mancha; tres continuam legiveis. -->
+  <rect width="32" height="32" rx="7" fill="#29a383"/>
+  <ellipse cx="8.5" cy="11.5" rx="2.8" ry="3.6" fill="#fff"/>
+  <ellipse cx="16" cy="11.5" rx="2.8" ry="3.6" fill="#fff"/>
+  <ellipse cx="23.5" cy="11.5" rx="2.8" ry="3.6" fill="#fff"/>
+  <ellipse cx="16" cy="22" rx="7" ry="5.8" fill="#fff"/>
+</svg>

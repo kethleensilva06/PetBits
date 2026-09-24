@@ -41,6 +41,8 @@ app = rx.App(
             cross_origin="anonymous",
         ),
         rx.el.link(rel="stylesheet", href=FONTES),
+        # Navegadores modernos preferem o SVG; o favicon.ico fica de fallback.
+        rx.el.link(rel="icon", type="image/svg+xml", href="/favicon.svg"),
     ],
     html_lang="pt-BR",
 )

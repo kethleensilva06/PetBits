@@ -2,6 +2,8 @@
 
 import reflex as rx
 
+from .brand import logo
+
 NAV_ITEMS = [
     ("Início", "/", "layout-dashboard"),
     ("Clientes", "/clientes", "users"),
@@ -39,13 +41,7 @@ def _nav_link(label: str, href: str, icon: str) -> rx.Component:
 def sidebar() -> rx.Component:
     return rx.box(
         rx.vstack(
-            rx.hstack(
-                rx.icon("paw-print", size=26, color=rx.color("accent", 9)),
-                rx.heading("PetBits", size="6"),
-                align="center",
-                spacing="2",
-                padding_bottom="1rem",
-            ),
+            rx.box(logo(size=30), padding_bottom="1rem"),
             *[_nav_link(label, href, icon) for label, href, icon in NAV_ITEMS],
             rx.spacer(),
             rx.hstack(

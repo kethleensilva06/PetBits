@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 32" width="148" height="32">
+  <title>PetBits</title>
+  <!-- Marca completa: simbolo + wordmark bicolor. Para README e materiais.
+       Dentro do app a mesma forma e desenhada por petbits/components/brand.py,
+       que se adapta ao modo claro/escuro. -->
+  <rect width="32" height="32" rx="9" fill="#29a383"/>
+  <ellipse cx="8.6" cy="13.2" rx="2.5" ry="3.1" fill="#fff"/>
+  <ellipse cx="13.6" cy="10.6" rx="2.6" ry="3.4" fill="#fff"/>
+  <ellipse cx="18.9" cy="10.6" rx="2.6" ry="3.4" fill="#fff"/>
+  <ellipse cx="23.8" cy="13.2" rx="2.5" ry="3.1" fill="#fff"/>
+  <ellipse cx="16.2" cy="21.2" rx="6.6" ry="5.4" fill="#fff"/>
+  <text x="41" y="23"
+        font-family="Nunito, 'Trebuchet MS', sans-serif"
+        font-size="23" font-weight="800" letter-spacing="-0.5">
+    <tspan fill="#1b1b18">Pet</tspan><tspan fill="#208368">Bits</tspan>
+  </text>
+</svg>
