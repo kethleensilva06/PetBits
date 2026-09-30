@@ -9,3 +9,5 @@ reflex.lock/
 
 # Credenciais do Xano — nunca versionar. Use .env.example como modelo.
 .env
+.agents/skills/
+skills-lock.json

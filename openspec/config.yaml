@@ -1,28 +1,61 @@
 schema: spec-driven
 
 context: |
-  Language: português brasileiro
-  All artifacts must be written in português brasileiro.
-  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Project: PetBits — sistema de gestão para clínica veterinária e petshop.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Domain: Tutores, seus animais, agendamento de serviços, histórico clínico
+    e vendas do petshop. Dois perfis de usuário: a equipe da clínica, que
+    administra a operação, e o tutor, que acompanha os próprios animais e
+    marca atendimentos. Um tutor nunca acessa dados de outro tutor.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Tech stack:
+    Python com venv + pip. Não utilizar uv.
+    Frontend: Reflex é a tecnologia obrigatória para implementação das
+    interfaces frontend do projeto. Não introduzir outra tecnologia de
+    frontend sem uma mudança explícita da decisão arquitetural.
+    Persistência: Xano (banco e API REST, acessados por HTTP). A aplicação
+    não possui banco local nem ORM.
+
+  Architecture:
+    O backend é responsável pelas regras de negócio e pela persistência.
+    O frontend não deve ser considerado mecanismo de segurança.
+
+  Security:
+    Regras de autorização são aplicadas no backend, sempre.
+    O papel do usuário é lido do banco a cada requisição, nunca do que o
+    cliente enviou.
+    Credenciais ficam em .env, que não é versionado.
+
+  Development:
+    O projeto é desenvolvido incrementalmente utilizando OpenSpec.
+    Cada change entrega uma fatia vertical — uma funcionalidade utilizável
+    de ponta a ponta. Não organizar changes por camada técnica.
+    Escopo novo é change nova, não ampliação da change em andamento.
+
+  Language:
+    Escrever a documentação do projeto e os artefatos OpenSpec em português
+    brasileiro. Manter em inglês os cabeçalhos estruturais do OpenSpec e as
+    palavras-chave SHALL/MUST.
+
+rules:
+  proposal:
+    - Descrever o problema, o objetivo e o escopo da mudança.
+    - Explicitar o que fica fora do escopo.
+
+  specs:
+    - Escrever requisitos verificáveis.
+    - Utilizar cenários para os comportamentos relevantes, incluindo os casos
+      de erro e de acesso negado.
+
+  tasks:
+    - Dividir a implementação em tarefas pequenas e verificáveis.
+
+operations:
+  apply:
+    guidance:
+      - Executar as verificações declaradas na change antes de concluir.
+      - Relatar o resultado real da verificação, inclusive quando falhar.
+
+  archive:
+    guidance:
+      - Confirmar que a implementação corresponde à especificação.

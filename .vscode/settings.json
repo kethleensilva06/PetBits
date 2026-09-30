@@ -1,0 +1,16 @@
+{
+  // O projeto tem um .env com os endereços do Xano. A extensão Python já o
+  // reconhece (python.envFile aponta para ${workspaceFolder}/.env por
+  // padrão), mas desde versões recentes ela não injeta mais essas variáveis
+  // no terminal sem esta opção — daí o aviso "injeção de ambiente de
+  // terminal está desabilitada".
+  //
+  // Ligar aqui faz `reflex run` digitado no terminal enxergar XANO_BASE_URL
+  // e XANO_AUTH_BASE_URL. O código também lê o .env por conta própria
+  // (python-dotenv), então isto é conveniência, não requisito.
+  "python.terminal.useEnvFile": true,
+
+  // Usa o ambiente virtual do projeto, conforme o Apêndice B.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true
+}
