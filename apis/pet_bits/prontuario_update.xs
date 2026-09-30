@@ -1,6 +1,7 @@
-// Atualiza um registro de prontuario; apenas os campos enviados sao gravados
+// Atualiza um prontuario. So a equipe da clinica.
 query "prontuario/{prontuario_id}" verb=PATCH {
   api_group = "PetBits"
+  auth = "user"
 
   input {
     int prontuario_id? filters=min:1
@@ -10,11 +11,20 @@ query "prontuario/{prontuario_id}" verb=PATCH {
   }
 
   stack {
+    function.run "PetBits/ctx" {
+      input = {user_id: $auth.id}
+    } as $ctx
+
+    precondition ($ctx.is_admin == true) {
+      error_type = "accessdenied"
+      error = "Apenas a equipe da clinica pode fazer isso."
+    }
+
     util.get_raw_input {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-  
+
     db.patch prontuario {
       field_name = "id"
       field_value = $input.prontuario_id

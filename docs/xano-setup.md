@@ -170,11 +170,17 @@ Na raiz do projeto, copie `.env.example` para `.env` e preencha:
 
 ```
 XANO_BASE_URL=https://x8ki-letl-twmt.n7.xano.io/api:AbCdEf12
-XANO_TOKEN=
+XANO_AUTH_BASE_URL=https://x8ki-letl-twmt.n7.xano.io/api:GhIjKl34
 ```
 
-Deixe `XANO_TOKEN` vazio se o API group estiver público. Se ele exigir
-autenticação, cole o token — ele vai no header `Authorization: Bearer ...`.
+São **dois** endereços porque são dois API groups: o **PetBits**, com as
+tabelas do domínio e o cadastro de tutor, e o **Authentication**, que veio
+pronto no workspace e tem o login e o `auth/me`.
+
+Não há `XANO_TOKEN`: o token não é do projeto, é de quem está logado. Ele
+nasce no login, vive no `localStorage` do navegador e acompanha cada
+requisição. Um token fixo no `.env` daria a todo mundo o mesmo acesso, que é
+exatamente o que a autorização existe para evitar.
 
 O arquivo `.env` **não é versionado** (está no `.gitignore`). Cada integrante
 do grupo cria o seu.
@@ -187,15 +193,32 @@ Com o `.env` preenchido, suba a aplicação:
 reflex run
 ```
 
-Abra <http://localhost:3000> e cadastre um cliente. Se aparecer uma faixa
-vermelha no topo da página, ela traz a mensagem devolvida pelo Xano — as causas
-mais comuns são:
+Abra <http://localhost:3000>. A primeira tela é o login, porque o sistema não
+tem mais nenhuma página aberta.
+
+**Na primeira vez não existe conta nenhuma.** Faça o caminho completo:
+
+1. Clique em **Cadastre-se** e crie a sua conta. Ela nasce como tutor, e você
+   já cai no portal — dá para cadastrar um pet e marcar uma consulta.
+2. Para administrar a clínica, promova essa conta:
+
+   ```bash
+   python scripts/promover_admin.py voce@email.com
+   ```
+
+   (ou troque `role` para `admin` na tabela `user`, pelo painel do Xano).
+3. Saia e entre de novo. Agora você cai no painel, com as nove telas da
+   clínica.
+
+Se aparecer uma faixa vermelha no topo da página, ela traz a mensagem
+devolvida pelo Xano — as causas mais comuns são:
 
 | Mensagem | Causa provável |
 |---|---|
 | `XANO_BASE_URL não configurada` | o `.env` não existe ou está vazio |
 | `O Xano respondeu 404` | nome da tabela diferente, ou CRUD não gerado |
-| `não autorizado` | o API group exige token e o `XANO_TOKEN` está vazio ou errado |
+| `Sua sessão expirou` | o token venceu (dura 24h) — entre de novo |
+| `Você não tem permissão para esta operação` | a conta é de tutor e a tela é da clínica; veja o passo 2 |
 | `Não foi possível falar com o Xano` | sem internet, ou base URL com erro de digitação |
 
 ## Notas de implementação
@@ -207,4 +230,9 @@ mais comuns são:
   das listagens é feita em Python, nos States.
 - **Filtros.** `TabelaXano.listar_por` filtra em memória, depois de listar. Se
   o volume de dados crescer, crie um endpoint com filtro no Xano e troque só
-  esse método.
+  esse método. O recorte **por dono** já acontece no servidor (veja a seção de
+  autorização em `docs/xanoscript.md`) — o filtro em memória é só conveniência
+  de tela, nunca a barreira de acesso.
+- **Autorização.** Nenhum endpoint é público, com uma exceção proposital:
+  `POST /cliente/signup`, que é como se entra. O que cada papel alcança está
+  em `docs/xanoscript.md`.

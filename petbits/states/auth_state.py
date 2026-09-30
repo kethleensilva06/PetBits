@@ -145,6 +145,12 @@ class AuthState(rx.State):
         self.usuario_papel = ""
         self.sessao_validada = False
         self.sessao_expirou = expirou
+        # O formulario tambem: sem isto, sair deixa o e-mail de quem saiu
+        # preenchido na tela de login -- num computador compartilhado, a
+        # proxima pessoa descobre quem usou o sistema antes dela.
+        self.login_email = ""
+        self.login_senha = ""
+        self.auth_error = ""
 
     async def entrar(self):
         self.auth_error = ""

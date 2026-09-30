@@ -1,6 +1,7 @@
-// Busca um registro de servico pelo id
+// Busca um servico pelo id. Catalogo: qualquer pessoa logada ve.
 query "servico/{id}" verb=GET {
   api_group = "PetBits"
+  auth = "user"
 
   input {
     // Identificador do registro

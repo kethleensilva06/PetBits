@@ -1,6 +1,7 @@
-// Atualiza um registro de funcionario; grava apenas os campos enviados na requisicao
+// Atualiza um funcionario. So a equipe da clinica.
 query "funcionario/{funcionario_id}" verb=PATCH {
   api_group = "PetBits"
+  auth = "user"
 
   input {
     int funcionario_id? filters=min:1
@@ -10,11 +11,20 @@ query "funcionario/{funcionario_id}" verb=PATCH {
   }
 
   stack {
+    function.run "PetBits/ctx" {
+      input = {user_id: $auth.id}
+    } as $ctx
+
+    precondition ($ctx.is_admin == true) {
+      error_type = "accessdenied"
+      error = "Apenas a equipe da clinica pode fazer isso."
+    }
+
     util.get_raw_input {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-  
+
     db.patch funcionario {
       field_name = "id"
       field_value = $input.funcionario_id

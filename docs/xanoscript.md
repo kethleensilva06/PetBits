@@ -1,14 +1,16 @@
 # Backend do PetBits em XanoScript
 
-Estes 54 arquivos `.xs` descrevem o backend do PetBits: as 9 tabelas e os 45
-endpoints CRUD que o frontend Reflex consome. Eles existem para você não ter
-que criar tabela por tabela e campo por campo no painel do Xano.
+Estes arquivos `.xs` descrevem o backend do PetBits: as 9 tabelas, os 45
+endpoints CRUD que o frontend Reflex consome, o cadastro público de tutor e a
+função de autorização que todos eles usam. Eles existem para você não ter que
+criar tabela por tabela e campo por campo no painel do Xano.
 
 Eles ficam nas pastas que a extensão usa, declaradas em `.xano/config.json`:
 
 ```
 tables/             9 tabelas do PetBits (+ as que vieram do pull do Xano)
-apis/pet_bits/      45 endpoints (5 por tabela) + api_group.xs
+apis/pet_bits/      45 endpoints CRUD + cliente_signup + me_cliente + api_group.xs
+functions/pet_bits/ ctx.xs -- a autorização que os 45 endpoints consultam
 ```
 
 > **Atenção:** os caminhos vêm de `.xano/config.json` (`paths.tables` e
@@ -77,7 +79,95 @@ curl -s "https://x8ki-letl-twmt.n7.xano.io/api:Xj7KkS4w/cliente"
 |---|---|
 | `[]` ou uma lista JSON | funcionando |
 | `Unable to locate request.` | o endpoint não existe: falta o push |
-| `401` / `403` | o grupo exige token; preencha `XANO_TOKEN` no `.env` |
+| `401` | sem token, ou token vencido: todos os endpoints exigem login |
+| `403` | logado, mas sem direito àquilo — veja a seção de autorização |
+
+## Autorização
+
+**Todos os 45 endpoints exigem login** (`auth = "user"`). As duas únicas
+exceções são propositais: `POST /cliente/signup`, que é a porta de entrada, e
+`POST /auth/login`, que fica no grupo Authentication.
+
+Quem decide o que cada pessoa pode é `functions/pet_bits/ctx.xs`. Ele recebe o
+`$auth.id` e devolve `{user_id, role, is_admin, cliente_id}`:
+
+```
+function.run "PetBits/ctx" {
+  input = {user_id: $auth.id}
+} as $ctx
+```
+
+Três decisões que valem explicar:
+
+- **O papel vem sempre do banco, nunca do token.** O `auth/login` do template
+  cria o token com `extras = {}`, e é assim que fica. Papel dentro do token
+  congelaria por 24 horas: rebaixar um administrador não teria efeito até o
+  token vencer.
+- **`ctx` falha fechada.** Um login sem ficha de cliente correspondente recebe
+  `accessdenied` em vez de `cliente_id` nulo. Isso importa porque um filtro que
+  ignora valor nulo devolveria a tabela inteira justamente para quem não
+  deveria ver nada.
+- **O papel guardado no navegador não protege coisa nenhuma.** Ele serve para
+  esconder botão; qualquer pessoa edita o `localStorage` pelo DevTools. Quem
+  barra é este arquivo.
+
+### O que cada papel alcança
+
+| Tabela | list | get | create | update | delete |
+|---|---|---|---|---|---|
+| produto, servico | logado | logado | clínica | clínica | clínica |
+| funcionario | logado¹ | logado¹ | clínica | clínica | clínica |
+| cliente | clínica | clínica | clínica | clínica | clínica |
+| pet | só os seus | só os seus | dono forçado² | só os seus³ | clínica |
+| pedido | só os seus | só os seus | clínica | clínica | clínica |
+| agendamento | só os seus⁴ | só os seus⁴ | pet seu, `agendado`⁵ | só cancelar⁶ | clínica |
+| prontuario | só os seus⁴ | só os seus⁴ | clínica | clínica | clínica |
+| itens_pedido | só os seus⁴ | só os seus⁴ | clínica | clínica | clínica |
+
+1. O tutor recebe só `id`, `nome` e `cargo`. Ele precisa do nome de quem
+   atendeu (aparece no histórico), mas a ficha tem CPF, telefone e e-mail.
+2. O `dblink` transforma **toda** coluna da tabela em entrada, inclusive
+   `id_cliente`. Para o tutor esse valor é ignorado e trocado pela ficha dele;
+   sem isso bastaria mandar outro id para cadastrar um pet na conta alheia.
+3. `id_cliente` e `id` saem do corpo antes de gravar. O `filter_null` não
+   serve para isso: ele descarta nulo, não um inteiro forjado.
+4. O dono está a um salto (no `pet` ou no `pedido`). O filtro entra como
+   `join`, para o recorte acontecer no banco em vez de depois de baixar a
+   tabela inteira.
+5. O status sai sempre como `"agendado"`; deixar o corpo escolher permitiria
+   gravar uma consulta já como concluída.
+6. O corpo do tutor é descartado inteiro em favor de `{status: "cancelado"}`.
+   Senão ele remarcaria por cima de um horário ocupado, ou passaria a consulta
+   para outro pet.
+
+Excluir é sempre da clínica, inclusive nas tabelas com dono: apagar um pet
+deixaria prontuários e agendamentos apontando para o vazio, e o tutor tem o
+cancelamento para o que de fato precisa desfazer.
+
+### Virar administradora
+
+O cadastro pelo site cria sempre `role: "member"` — é isso que permite ele ser
+público. Promover acontece fora da aplicação:
+
+```bash
+python scripts/promover_admin.py voce@email.com
+```
+
+Ou, sem script nenhum: painel do Xano → Database → tabela `user` → sua linha →
+trocar `role` para `admin`. A coluna é `private`, o que a esconde da API, não
+do painel.
+
+### Conferindo
+
+O teste que decide se a autorização vale é `curl`, não a tela:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}
+" https://x8ki-letl-twmt.n7.xano.io/api:Xj7KkS4w/cliente
+```
+
+Tem que responder `401`. Com um token de tutor, `DELETE /funcionario/1`
+responde `403`, e `GET /pet` traz só os pets dele.
 
 ## O que cada endpoint faz
 
@@ -90,6 +180,13 @@ Para cada tabela `<t>`:
 | `<t>_create.xs` | `POST /<t>` | `TabelaXano.criar(dados)` |
 | `<t>_update.xs` | `PATCH /<t>/{id}` | `TabelaXano.atualizar(id, dados)` |
 | `<t>_delete.xs` | `DELETE /<t>/{id}` | `TabelaXano.remover(id)` |
+
+Mais dois, fora do CRUD:
+
+| Arquivo | Endpoint | Uso |
+|---|---|---|
+| `cliente_signup.xs` | `POST /cliente/signup` | cadastro público do tutor: cria `user` + `cliente` vinculados e devolve o token |
+| `me_cliente.xs` | `GET /me/cliente` | a ficha de cliente de quem está logado |
 
 Os endpoints de escrita (`_create` e `_update`) seguem o padrão que o próprio
 Xano gera: o bloco `input` usa `dblink { table = "..." }` em vez de listar

@@ -1,12 +1,8 @@
-// Cria um registro em cliente
+// Cria um cliente. So a equipe da clinica.
 query cliente verb=POST {
   api_group = "PetBits"
+  auth = "user"
 
-  // id_user liga a ficha a um login. O dblink espelha o schema inteiro, entao
-  // sem o override abaixo qualquer requisicao poderia reapontar uma ficha para
-  // outro login e, com isso, herdar os pets, os prontuarios e os pedidos
-  // daquele tutor. Quem grava id_user e so o cliente/signup, com o id que o
-  // proprio servidor acabou de criar.
   input {
     dblink {
       table = "cliente"
@@ -17,6 +13,15 @@ query cliente verb=POST {
   }
 
   stack {
+    function.run "PetBits/ctx" {
+      input = {user_id: $auth.id}
+    } as $ctx
+
+    precondition ($ctx.is_admin == true) {
+      error_type = "accessdenied"
+      error = "Apenas a equipe da clinica pode fazer isso."
+    }
+
     db.add cliente {
       enforce_hidden_fields = false
       data = {created_at: "now", data_cadastro: "now"}

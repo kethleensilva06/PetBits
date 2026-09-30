@@ -1,6 +1,7 @@
-// Lista todos os registros de produto
+// Lista produto. Catalogo: visivel para qualquer pessoa logada.
 query produto verb=GET {
   api_group = "PetBits"
+  auth = "user"
 
   input {
   }

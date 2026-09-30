@@ -1,10 +1,8 @@
-// Atualiza apenas os campos enviados de um registro de cliente
+// Atualiza um cliente. So a equipe da clinica.
 query "cliente/{cliente_id}" verb=PATCH {
   api_group = "PetBits"
+  auth = "user"
 
-  // Ver a nota em cliente_create.xs: id_user nunca entra pelo corpo da
-  // requisicao. Aqui o risco e maior, porque reapontar uma ficha ja existente
-  // para outro login e o ataque direto.
   input {
     int cliente_id? filters=min:1
     dblink {
@@ -16,11 +14,20 @@ query "cliente/{cliente_id}" verb=PATCH {
   }
 
   stack {
+    function.run "PetBits/ctx" {
+      input = {user_id: $auth.id}
+    } as $ctx
+
+    precondition ($ctx.is_admin == true) {
+      error_type = "accessdenied"
+      error = "Apenas a equipe da clinica pode fazer isso."
+    }
+
     util.get_raw_input {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-  
+
     db.patch cliente {
       field_name = "id"
       field_value = $input.cliente_id

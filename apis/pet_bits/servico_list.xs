@@ -1,6 +1,7 @@
-// Lista todos os registros de servico
+// Lista servico. Catalogo: visivel para qualquer pessoa logada.
 query servico verb=GET {
   api_group = "PetBits"
+  auth = "user"
 
   input {
   }
