@@ -6,10 +6,11 @@ import reflex as rx
 
 from petbits import models
 from petbits.states.conversores import para_data, para_input_data
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class PetState(rx.State):
+class PetState(Sessao, rx.State):
     pets: list[dict] = []
     cliente_options: list[dict] = []
     search: str = ""
@@ -68,8 +69,11 @@ class PetState(rx.State):
     async def load_pets(self):
         self.load_error = ""
         try:
-            registros = await models.pets.listar()
-            clientes = await models.clientes.listar()
+            token = await self._token(admin=True)
+            registros = await models.pets.listar(token=token)
+            clientes = await models.clientes.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.pets = []
             self.cliente_options = []
@@ -148,22 +152,28 @@ class PetState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.pets.criar(dados)
+                await models.pets.criar(dados, token=token)
             else:
-                await models.pets.atualizar(self.editing_id, dados)
+                await models.pets.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_pets()
+        return await self.load_pets()
 
     async def delete(self, pet_id: int):
         try:
-            await models.pets.remover(pet_id)
+            token = await self._token(admin=True)
+            await models.pets.remover(pet_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_pets()
+        return await self.load_pets()

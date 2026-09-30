@@ -6,10 +6,11 @@ import reflex as rx
 
 from petbits import models
 from petbits.states.conversores import formatar_moeda
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class ProdutoState(rx.State):
+class ProdutoState(Sessao, rx.State):
     produtos: list[dict] = []
     search: str = ""
     load_error: str = ""
@@ -59,7 +60,10 @@ class ProdutoState(rx.State):
     async def load_produtos(self):
         self.load_error = ""
         try:
-            registros = await models.produtos.listar()
+            token = await self._token(admin=True)
+            registros = await models.produtos.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.produtos = []
             self.load_error = str(erro)
@@ -122,22 +126,28 @@ class ProdutoState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.produtos.criar(dados)
+                await models.produtos.criar(dados, token=token)
             else:
-                await models.produtos.atualizar(self.editing_id, dados)
+                await models.produtos.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_produtos()
+        return await self.load_produtos()
 
     async def delete(self, produto_id: int):
         try:
-            await models.produtos.remover(produto_id)
+            token = await self._token(admin=True)
+            await models.produtos.remover(produto_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_produtos()
+        return await self.load_produtos()

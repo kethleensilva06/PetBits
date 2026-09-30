@@ -1,6 +1,7 @@
+from .auth_layout import auth_layout, campo_senha
 from .brand import logo, logo_mark, paw_watermark
-from .layout import layout
-from .sidebar import sidebar
+from .layout import layout, layout_cliente
+from .sidebar import NAV_ADMIN, NAV_CLIENTE, sidebar, user_menu
 from .tokens import (
     CARGO_ROTULOS,
     STATUS_AGENDAMENTO_CORES,
@@ -26,7 +27,13 @@ from .ui import (
 
 __all__ = [
     "layout",
+    "layout_cliente",
     "sidebar",
+    "user_menu",
+    "NAV_ADMIN",
+    "NAV_CLIENTE",
+    "auth_layout",
+    "campo_senha",
     "logo",
     "logo_mark",
     "paw_watermark",

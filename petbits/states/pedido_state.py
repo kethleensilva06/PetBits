@@ -7,10 +7,11 @@ import reflex as rx
 
 from petbits import models
 from petbits.states.conversores import formatar_data_hora, formatar_moeda
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class PedidoState(rx.State):
+class PedidoState(Sessao, rx.State):
     pedidos: list[dict] = []
     cliente_options: list[dict] = []
     produto_options: list[dict] = []
@@ -69,9 +70,12 @@ class PedidoState(rx.State):
     async def load_pedidos(self):
         self.load_error = ""
         try:
-            pedidos = await models.pedidos.listar()
-            clientes = await models.clientes.listar()
-            produtos = await models.produtos.listar()
+            token = await self._token(admin=True)
+            pedidos = await models.pedidos.listar(token=token)
+            clientes = await models.clientes.listar(token=token)
+            produtos = await models.produtos.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.pedidos = []
             self.cliente_options = []
@@ -139,34 +143,42 @@ class PedidoState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
                 # O Xano não preenche estes campos sozinho: o pedido nasce com
                 # a data do momento e o total zerado, que os itens recalculam.
                 dados["data_pedido"] = datetime.now().isoformat()
                 dados["valor_total"] = 0.0
-                await models.pedidos.criar(dados)
+                await models.pedidos.criar(dados, token=token)
             else:
-                await models.pedidos.atualizar(self.editing_id, dados)
+                await models.pedidos.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_pedidos()
+        return await self.load_pedidos()
 
     async def delete(self, pedido_id: int):
         try:
+            token = await self._token(admin=True)
             # O Xano não tem ON DELETE CASCADE: os itens saem antes do pedido.
-            for item in await models.itens_pedido.listar_por("id_pedido", pedido_id):
+            for item in await models.itens_pedido.listar_por(
+                "id_pedido", pedido_id, token=token
+            ):
                 item_id = item.get("id")
                 if item_id is not None:
-                    await models.itens_pedido.remover(item_id)
-            await models.pedidos.remover(pedido_id)
+                    await models.itens_pedido.remover(item_id, token=token)
+            await models.pedidos.remover(pedido_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_pedidos()
+        return await self.load_pedidos()
 
     async def open_itens(self, pedido: dict):
         self.selected_pedido_id = pedido["id"]
@@ -177,12 +189,16 @@ class PedidoState(rx.State):
         self.item_quantidade = "1"
         self.item_error = ""
         self.show_itens_dialog = True
-        await self.load_itens()
+        try:
+            token = await self._token(admin=True)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        return await self._load_itens(token)
 
     def close_itens(self):
         self.show_itens_dialog = False
 
-    async def load_itens(self):
+    async def _load_itens(self, token: str):
         if self.selected_pedido_id is None:
             self.itens = []
             self.itens_total = "0.00"
@@ -191,8 +207,10 @@ class PedidoState(rx.State):
 
         try:
             itens = await models.itens_pedido.listar_por(
-                "id_pedido", self.selected_pedido_id
+                "id_pedido", self.selected_pedido_id, token=token
             )
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.itens = []
             self.itens_total = "0.00"
@@ -249,26 +267,32 @@ class PedidoState(rx.State):
         }
 
         try:
-            await models.itens_pedido.criar(dados)
+            token = await self._token(admin=True)
+            await models.itens_pedido.criar(dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.item_error = str(erro)
             return
 
         self.item_error = ""
         self.item_quantidade = "1"
-        await self.load_itens()
-        await self._recalcular_total()
+        await self._load_itens(token)
+        return await self._recalcular_total(token)
 
     async def remove_item(self, item_id: int):
         try:
-            await models.itens_pedido.remover(item_id)
+            token = await self._token(admin=True)
+            await models.itens_pedido.remover(item_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.item_error = str(erro)
             return
-        await self.load_itens()
-        await self._recalcular_total()
+        await self._load_itens(token)
+        return await self._recalcular_total(token)
 
-    async def _recalcular_total(self):
+    async def _recalcular_total(self, token: str):
         """Atualiza o valor_total do pedido a partir da soma dos seus itens."""
         if self.selected_pedido_id is None:
             return
@@ -277,14 +301,14 @@ class PedidoState(rx.State):
             # A soma sai de uma leitura própria, sobre os valores crus do Xano:
             # se a listagem falhar, o total gravado não é zerado por engano.
             itens = await models.itens_pedido.listar_por(
-                "id_pedido", self.selected_pedido_id
+                "id_pedido", self.selected_pedido_id, token=token
             )
             total = float(sum(float(i.get("valor_total") or 0) for i in itens))
 
             # O endpoint de edição do Xano grava todos os campos que recebe,
             # então o pedido é reenviado inteiro: mandar só o valor_total
             # apagaria id_cliente e status.
-            pedido = await models.pedidos.obter(self.selected_pedido_id)
+            pedido = await models.pedidos.obter(self.selected_pedido_id, token=token)
             if pedido is None:
                 self.item_error = "Pedido não encontrado no Xano."
                 return
@@ -295,11 +319,14 @@ class PedidoState(rx.State):
                     "status": pedido.get("status"),
                     "valor_total": total,
                 },
+                token=token,
             )
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.item_error = str(erro)
             return
 
         self.itens_total_valor = total
         self.itens_total = formatar_moeda(total)
-        await self.load_pedidos()
+        return await self.load_pedidos()

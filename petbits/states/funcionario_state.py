@@ -6,10 +6,11 @@ import reflex as rx
 
 from petbits import models
 from petbits.states.conversores import formatar_data, para_data, para_input_data
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class FuncionarioState(rx.State):
+class FuncionarioState(Sessao, rx.State):
     funcionarios: list[dict] = []
     search: str = ""
     load_error: str = ""
@@ -63,7 +64,10 @@ class FuncionarioState(rx.State):
     async def load_funcionarios(self):
         self.load_error = ""
         try:
-            registros = await models.funcionarios.listar()
+            token = await self._token(admin=True)
+            registros = await models.funcionarios.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.funcionarios = []
             self.load_error = str(erro)
@@ -125,22 +129,28 @@ class FuncionarioState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.funcionarios.criar(dados)
+                await models.funcionarios.criar(dados, token=token)
             else:
-                await models.funcionarios.atualizar(self.editing_id, dados)
+                await models.funcionarios.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_funcionarios()
+        return await self.load_funcionarios()
 
     async def delete(self, funcionario_id: int):
         try:
-            await models.funcionarios.remover(funcionario_id)
+            token = await self._token(admin=True)
+            await models.funcionarios.remover(funcionario_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_funcionarios()
+        return await self.load_funcionarios()

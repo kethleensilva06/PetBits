@@ -11,10 +11,11 @@ from petbits.states.conversores import (
     para_data,
     para_input_data,
 )
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class ProntuarioState(rx.State):
+class ProntuarioState(Sessao, rx.State):
     prontuarios: list[dict] = []
     pet_options: list[dict] = []
     funcionario_options: list[dict] = []
@@ -66,9 +67,12 @@ class ProntuarioState(rx.State):
     async def load_prontuarios(self):
         self.load_error = ""
         try:
-            registros = await models.prontuarios.listar()
-            pets = await models.pets.listar()
-            funcionarios = await models.funcionarios.listar()
+            token = await self._token(admin=True)
+            registros = await models.prontuarios.listar(token=token)
+            pets = await models.pets.listar(token=token)
+            funcionarios = await models.funcionarios.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.prontuarios = []
             self.pet_options = []
@@ -155,22 +159,28 @@ class ProntuarioState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.prontuarios.criar(dados)
+                await models.prontuarios.criar(dados, token=token)
             else:
-                await models.prontuarios.atualizar(self.editing_id, dados)
+                await models.prontuarios.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_prontuarios()
+        return await self.load_prontuarios()
 
     async def delete(self, prontuario_id: int):
         try:
-            await models.prontuarios.remover(prontuario_id)
+            token = await self._token(admin=True)
+            await models.prontuarios.remover(prontuario_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_prontuarios()
+        return await self.load_prontuarios()

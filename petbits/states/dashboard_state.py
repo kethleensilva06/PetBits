@@ -7,10 +7,11 @@ import reflex as rx
 
 from petbits import models
 from petbits.states.conversores import de_data_hora, formatar_data_hora
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class DashboardState(rx.State):
+class DashboardState(Sessao, rx.State):
     total_clientes: int = 0
     total_pets: int = 0
     total_funcionarios: int = 0
@@ -24,6 +25,7 @@ class DashboardState(rx.State):
     async def load_dashboard(self):
         self.load_error = ""
         try:
+            token = await self._token(admin=True)
             (
                 clientes,
                 pets,
@@ -33,14 +35,16 @@ class DashboardState(rx.State):
                 pedidos,
                 agendamentos,
             ) = await asyncio.gather(
-                models.clientes.listar(),
-                models.pets.listar(),
-                models.funcionarios.listar(),
-                models.produtos.listar(),
-                models.servicos.listar(),
-                models.pedidos.listar(),
-                models.agendamentos.listar(),
+                models.clientes.listar(token=token),
+                models.pets.listar(token=token),
+                models.funcionarios.listar(token=token),
+                models.produtos.listar(token=token),
+                models.servicos.listar(token=token),
+                models.pedidos.listar(token=token),
+                models.agendamentos.listar(token=token),
             )
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.total_clientes = 0
             self.total_pets = 0

@@ -5,10 +5,11 @@ from typing import Optional
 import reflex as rx
 
 from petbits import models
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class ClienteState(rx.State):
+class ClienteState(Sessao, rx.State):
     clientes: list[dict] = []
     search: str = ""
     load_error: str = ""
@@ -58,7 +59,10 @@ class ClienteState(rx.State):
     async def load_clientes(self):
         self.load_error = ""
         try:
-            registros = await models.clientes.listar()
+            token = await self._token(admin=True)
+            registros = await models.clientes.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.clientes = []
             self.load_error = str(erro)
@@ -113,22 +117,28 @@ class ClienteState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.clientes.criar(dados)
+                await models.clientes.criar(dados, token=token)
             else:
-                await models.clientes.atualizar(self.editing_id, dados)
+                await models.clientes.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_clientes()
+        return await self.load_clientes()
 
     async def delete(self, cliente_id: int):
         try:
-            await models.clientes.remover(cliente_id)
+            token = await self._token(admin=True)
+            await models.clientes.remover(cliente_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_clientes()
+        return await self.load_clientes()

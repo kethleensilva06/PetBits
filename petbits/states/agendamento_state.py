@@ -10,10 +10,11 @@ from petbits.states.conversores import (
     para_data_hora,
     para_input_data_hora,
 )
-from petbits.xano import XanoError
+from petbits.states.sessao import Sessao, SemSessao
+from petbits.xano import SessaoExpirada, XanoError
 
 
-class AgendamentoState(rx.State):
+class AgendamentoState(Sessao, rx.State):
     agendamentos: list[dict] = []
     pet_options: list[dict] = []
     servico_options: list[dict] = []
@@ -70,10 +71,13 @@ class AgendamentoState(rx.State):
     async def load_agendamentos(self):
         self.load_error = ""
         try:
-            registros = await models.agendamentos.listar()
-            pets = await models.pets.listar()
-            servicos = await models.servicos.listar()
-            funcionarios = await models.funcionarios.listar()
+            token = await self._token(admin=True)
+            registros = await models.agendamentos.listar(token=token)
+            pets = await models.pets.listar(token=token)
+            servicos = await models.servicos.listar(token=token)
+            funcionarios = await models.funcionarios.listar(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.agendamentos = []
             self.pet_options = []
@@ -168,22 +172,28 @@ class AgendamentoState(rx.State):
         }
 
         try:
+            token = await self._token(admin=True)
             if self.editing_id is None:
-                await models.agendamentos.criar(dados)
+                await models.agendamentos.criar(dados, token=token)
             else:
-                await models.agendamentos.atualizar(self.editing_id, dados)
+                await models.agendamentos.atualizar(self.editing_id, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.form_error = str(erro)
             return
 
         self.form_error = ""
         self.show_dialog = False
-        await self.load_agendamentos()
+        return await self.load_agendamentos()
 
     async def delete(self, agendamento_id: int):
         try:
-            await models.agendamentos.remover(agendamento_id)
+            token = await self._token(admin=True)
+            await models.agendamentos.remover(agendamento_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
         except XanoError as erro:
             self.load_error = str(erro)
             return
-        await self.load_agendamentos()
+        return await self.load_agendamentos()

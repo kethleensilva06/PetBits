@@ -3,15 +3,19 @@
 import reflex as rx
 
 from petbits.pages.agendamentos import agendamentos_page
+from petbits.pages.cadastro import cadastro_page
 from petbits.pages.clientes import clientes_page
+from petbits.pages.erros import nao_encontrada_page, sem_permissao_page
 from petbits.pages.funcionarios import funcionarios_page
 from petbits.pages.index import index
+from petbits.pages.login import login_page
 from petbits.pages.pedidos import pedidos_page
 from petbits.pages.pets import pets_page
 from petbits.pages.produtos import produtos_page
 from petbits.pages.prontuarios import prontuarios_page
 from petbits.pages.servicos import servicos_page
 from petbits.states.agendamento_state import AgendamentoState
+from petbits.states.auth_state import AuthState
 from petbits.states.cliente_state import ClienteState
 from petbits.states.dashboard_state import DashboardState
 from petbits.states.funcionario_state import FuncionarioState
@@ -47,57 +51,52 @@ app = rx.App(
     html_lang="pt-BR",
 )
 
+# As nove telas da clínica. `carregar_sessao` vem primeiro em todas: ele
+# revalida o token quando o backend não lembra mais deste navegador.
+#
+# Ele não substitui a guarda de dentro do `load_*`: `rx.redirect` é evento de
+# frontend e não cancela o que já está na fila do backend, então o `load_*`
+# roda de qualquer jeito. Quem barra de fato é o `_token()` lá dentro; este
+# `on_load` só evita a tela piscar antes do redirect.
+PAGINAS_ADMIN = [
+    ("/", index, "Painel", DashboardState.load_dashboard),
+    ("/clientes", clientes_page, "Clientes", ClienteState.load_clientes),
+    ("/pets", pets_page, "Pets", PetState.load_pets),
+    ("/agendamentos", agendamentos_page, "Agendamentos", AgendamentoState.load_agendamentos),
+    ("/prontuarios", prontuarios_page, "Prontuários", ProntuarioState.load_prontuarios),
+    ("/servicos", servicos_page, "Serviços", ServicoState.load_servicos),
+    ("/produtos", produtos_page, "Produtos", ProdutoState.load_produtos),
+    ("/pedidos", pedidos_page, "Pedidos", PedidoState.load_pedidos),
+    ("/funcionarios", funcionarios_page, "Funcionários", FuncionarioState.load_funcionarios),
+]
+
+for rota, componente, titulo, carregar in PAGINAS_ADMIN:
+    app.add_page(
+        componente,
+        route=rota,
+        title=f"PetBits | {titulo}",
+        on_load=[AuthState.carregar_sessao, carregar],
+    )
+
+# Porta de entrada. `redirecionar_se_logado` evita mostrar o formulário a quem
+# já entrou — voltar para o login por engano e ver campos vazios passa a
+# impressão de que a sessão caiu.
 app.add_page(
-    index,
-    route="/",
-    title="PetBits | Painel",
-    on_load=DashboardState.load_dashboard,
+    login_page,
+    route="/login",
+    title="PetBits | Entrar",
+    on_load=AuthState.redirecionar_se_logado,
 )
 app.add_page(
-    clientes_page,
-    route="/clientes",
-    title="PetBits | Clientes",
-    on_load=ClienteState.load_clientes,
+    cadastro_page,
+    route="/cadastro",
+    title="PetBits | Criar conta",
+    on_load=AuthState.redirecionar_se_logado,
+)
+
+app.add_page(
+    sem_permissao_page, route="/sem-permissao", title="PetBits | Área restrita"
 )
 app.add_page(
-    pets_page,
-    route="/pets",
-    title="PetBits | Pets",
-    on_load=PetState.load_pets,
-)
-app.add_page(
-    agendamentos_page,
-    route="/agendamentos",
-    title="PetBits | Agendamentos",
-    on_load=AgendamentoState.load_agendamentos,
-)
-app.add_page(
-    prontuarios_page,
-    route="/prontuarios",
-    title="PetBits | Prontuários",
-    on_load=ProntuarioState.load_prontuarios,
-)
-app.add_page(
-    servicos_page,
-    route="/servicos",
-    title="PetBits | Serviços",
-    on_load=ServicoState.load_servicos,
-)
-app.add_page(
-    produtos_page,
-    route="/produtos",
-    title="PetBits | Produtos",
-    on_load=ProdutoState.load_produtos,
-)
-app.add_page(
-    pedidos_page,
-    route="/pedidos",
-    title="PetBits | Pedidos",
-    on_load=PedidoState.load_pedidos,
-)
-app.add_page(
-    funcionarios_page,
-    route="/funcionarios",
-    title="PetBits | Funcionários",
-    on_load=FuncionarioState.load_funcionarios,
+    nao_encontrada_page, route="/404", title="PetBits | Página não encontrada"
 )
