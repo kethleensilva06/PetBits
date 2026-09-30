@@ -38,7 +38,19 @@ Os nomes de tabela, de campo e os caminhos dos endpoints são exatamente os que
 `petbits/xano.py` espera. Se você alterar algo aqui, altere também lá.
 
 Todos os arquivos foram validados com o parser oficial do Xano (o que vem
-embutido na extensão `xano.xanoscript`).
+embutido na extensão `xano.xanoscript`). Para validar todos de uma vez, antes
+de empurrar:
+
+```bash
+node scripts/validar_xanoscript.mjs apis/pet_bits/*.xs functions/pet_bits/*.xs tables/*.xs
+```
+
+Vale o hábito: o push é irreversível — um arquivo com erro de sintaxe
+substitui um endpoint que funcionava. A extensão só valida o arquivo aberto.
+
+Uma pegadinha que esse validador pega e é fácil de escrever errado: o `else`
+do `conditional` precisa ficar **em linha própria**. `} else {` é erro de
+sintaxe no XanoScript.
 
 ## Como enviar para o Xano
 
