@@ -16,6 +16,12 @@ context: |
     Persistência: Xano (banco e API REST, acessados por HTTP). A aplicação
     não possui banco local nem ORM.
 
+  Constraints:
+    O plano gratuito do Xano aceita 10 requisições a cada 20 segundos, e o
+    limite é da instância, não do API group. Uma tela que consulta muitas
+    tabelas estoura sozinha: considerar o número de requisições ao desenhar
+    qualquer funcionalidade.
+
   Architecture:
     O backend é responsável pelas regras de negócio e pela persistência.
     O frontend não deve ser considerado mecanismo de segurança.

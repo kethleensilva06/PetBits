@@ -11,3 +11,15 @@ reflex.lock/
 .env
 .agents/skills/
 skills-lock.json
+
+# Gerados pela extensão xano.xanoscript ao rodar "Setup Agent Instructions"
+# (ela roda sozinha no login). Contradizem o fluxo do OpenSpec — veja a nota
+# em .github/copilot-instructions.md.
+.claude/agents/
+.codex/
+.cursor/
+.github/agents/
+
+# Estado local da extensão do Xano: identifica a conta e o workspace de quem
+# está trabalhando, e o cache do último pull. Não é decisão do projeto.
+.xano/
