@@ -10,6 +10,14 @@ from petbits.pages.funcionarios import funcionarios_page
 from petbits.pages.index import index
 from petbits.pages.login import login_page
 from petbits.pages.pedidos import pedidos_page
+from petbits.pages.portal import (
+    portal_agendar_page,
+    portal_consultas_page,
+    portal_historico_page,
+    portal_page,
+    portal_pedidos_page,
+    portal_pets_page,
+)
 from petbits.pages.pets import pets_page
 from petbits.pages.produtos import produtos_page
 from petbits.pages.prontuarios import prontuarios_page
@@ -21,6 +29,7 @@ from petbits.states.dashboard_state import DashboardState
 from petbits.states.funcionario_state import FuncionarioState
 from petbits.states.pedido_state import PedidoState
 from petbits.states.pet_state import PetState
+from petbits.states.portal_state import PortalState
 from petbits.states.produto_state import ProdutoState
 from petbits.states.prontuario_state import ProntuarioState
 from petbits.states.servico_state import ServicoState
@@ -100,3 +109,23 @@ app.add_page(
 app.add_page(
     nao_encontrada_page, route="/404", title="PetBits | Página não encontrada"
 )
+
+# O portal do tutor. Mesmo desenho do painel, com uma diferença: a guarda
+# passa `admin=False`, então quem entra é qualquer pessoa logada — e o que ela
+# vê é recortado pela ficha de cliente dela, no servidor.
+PAGINAS_PORTAL = [
+    ("/portal", portal_page, "Portal", PortalState.load_inicio),
+    ("/portal/pets", portal_pets_page, "Meus pets", PortalState.load_pets),
+    ("/portal/agendar", portal_agendar_page, "Marcar consulta", PortalState.load_agendar),
+    ("/portal/consultas", portal_consultas_page, "Minhas consultas", PortalState.load_consultas),
+    ("/portal/historico", portal_historico_page, "Histórico", PortalState.load_historico),
+    ("/portal/pedidos", portal_pedidos_page, "Minhas compras", PortalState.load_compras),
+]
+
+for rota, componente, titulo, carregar in PAGINAS_PORTAL:
+    app.add_page(
+        componente,
+        route=rota,
+        title=f"PetBits | {titulo}",
+        on_load=[AuthState.carregar_sessao, carregar],
+    )
