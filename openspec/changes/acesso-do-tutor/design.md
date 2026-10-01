@@ -73,6 +73,16 @@ tarefa, não um palpite.
 *Por que não confiar só no índice:* porque a resposta depende de um
 comportamento do Xano que ainda não foi medido nesta conta.
 
+**Resultado da medição (tarefa 1.2).** Dois tutores criados sem vínculo
+ficaram com `id_user = 0`, do tipo inteiro — **não** nulo. Um índice único
+sobre `id_user` teria recusado o segundo tutor de balcão. Portanto o índice
+permanece não único, e a garantia fica inteiramente no código.
+
+Consequência que precisa ser carregada adiante: **a change que introduzir o
+vínculo de um tutor de balcão a uma conta existente terá de fazer essa
+checagem no seu próprio endpoint** — não há índice protegendo. Está anotado
+aqui porque é o tipo de garantia que se perde entre uma change e outra.
+
 ### D4 — Cadastro: conferir tudo antes de gravar qualquer coisa
 
 Ordem: verificar o e-mail, verificar o documento, **então** criar a conta e
@@ -80,8 +90,16 @@ em seguida o tutor. Conferir o documento antes de criar a conta é o que
 cumpre o cenário "recusa não deixa conta órfã" — invertido, a recusa por
 documento duplicado aconteceria com a conta já criada.
 
-Se o Xano oferecer `transaction` com rollback real, ela entra como reforço;
-isso também é tarefa de verificação, não suposição.
+**Resultado da medição (tarefa 2.7).** `db.transaction { stack { ... } }`
+faz rollback de verdade: um endpoint descartável que gravava uma linha e em
+seguida lançava erro terminou com a tabela intacta. As duas gravações do
+cadastro passaram a viver dentro de uma transação.
+
+Com isso, "recusa não deixa conta órfã" deixa de depender da ordem das
+conferências e vira **garantia estrutural**: se a segunda gravação falhar por
+qualquer motivo, a primeira é desfeita. A ordem foi mantida mesmo assim,
+porque recusar antes de gravar devolve uma mensagem melhor do que recusar
+depois.
 
 ### D5 — Sessão em armazenamento local do navegador
 
@@ -135,10 +153,12 @@ uma vez, não espalhada pelas telas.
 
 ## Risks / Trade-offs
 
-**Conta órfã numa corrida** → D4 estreita muito a janela, mas entre conferir
-e gravar cabe outra requisição. O índice único de `email` na tabela `user` é
-o anteparo real: a segunda gravação falha. Fica registrado que a janela
-existe.
+**Conta órfã numa corrida** → resolvido melhor do que o previsto: a medição
+da tarefa 2.7 mostrou que `db.transaction` faz rollback real, então as duas
+gravações são atômicas. A janela entre conferir e gravar ainda existe para a
+*mensagem* (duas pessoas podem passar pela conferência de e-mail ao mesmo
+tempo), mas o índice único de `email` faz a segunda gravação falhar e a
+transação desfaz tudo. Não sobra conta órfã em nenhum caminho.
 
 **A verificação do nulo (D3) pode contrariar o índice único desejado** → por
 isso a garantia primária é o endpoint, que funciona nos dois casos. O índice

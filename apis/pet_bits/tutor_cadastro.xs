@@ -45,29 +45,55 @@ query "tutor/cadastro" verb=POST {
       error = "Ja existe um cadastro com este documento. Procure a clinica para liberar o seu acesso."
     }
 
-    // O papel e fixado aqui, no servidor. Nenhum valor vindo do corpo da
-    // requisicao participa desta decisao.
-    db.add user {
-      data = {
-        created_at: "now"
-        name      : $input.nome
-        email     : $input.email
-        password  : $input.password
-        role      : "member"
-      }
-    } as $user
+    // As duas gravacoes vao juntas ou nao vao. Medido na tarefa 2.7: o
+    // db.transaction do Xano faz rollback de verdade -- um erro depois do
+    // primeiro db.add desfaz o primeiro db.add. Isso torna "recusa nao deixa
+    // conta orfa" uma garantia estrutural, e nao so uma questao de ordem.
+    db.transaction {
+      stack {
+        // O papel e fixado aqui, no servidor. Nenhum valor vindo do corpo da
+        // requisicao participa desta decisao.
+        db.add user {
+          data = {
+            created_at: "now"
+            name      : $input.nome
+            email     : $input.email
+            password  : $input.password
+            role      : "member"
+          }
+        } as $user
 
-    db.add tutor {
-      data = {
-        created_at: "now"
-        nome      : $input.nome
-        documento : $input.documento
-        email     : $input.email
-        telefone  : $input.telefone
-        endereco  : $input.endereco
-        id_user   : $user.id
+        // "No maximo um tutor por conta" nao pode ser garantido por indice: a
+        // medicao da tarefa 1.2 mostrou que o Xano grava 0, e nao nulo, quando o
+        // vinculo e omitido -- um indice unico sobre id_user recusaria o segundo
+        // tutor de balcao. Entao a garantia mora aqui.
+        //
+        // Hoje a conta acabou de ser criada e a checagem nunca falha. Ela existe
+        // porque este endpoint e o modelo do qual o vinculo de tutor de balcao
+        // vai ser derivado, e e ali que ela passa a ser necessaria de verdade.
+        db.has tutor {
+          field_name = "id_user"
+          field_value = $user.id
+        } as $conta_ja_vinculada
+
+        precondition ($conta_ja_vinculada == false) {
+          error_type = "accessdenied"
+          error = "Esta conta ja esta vinculada a um cadastro de tutor."
+        }
+
+        db.add tutor {
+          data = {
+            created_at: "now"
+            nome      : $input.nome
+            documento : $input.documento
+            email     : $input.email
+            telefone  : $input.telefone
+            endereco  : $input.endereco
+            id_user   : $user.id
+          }
+        } as $tutor
       }
-    } as $tutor
+    }
 
     // Mesmo formato de token do auth/login do template: 24h, sem extras. O
     // papel fica fora do token de proposito -- dentro dele congelaria por 24
