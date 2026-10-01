@@ -24,21 +24,21 @@
 
 ## 4. Sessão
 
-- [ ] 4.1 Escrever o State de sessão guardando token e perfil no armazenamento local do navegador, com a marca de validação fora dele (D5); verificar os três cenários da spec: recarregar a página, abrir outra aba e reiniciar o servidor de aplicação
-- [ ] 4.2 Implementar sair; verificar que o armazenamento local fica vazio, que a pessoa volta à entrada e que os campos do formulário estão limpos
-- [ ] 4.3 Tratar credencial expirada separadamente de falha de comunicação; verificar substituindo o token guardado por um valor inválido (deve cair na entrada com aviso de sessão expirada) e depois deixando o backend inacessível (a sessão deve **permanecer** ativa)
+- [x] 4.1 Escrever o State de sessão guardando token e perfil no armazenamento local do navegador, com a marca de validação fora dele (D5); verificar os três cenários da spec: recarregar a página, abrir outra aba e reiniciar o servidor de aplicação
+- [x] 4.2 Implementar sair; verificar que o armazenamento local fica vazio, que a pessoa volta à entrada e que os campos do formulário estão limpos
+- [x] 4.3 Tratar credencial expirada separadamente de falha de comunicação; verificar substituindo o token guardado por um valor inválido (deve cair na entrada com aviso de sessão expirada) e depois deixando o backend inacessível (a sessão deve **permanecer** ativa)
 
 ## 5. Telas e rotas
 
-- [ ] 5.1 Construir a tela de cadastro com os campos da spec; verificar que um cadastro completo leva à tela pós-login já autenticado
-- [ ] 5.2 Construir a tela de entrada; verificar que senha errada e e-mail inexistente produzem **a mesma** mensagem, sem permitir distinguir os casos
-- [ ] 5.3 Construir a tela pós-login que cumprimenta pelo nome; verificar que exibe o nome de quem entrou
-- [ ] 5.4 Implementar a guarda com retorno antecipado dentro do carregamento (D6); verificar que um visitante em rota privada vai para a entrada **e** que nenhuma requisição daquela rota chega ao backend
-- [ ] 5.5 Registrar as rotas na aplicação; verificar que cada endereço abre a tela correta e que a aplicação sobe sem erro de compilação
-- [ ] 5.6 Descrever o primeiro acesso no `README.md` — cadastrar-se e entrar; verificar seguindo o texto num navegador sem sessão e chegando à tela pós-login
+- [x] 5.1 Construir a tela de cadastro com os campos da spec; verificar que um cadastro completo leva à tela pós-login já autenticado
+- [x] 5.2 Construir a tela de entrada; verificar que senha errada e e-mail inexistente produzem **a mesma** mensagem, sem permitir distinguir os casos
+- [x] 5.3 Construir a tela pós-login que cumprimenta pelo nome; verificar que exibe o nome de quem entrou
+- [x] 5.4 Implementar a guarda com retorno antecipado dentro do carregamento (D6); verificar que um visitante em rota privada vai para a entrada **e** que nenhuma requisição daquela rota chega ao backend
+- [x] 5.5 Registrar as rotas na aplicação; verificar que cada endereço abre a tela correta e que a aplicação sobe sem erro de compilação
+- [x] 5.6 Descrever o primeiro acesso no `README.md` — cadastrar-se e entrar; verificar seguindo o texto num navegador sem sessão e chegando à tela pós-login
 
 ## 6. Verificação de integração
 
-- [ ] 6.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
+- [x] 6.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
 - [x] 6.2 Conferir por requisição crua, fora da interface, que os endpoints privados recusam sem credencial e que adulterar o papel no armazenamento local não concede acesso nenhum
 - [x] 6.3 Contar as requisições ao Xano ao entrar e ao se cadastrar; verificar que nenhuma das duas operações passa de duas requisições
