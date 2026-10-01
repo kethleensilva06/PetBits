@@ -52,11 +52,28 @@ A aplicação fica em http://localhost:3000.
 > **Windows:** se o `reflex run` abortar com `UnicodeEncodeError: 'charmap'`,
 > o console está em cp1252. Rode com `$env:PYTHONUTF8=1; reflex run`.
 
+## Primeiro acesso
+
+A primeira tela é a de entrada, porque o sistema não tem página aberta.
+
+1. Clique em **Cadastre-se** e preencha nome, e-mail, documento e senha.
+   A senha precisa de pelo menos 8 caracteres, com uma letra e um número.
+2. Ao concluir, você já entra autenticado e cai na tela inicial.
+3. Para voltar depois, use **Entrar** com o mesmo e-mail e senha.
+
+A conta criada pelo site é sempre de **tutor** — é isso que permite o
+cadastro ser público. O acesso da equipe da clínica chega numa change
+própria.
+
+A sessão sobrevive a recarregar a página, a abrir outra aba e a reiniciar o
+`reflex run`. Sair limpa tudo.
+
 ## Ciclo de desenvolvimento
 
 ```text
 Explore → Propose → Review → Apply → Archive → próxima change
 ```
 
-O estado atual: a fundação de contexto está pronta e a aplicação está em
-branco. As funcionalidades entram uma change por vez.
+Toda modificação do projeto passa por uma change e termina registrada em
+`openspec/changes/archive/`. O que já foi entregue está consolidado em
+`openspec/specs/`.

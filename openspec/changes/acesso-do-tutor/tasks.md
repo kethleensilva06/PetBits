@@ -40,5 +40,5 @@
 ## 6. Verificação de integração
 
 - [ ] 6.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
-- [ ] 6.2 Conferir por requisição crua, fora da interface, que os endpoints privados recusam sem credencial e que adulterar o papel no armazenamento local não concede acesso nenhum
-- [ ] 6.3 Contar as requisições ao Xano ao entrar e ao se cadastrar; verificar que nenhuma das duas operações passa de duas requisições
+- [x] 6.2 Conferir por requisição crua, fora da interface, que os endpoints privados recusam sem credencial e que adulterar o papel no armazenamento local não concede acesso nenhum
+- [x] 6.3 Contar as requisições ao Xano ao entrar e ao se cadastrar; verificar que nenhuma das duas operações passa de duas requisições
