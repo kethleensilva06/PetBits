@@ -326,9 +326,9 @@ erro.
 `output` obrigatório, e não uma boa prática.
 
 **`lock = true` trava de verdade — e isso tem um custo que precisa estar
-escrito.** A medição da tarefa 1.2 não chegou ao número que eu queria (duas
-chamadas concorrentes cronometradas), mas produziu evidência mais forte e menos
-confortável: um endpoint descartável que tomava `lock = true` dentro de uma
+escrito.** As duas chamadas concorrentes da tarefa 1.2 foram disparadas, mas
+não produziram um número: elas travaram uma na outra. O que ficou estabelecido
+é mais forte do que o cronômetro daria, e menos confortável: um endpoint descartável que tomava `lock = true` dentro de uma
 transação e dormia 2 segundos teve a requisição abortada do lado do cliente, e a
 linha ficou **inacessível para escrita por mais de dez minutos** — leituras
 continuaram normais, toda tentativa de alteração ou remoção expirou.
@@ -418,6 +418,29 @@ escreve não digitar a linha; aqui a coluna simplesmente não é uma entrada.
 `db.transaction` **é** visível no `response` fora dele — o `PATCH` responde com
 o registro atualizado, montado de dentro da transação. O plano B previsto no
 design não foi necessário.
+
+### D13 — Data de calendário e instante não se leem do mesmo jeito
+
+A verificação no navegador pegou um defeito que teria passado: uma data de
+nascimento informada como `2022-03-15` aparecia na tela como **14/03/2022** —
+sempre um dia a menos.
+
+O Xano recebe `2022-03-15` e guarda a meia-noite **UTC** daquele dia
+(`1647302400000`). Lendo esse instante em hora local (UTC−3), o resultado é
+14/03 às 21:00, e a data de calendário sai errada.
+
+A regra, que vale para o projeto inteiro:
+
+- **Data de calendário** — nascimento, vencimento, retorno — é um dia, não um
+  instante. Grava-se e lê-se em **UTC**, sem conversão de fuso. Converter é o
+  que introduz o erro.
+- **Instante** — o horário de um atendimento, o momento de uma compra — é um
+  ponto no tempo. Aí o fuso importa e a conversão é obrigatória, senão uma
+  consulta marcada para as 09:00 é gravada como 09:00 UTC e volta como 06:00.
+
+A change de agendamento tem campos dos **dois** tipos na mesma tela. Misturar
+as duas regras é o erro mais fácil de cometer ali, e o mais difícil de notar:
+ninguém recebe erro, a data só fica um dia fora.
 
 ## Risks / Trade-offs
 

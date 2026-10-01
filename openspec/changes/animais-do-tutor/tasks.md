@@ -7,7 +7,7 @@ parser aceita, mas o motor do Xano nunca foi exercitado nesta conta — e a
 abordagem inteira depende da primeira.
 
 - [x] 1.1 Medir se `$db.<tabela_juntada>.<coluna>` no `where` de topo funciona em runtime: endpoint descartável com `join` até `tutor` e `where` sobre a coluna da tabela juntada; verificar que ele devolve só as linhas do dono, com duas fichas de tutor na base — se não funcionar, o desenho muda e a change volta ao design
-- [ ] 1.2 Medir se `lock = true` numa `db.query` dentro de `db.transaction` segura a linha até o commit; verificar com duas requisições concorrentes e anotar o resultado no design
+- [x] 1.2 Medir se `lock = true` numa `db.query` dentro de `db.transaction` segura a linha até o commit; verificar com duas requisições concorrentes e anotar o resultado no design
 - [x] 1.3 Medir se uma variável criada dentro do `stack` de `db.transaction` é visível no `response` fora dele; verificar chamando o endpoint descartável e, se não for, registrar no design qual plano B será usado
 - [x] 1.4 Remover os endpoints descartáveis das medições; verificar pela listagem de endpoints do grupo que nenhum sobrou
 
@@ -51,17 +51,17 @@ abordagem inteira depende da primeira.
 
 ## 7. Aplicação Reflex
 
-- [ ] 7.1 Acrescentar as operações de animal ao cliente HTTP, com token obrigatório por chamada; verificar que uma chamada sem token falha na hora, e não com requisição anônima
-- [ ] 7.2 Escrever o State da tela de animais, carregando a lista pela guarda de sessão existente; verificar que sem sessão nenhuma requisição ao Xano sai
-- [ ] 7.3 Construir a tela de animais com a lista e o formulário de cadastro; verificar cadastrando um animal e vendo-o aparecer
-- [ ] 7.4 Permitir editar um animal, enviando o registro completo que a tela já tem em mãos (D4 do dossiê — evita apagar campo por omissão); verificar editando só o nome e conferindo que peso e observações sobrevivem
-- [ ] 7.5 Trocar o cartão de boas-vindas da tela inicial pela lista de animais; verificar que um tutor sem animais vê um convite a cadastrar, não uma tela vazia ou um erro
-- [ ] 7.6 Registrar a tela de animais no `README.md`, dentro do primeiro acesso; verificar seguindo o texto num navegador sem sessão
+- [x] 7.1 Acrescentar as operações de animal ao cliente HTTP, com token obrigatório por chamada; verificar que uma chamada sem token falha na hora, e não com requisição anônima
+- [x] 7.2 Escrever o State da tela de animais, carregando a lista pela guarda de sessão existente; verificar que sem sessão nenhuma requisição ao Xano sai
+- [x] 7.3 Construir a tela de animais com a lista e o formulário de cadastro; verificar cadastrando um animal e vendo-o aparecer
+- [x] 7.4 Permitir editar um animal, enviando o registro completo que a tela já tem em mãos (D4 do dossiê — evita apagar campo por omissão); verificar editando só o nome e conferindo que peso e observações sobrevivem
+- [x] 7.5 Trocar o cartão de boas-vindas da tela inicial pela lista de animais; verificar que um tutor sem animais vê um convite a cadastrar, não uma tela vazia ou um erro
+- [x] 7.6 Registrar a tela de animais no `README.md`, dentro do primeiro acesso; verificar seguindo o texto num navegador sem sessão
 
 ## 8. Verificação de integração
 
 - [ ] 8.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta, com duas contas; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
-- [ ] 8.2 Conferir por requisição crua que as quatro operações de animal recusam sem credencial e com credencial forjada
-- [ ] 8.3 Verificar que uma expressão enviada como busca ou ordenação não altera o filtro de dono, e que página zero ou negativa é recusada sem erro interno
-- [ ] 8.4 Contar as requisições ao Xano ao abrir a tela de animais; verificar que não passa de duas
+- [x] 8.2 Conferir por requisição crua que as quatro operações de animal recusam sem credencial e com credencial forjada
+- [x] 8.3 Verificar que uma expressão enviada como busca ou ordenação não altera o filtro de dono, e que página zero ou negativa é recusada sem erro interno
+- [x] 8.4 Contar as requisições ao Xano ao abrir a tela de animais; verificar que não passa de duas
 - [ ] 8.5 Remover todos os dados de teste criados e confirmar que a base ficou no estado anterior

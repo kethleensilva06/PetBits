@@ -61,6 +61,10 @@ A primeira tela é a de entrada, porque o sistema não tem página aberta.
 2. Ao concluir, você já entra autenticado e cai na tela inicial.
 3. Para voltar depois, use **Entrar** com o mesmo e-mail e senha.
 
+Na tela inicial ficam os seus animais. Use **Cadastrar animal** para o
+primeiro, e **Editar** para alterar qualquer um deles. Você vê apenas os seus:
+quem decide isso é o backend, a partir de quem está autenticado.
+
 A conta criada pelo site é sempre de **tutor** — é isso que permite o
 cadastro ser público. O acesso da equipe da clínica chega numa change
 própria.

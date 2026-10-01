@@ -253,3 +253,42 @@ async def cadastrar_tutor(
 async def minha_ficha(token: str) -> Optional[dict]:
     """A ficha de tutor de quem está logado, ou None se a conta não tiver."""
     return await _requisitar("GET", "/me/tutor", token=token)
+
+
+# --- animais ------------------------------------------------------------------
+#
+# O `token` e nomeado e **obrigatorio**, sem valor padrao. Esquece-lo falha na
+# hora com TypeError, em vez de sair uma requisicao anonima que o backend
+# recusa com 401 e faz a aplicacao deslogar sozinha -- o tipo de defeito que
+# aparece como "as vezes ele me desconecta" e custa caro para achar.
+#
+# Nenhuma destas funcoes envia o dono: quem decide de quem e o animal e o
+# backend, a partir da credencial.
+
+
+async def listar_animais(*, token: str) -> list[dict]:
+    """Os animais do tutor autenticado. Lista vazia quando nao ha nenhum."""
+    dados = await _requisitar("GET", "/pet", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def obter_animal(animal_id: int, *, token: str) -> Optional[dict]:
+    """Um animal do tutor, ou None se nao for dele (ou nao existir)."""
+    return await _requisitar("GET", f"/pet/{animal_id}", token=token)
+
+
+async def criar_animal(dados: dict, *, token: str) -> Optional[dict]:
+    """Cria um animal para o tutor autenticado."""
+    return await _requisitar("POST", "/pet", token=token, json=dados)
+
+
+async def atualizar_animal(
+    animal_id: int, dados: dict, *, token: str
+) -> Optional[dict]:
+    """Altera os campos informados de um animal do tutor.
+
+    So o que estiver em `dados` e alterado: o backend monta a gravacao a partir
+    do corpo recebido, entao um campo ausente aqui permanece como esta no
+    banco. E o que impede uma edicao de apagar observacoes clinicas.
+    """
+    return await _requisitar("PATCH", f"/pet/{animal_id}", token=token, json=dados)

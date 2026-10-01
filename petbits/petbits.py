@@ -10,6 +10,7 @@ import reflex as rx
 from petbits.pages.entrar import cadastro_page, entrar_page
 from petbits.pages.inicio import inicio_page
 from petbits.states.auth_state import AuthState
+from petbits.states.pet_state import PetState
 
 app = rx.App()
 
@@ -21,7 +22,7 @@ app.add_page(
     inicio_page,
     route="/",
     title="PetBits",
-    on_load=AuthState.carregar_sessao,
+    on_load=[AuthState.carregar_sessao, PetState.carregar],
 )
 
 # Portas de entrada. `redirecionar_se_logado` evita mostrar o formulário a
