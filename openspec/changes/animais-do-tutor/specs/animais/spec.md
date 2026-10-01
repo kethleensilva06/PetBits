@@ -167,8 +167,8 @@ MUST acontecer no backend.
 
 ### Requirement: Entradas de busca e ordenação não alteram o filtro de dono
 
-Quando a listagem aceitar busca, ordenação ou paginação, esses valores SHALL
-ser interpretados pelo servidor. Expressões recebidas do cliente MUST NOT
+Quando a listagem aceitar busca ou ordenação, esses valores SHALL ser
+interpretados pelo servidor. Expressões recebidas do cliente MUST NOT
 participar da condição que determina o dono.
 
 #### Scenario: Valor de busca não escapa para a condição de dono
@@ -177,9 +177,3 @@ participar da condição que determina o dono.
   condição da consulta
 - **THEN** ele é tratado como texto a procurar
 - **AND** a listagem continua restrita aos animais do tutor
-
-#### Scenario: Página inválida
-
-- **WHEN** a listagem recebe um número de página zero ou negativo
-- **THEN** a requisição é recusada com erro de dados inválidos, sem erro
-  interno

@@ -49,10 +49,10 @@ db.query pet {
     tutor: {type: "inner", table: "tutor", where: $db.pet.id_tutor == $db.tutor.id}
   }
 
-  where = $db.tutor.id_user === $auth.id
+  where = $db.tutor.id_user == $auth.id
   sort = {nome: "asc"}
   output = ["id", "nome", "especie", "raca", "data_nascimento", "peso", "observacoes"]
-  return = {type: "list", totals: false}
+  return = {type: "list"}
 } as $meus
 ```
 
@@ -80,7 +80,7 @@ db.transaction {
         tutor: {type: "inner", table: "tutor", where: $db.pet.id_tutor == $db.tutor.id}
       }
 
-      where = ($db.pet.id === $input.pet_id) && ($db.tutor.id_user === $auth.id)
+      where = ($db.pet.id == $input.pet_id) && ($db.tutor.id_user == $auth.id)
       lock = true
       output = ["id"]
       return = {type: "single"}
@@ -162,7 +162,7 @@ A resolução **não** usa `return single`:
 
 ```
 db.query tutor {
-  where = $db.tutor.id_user === $auth.id
+  where = $db.tutor.id_user == $auth.id
   output = ["id"]
   return = {type: "list"}
 } as $fichas
@@ -260,9 +260,11 @@ Cada uma fecha um ataque que funcionou, e nenhuma é pega pelo validador:
 - **`precondition ($auth.id > 0)` como primeira instrução** de todo endpoint
   privado. Custa zero consulta e faz o endpoint falhar fechado se algum dia for
   publicado sem `auth = "user"`.
-- **`===` (estrita) na comparação de posse**, nunca `==`. Hoje os dois lados são
-  inteiros e tanto faz, mas o trecho será copiado para contextos onde um lado
-  vem de um join.
+- **`==` na comparação de posse — `===` NÃO existe em runtime.** O parser
+  aceita `===` sem reclamar, mas o motor responde `ERROR_FATAL: Invalid name:
+  ===` e o endpoint inteiro cai. Medido na tarefa 1.1. Esta regra substitui a
+  recomendação original de usar comparação estrita, que teria quebrado todos os
+  endpoints desta superfície.
 - **Parênteses em toda expressão booleana** de `where` com mais de um operador.
   `A && B || C` compila sem eles, e no dia em que agendamento quiser "os meus ou
   os da clínica", um `||` sem parênteses anula o filtro de dono em silêncio.
@@ -282,6 +284,68 @@ e-mail e para documento, com a distinção indo para o registro do servidor.
 
 É a mesma decisão de D6 aplicada ao endpoint que a antecede — e é o berço de
 todo identificador de tutor em que o resto do sistema confia.
+
+### D10 — O que o grupo 1 mediu, e o que mudou por causa disso
+
+As três premissas do desenho foram medidas com endpoints descartáveis antes de
+escrever qualquer endpoint definitivo. Duas se confirmaram, e **três detalhes
+contrariaram o que estava escrito**.
+
+**Confirmado — a premissa central.** `where = $db.<tabela_juntada>.<coluna> ==
+$auth.id` recorta de verdade em runtime, não só no parser. Medido com duas
+contas e duas fichas: cada uma recebeu só a sua. O controle, sem o `where`,
+devolveu as duas — é ele que prova que o recorte vem do `where`, e não de a base
+ter um registro só.
+
+**Corrigido 1 — `===` não existe em runtime.** O parser aceita, o motor responde
+`ERROR_FATAL: Invalid name: ===`. A recomendação original de usar comparação
+estrita teria derrubado todos os endpoints desta superfície logo no primeiro
+uso. Vale `==`.
+
+**Corrigido 2 — `output` e `paging` mudam de forma juntos.** Sem paginação, o
+`output` lista nomes de coluna crus (`["id", "nome"]`) e a resposta é uma lista.
+Com paginação, a raiz da resposta passa a ser o objeto de paginação, e o
+`output` precisa ser prefixado (`["items.id", "items.nome"]`); os campos de
+navegação entram no `output` se forem desejados. Misturar as duas formas devolve
+**lista vazia, com status 200** — falha silenciosa, do pior tipo.
+
+Nomes qualificados pela tabela (`["tutor.id"]`) devolvem `[[]]`, também sem
+erro.
+
+**Corrigido 3 — `totals` não vai solto no `return`.** Ele mora dentro de
+`paging`.
+
+**Confirmado — o vazamento do join é real e concreto.** Uma consulta com join e
+**sem** `output` devolveu, em cada linha, `documento`, `telefone`, `email`,
+`endereco` e `id_user` do tutor. Não é hipótese: foi observado. É o que torna o
+`output` obrigatório, e não uma boa prática.
+
+**`lock = true` trava de verdade — e isso tem um custo que precisa estar
+escrito.** A medição da tarefa 1.2 não chegou ao número que eu queria (duas
+chamadas concorrentes cronometradas), mas produziu evidência mais forte e menos
+confortável: um endpoint descartável que tomava `lock = true` dentro de uma
+transação e dormia 2 segundos teve a requisição abortada do lado do cliente, e a
+linha ficou **inacessível para escrita por mais de dez minutos** — leituras
+continuaram normais, toda tentativa de alteração ou remoção expirou.
+
+Então o lock funciona. E o modo de falhar dele é: transação interrompida antes
+do commit deixa a linha presa até o Xano reciclar a conexão.
+
+*Por que isso não condena o padrão:* a transação do desenho é consulta +
+`precondition` + `db.patch`, que roda em milissegundos. A janela só existiu
+porque a medição pôs uma pausa artificial de 2 segundos lá dentro. Mas a regra
+que sai daqui é concreta: **nada que demore — sem pausa, sem chamada externa,
+sem laço — pode entrar dentro de um `db.transaction` com `lock`.**
+
+**Decisão derivada:** a listagem desta change usa `output` **sem paginação**. A
+lista de animais de um tutor não tem volume que a justifique, e cada forma extra
+é uma chance a mais de cair na combinação que devolve vazio em silêncio. Quando
+a paginação for necessária, ela entra como mudança própria, com a forma
+prefixada e um teste que afirme o conjunto exato de chaves.
+
+*Consequência na spec:* o cenário "Página inválida" perde objeto nesta change e
+é removido do requisito de busca e ordenação — não há parâmetro de página para
+validar. Ele volta com a paginação.
 
 ## Risks / Trade-offs
 

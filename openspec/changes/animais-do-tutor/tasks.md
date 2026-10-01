@@ -6,10 +6,10 @@ Antes de escrever qualquer endpoint definitivo. As três premissas abaixo o
 parser aceita, mas o motor do Xano nunca foi exercitado nesta conta — e a
 abordagem inteira depende da primeira.
 
-- [ ] 1.1 Medir se `$db.<tabela_juntada>.<coluna>` no `where` de topo funciona em runtime: endpoint descartável com `join` até `tutor` e `where` sobre a coluna da tabela juntada; verificar que ele devolve só as linhas do dono, com duas fichas de tutor na base — se não funcionar, o desenho muda e a change volta ao design
+- [x] 1.1 Medir se `$db.<tabela_juntada>.<coluna>` no `where` de topo funciona em runtime: endpoint descartável com `join` até `tutor` e `where` sobre a coluna da tabela juntada; verificar que ele devolve só as linhas do dono, com duas fichas de tutor na base — se não funcionar, o desenho muda e a change volta ao design
 - [ ] 1.2 Medir se `lock = true` numa `db.query` dentro de `db.transaction` segura a linha até o commit; verificar com duas requisições concorrentes e anotar o resultado no design
 - [ ] 1.3 Medir se uma variável criada dentro do `stack` de `db.transaction` é visível no `response` fora dele; verificar chamando o endpoint descartável e, se não for, registrar no design qual plano B será usado
-- [ ] 1.4 Remover os endpoints descartáveis das medições; verificar pela listagem de endpoints do grupo que nenhum sobrou
+- [x] 1.4 Remover os endpoints descartáveis das medições; verificar pela listagem de endpoints do grupo que nenhum sobrou
 
 ## 2. Tabela de animais
 
