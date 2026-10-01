@@ -19,8 +19,8 @@ abordagem inteira depende da primeira.
 
 ## 3. Resolver o tutor de quem escreve
 
-- [ ] 3.1 Escrever a função reutilizável que resolve o tutor a partir do `$auth.id`, com `return list` e guarda de ambiguidade `== 1` (D4), falhando alto para 0 e para 2 ou mais; verificar com o parser oficial
-- [ ] 3.2 Empurrar e exercitar os três casos: conta com uma ficha devolve o identificador dela; conta sem ficha é recusada com mensagem sobre a própria conta; verificar criando temporariamente uma segunda ficha na mesma conta que o caso ambíguo também é recusado, e remover a ficha extra depois
+- [x] 3.1 Escrever a função reutilizável que resolve o tutor a partir do `$auth.id`, com `return list` e guarda de ambiguidade `== 1` (D4), falhando alto para 0 e para 2 ou mais; verificar com o parser oficial
+- [x] 3.2 Empurrar e exercitar os três casos: conta com uma ficha devolve o identificador dela; conta sem ficha é recusada com mensagem sobre a própria conta; verificar criando temporariamente uma segunda ficha na mesma conta que o caso ambíguo também é recusado, e remover a ficha extra depois
 
 ## 4. Listagem e leitura por identificador
 

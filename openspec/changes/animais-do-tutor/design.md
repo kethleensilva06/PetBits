@@ -162,16 +162,21 @@ A resolução **não** usa `return single`:
 
 ```
 db.query tutor {
-  where = $db.tutor.id_user == $auth.id
+  where = $db.tutor.id_user == $input.user_id
   output = ["id"]
   return = {type: "list"}
 } as $fichas
 
-precondition (($fichas.items|count) == 1) {
+precondition (($fichas|count) == 1) {
   error_type = "accessdenied"
   error = "Esta conta nao esta vinculada a um unico cadastro de tutor."
 }
 ```
+
+**Correção de forma, medida no grupo 3:** com `return = {type: "list"}` e sem
+paginação o resultado é uma **lista nua**, não um objeto — então a contagem é
+`$fichas|count`, e não `$fichas.items|count`. A forma com `.items` só vale
+quando há paginação, pelo mesmo motivo que muda o `output` (D10).
 
 *Por quê:* `tutor.id_user` tem índice **não único** (change anterior, D3). Duas
 fichas na mesma conta fariam o `return single` escolher uma arbitrariamente e
