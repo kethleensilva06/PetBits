@@ -2,13 +2,13 @@
 
 ## 1. Registro de tutor no Xano
 
-- [ ] 1.1 Escrever `tables/tutor.xs` com nome e documento obrigatórios, contato opcional e a coluna de vínculo opcional com `user` (D2); verificar rodando o parser oficial do XanoScript sobre o arquivo e obtendo zero erros
+- [x] 1.1 Escrever `tables/tutor.xs` com nome e documento obrigatórios, contato opcional e a coluna de vínculo opcional com `user` (D2); verificar rodando o parser oficial do XanoScript sobre o arquivo e obtendo zero erros
 - [ ] 1.2 Empurrar a tabela e medir o que o Xano grava na coluna de vínculo quando ela é omitida — criar dois tutores sem vínculo e ler os valores crus; verificar que os dois existem e anotar no design (seção D3) se o valor é nulo ou um padrão do tipo
 - [ ] 1.3 Declarar o índice único sobre o documento e, conforme o resultado de 1.2, o índice do vínculo; verificar que gravar documento repetido é recusado e que dois tutores sem vínculo coexistem
 
 ## 2. Cadastro e ficha própria
 
-- [ ] 2.1 Escrever o endpoint `POST /tutor/cadastro` na ordem do D4 — conferir e-mail, conferir documento, criar a conta, criar o tutor, devolver o token; verificar com o parser oficial
+- [x] 2.1 Escrever o endpoint `POST /tutor/cadastro` na ordem do D4 — conferir e-mail, conferir documento, criar a conta, criar o tutor, devolver o token; verificar com o parser oficial
 - [ ] 2.2 Empurrar o endpoint e exercitar o caminho feliz; verificar por leitura direta das tabelas que a conta e a ficha existem e estão vinculadas entre si
 - [ ] 2.3 Exercitar a recusa por e-mail já cadastrado; verificar que a resposta informa o motivo e que nenhum registro novo foi criado
 - [ ] 2.4 Exercitar a recusa por documento já cadastrado; verificar que **nenhuma conta de acesso ficou criada** — é o cenário "recusa não deixa conta órfã"
@@ -18,9 +18,9 @@
 
 ## 3. Cliente HTTP da aplicação
 
-- [ ] 3.1 Instalar no `.venv` uma biblioteca HTTP assíncrona (D8) e registrá-la em `requirements.txt`; verificar que o import funciona e que a versão aparece no arquivo
-- [ ] 3.2 Escrever o módulo cliente com os dois base URLs, token como argumento nomeado obrigatório (D7) e hierarquia de erro que separa credencial inválida de falha de comunicação; verificar chamando o login com senha errada e conferindo que o tipo de erro é o de credencial, não o de rede
-- [ ] 3.3 Registrar no próprio módulo o mapeamento de papéis do D9 (`member` é tutor, `admin` é equipe) e concentrar a tradução num só ponto; verificar que nenhuma outra parte do código compara com as strings cruas
+- [x] 3.1 Instalar no `.venv` uma biblioteca HTTP assíncrona (D8) e registrá-la em `requirements.txt`; verificar que o import funciona e que a versão aparece no arquivo
+- [x] 3.2 Escrever o módulo cliente com os dois base URLs, token como argumento nomeado obrigatório (D7) e hierarquia de erro que separa credencial inválida de falha de comunicação; verificar chamando o login com senha errada e conferindo que o tipo de erro é o de credencial, não o de rede
+- [x] 3.3 Registrar no próprio módulo o mapeamento de papéis do D9 (`member` é tutor, `admin` é equipe) e concentrar a tradução num só ponto; verificar que nenhuma outra parte do código compara com as strings cruas
 
 ## 4. Sessão
 
