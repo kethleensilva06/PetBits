@@ -27,22 +27,43 @@ query "tutor/cadastro" verb=POST {
       field_value = $input.email
     } as $email_existe
 
-    precondition ($email_existe == false) {
-      error_type = "accessdenied"
-      error = "Ja existe uma conta com este e-mail."
-    }
-
     db.has tutor {
       field_name = "documento"
       field_value = $input.documento
     } as $documento_existe
 
-    // Nao vinculamos automaticamente a uma ficha existente: quem soubesse o
-    // documento de outra pessoa passaria a ver os animais e o historico dela.
-    // O vinculo de um tutor de balcao e feito pela clinica.
-    precondition ($documento_existe == false) {
+    // As duas recusas saem IGUAIS -- mesma mensagem, mesmo error_type, logo
+    // mesmo status. Este endpoint e PUBLICO: distinguir "e-mail em uso" de
+    // "documento em uso" confirmaria, sem token nenhum, se um CPF alvo e
+    // cliente da clinica. Numa clinica veterinaria isso e dado de saude por
+    // inferencia.
+    //
+    // E a mesma decisao que o resto desta change aplica a leitura de animais
+    // (design.md, D6), trazida para o endpoint que antecede tudo: e dele que
+    // nasce todo identificador de tutor em que o sistema depois confia.
+    //
+    // O motivo especifico nao se perde: vai para o event_log, onde serve ao
+    // diagnostico sem servir a quem esta sondando. Diagnostico pelo registro,
+    // privacidade pela resposta.
+    conditional {
+      if ($email_existe == true || $documento_existe == true) {
+        function.run "Quick Start/log_event" {
+          input = {
+            user_id : 0
+            action  : "cadastro_recusado"
+            metadata: {
+              email_em_uso    : $email_existe
+              documento_em_uso: $documento_existe
+              email           : $input.email
+            }
+          }
+        } as $motivo_registrado
+      }
+    }
+
+    precondition (($email_existe == false) && ($documento_existe == false)) {
       error_type = "inputerror"
-      error = "Ja existe um cadastro com este documento. Procure a clinica para liberar o seu acesso."
+      error = "Nao foi possivel concluir o cadastro. Procure a clinica."
     }
 
     // As duas gravacoes vao juntas ou nao vao. Medido na tarefa 2.7: o

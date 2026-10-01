@@ -44,10 +44,10 @@ abordagem inteira depende da primeira.
 
 ## 6. Corrigir o vazamento do cadastro público
 
-- [ ] 6.1 Alterar `apis/pet_bits/tutor_cadastro.xs` para mensagem genérica única em e-mail e em documento duplicados, com a distinção indo para o registro do servidor (D9); verificar com o parser oficial
-- [ ] 6.2 Republicar e verificar que as duas recusas devolvem resposta idêntica, sem permitir deduzir qual dado já existia
-- [ ] 6.3 Verificar que o motivo específico continua recuperável no servidor, para diagnóstico
-- [ ] 6.4 Verificar que o cenário "recusa não deixa conta órfã" da change anterior continua valendo depois da alteração
+- [x] 6.1 Alterar `apis/pet_bits/tutor_cadastro.xs` para mensagem genérica única em e-mail e em documento duplicados, com a distinção indo para o registro do servidor (D9); verificar com o parser oficial
+- [x] 6.2 Republicar e verificar que as duas recusas devolvem resposta idêntica, sem permitir deduzir qual dado já existia
+- [x] 6.3 Verificar que o motivo específico continua recuperável no servidor, para diagnóstico
+- [x] 6.4 Verificar que o cenário "recusa não deixa conta órfã" da change anterior continua valendo depois da alteração
 
 ## 7. Aplicação Reflex
 
