@@ -378,6 +378,47 @@ Vale registrar também que `data_nascimento`, do tipo `date`, tem `"default":
 `500` neste projeto quando a entrada foi declarada à mão. Será exercitado no
 grupo 5, com o cadastro omitindo os campos opcionais.
 
+### D12 — O que o grupo 5 mediu: datas, e a assimetria entre criar e editar
+
+**O tipo `date` é inutilizável como entrada declarada à mão.** Um `input` com
+`date data_nascimento?` derruba o endpoint com `500 Unable to locate input`
+quando o campo é **omitido** — mesmo declarado opcional, e mesmo com valor
+padrão (`?=null` não ajuda). `timestamp` tolera a ausência: chega como `0`.
+
+A coluna passou a ser `timestamp`. Não é o tipo semanticamente correto para uma
+data de nascimento, e é uma concessão à plataforma, não uma escolha de
+modelagem. O `0` significa "não informado" e a interface o mostra como `-`,
+pelo mesmo mecanismo com que o projeto já trata o `0` em vínculo.
+
+**Isto vai se repetir.** As changes de agendamento e de histórico clínico são
+cheias de campos de data — `data_hora`, `data_atendimento`, `proxima_consulta`.
+Todas usam `timestamp`, e nenhuma delas deve gastar meio dia redescobrindo
+isso.
+
+**`db.add` exige `data` como objeto literal; `db.patch` aceita variável.** É o
+que faz criar e editar terem formas diferentes neste projeto, e não é
+preferência de estilo:
+
+- **Criar** monta `data` como mapa literal, referenciando cada campo. Só
+  funciona porque nenhum tipo em uso derruba quando ausente — foi essa
+  restrição que forçou a troca do `date`.
+- **Editar** monta `data` a partir do corpo cru
+  (`` `$input|pick:($corpo_cru|keys)` ``), carregando **apenas o que a
+  requisição enviou**. É isto que cumpre "a edição não apaga o que não foi
+  mencionado", e `observacoes` guarda alergias e cuidados especiais: perdê-las
+  por omissão seria o pior defeito desta change, porque é silencioso.
+
+*Por que o `pick` não afrouxa o D5:* a regra do mapa literal existia para
+impedir que o dono entrasse pelo corpo. Aqui a garantia é mais forte, não mais
+fraca — `id_tutor` não está no bloco `input`, então não existe em `$input`, e o
+`pick` não tem de onde trazê-lo. No mapa literal a garantia dependia de quem
+escreve não digitar a linha; aqui a coluna simplesmente não é uma entrada.
+
+**Tarefa 1.3, respondida aqui.** Uma variável criada dentro do `stack` do
+`db.transaction` **é** visível no `response` fora dele — o `PATCH` responde com
+o registro atualizado, montado de dentro da transação. O plano B previsto no
+design não foi necessário.
+
 ## Risks / Trade-offs
 
 **A premissa central não foi medida em runtime** → `$db.<tabela_juntada>.<coluna>`

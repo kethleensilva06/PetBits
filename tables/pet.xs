@@ -31,7 +31,11 @@ table pet {
     // Raca, quando conhecida
     text raca? filters=trim
 
-    date data_nascimento?
+    // `timestamp`, e nao `date`, por limitacao medida do Xano: um input
+    // declarado a mao com tipo `date` derruba o endpoint com 500 "Unable to
+    // locate input" quando o campo e OMITIDO, mesmo declarado opcional e
+    // mesmo com valor padrao. `timestamp` tolera a ausencia (chega como 0).
+    timestamp data_nascimento?
 
     decimal peso?
 

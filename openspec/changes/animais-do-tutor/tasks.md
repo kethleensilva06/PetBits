@@ -8,7 +8,7 @@ abordagem inteira depende da primeira.
 
 - [x] 1.1 Medir se `$db.<tabela_juntada>.<coluna>` no `where` de topo funciona em runtime: endpoint descartável com `join` até `tutor` e `where` sobre a coluna da tabela juntada; verificar que ele devolve só as linhas do dono, com duas fichas de tutor na base — se não funcionar, o desenho muda e a change volta ao design
 - [ ] 1.2 Medir se `lock = true` numa `db.query` dentro de `db.transaction` segura a linha até o commit; verificar com duas requisições concorrentes e anotar o resultado no design
-- [ ] 1.3 Medir se uma variável criada dentro do `stack` de `db.transaction` é visível no `response` fora dele; verificar chamando o endpoint descartável e, se não for, registrar no design qual plano B será usado
+- [x] 1.3 Medir se uma variável criada dentro do `stack` de `db.transaction` é visível no `response` fora dele; verificar chamando o endpoint descartável e, se não for, registrar no design qual plano B será usado
 - [x] 1.4 Remover os endpoints descartáveis das medições; verificar pela listagem de endpoints do grupo que nenhum sobrou
 
 ## 2. Tabela de animais
@@ -33,14 +33,14 @@ abordagem inteira depende da primeira.
 
 ## 5. Criar e editar
 
-- [ ] 5.1 Escrever `POST /pet` com colunas declaradas uma a uma (sem `dblink`), dono vindo só da função do grupo 3, e `precondition` de dono maior que zero antes do `db.add` (D3, D5); verificar com o parser oficial
-- [ ] 5.2 Escrever `PATCH /pet/{pet_id}` com as três instruções do D1 dentro de `db.transaction` — prova com `lock` e `output`, `precondition` de não encontrado, e `db.patch` por `$meu.id`; verificar com o parser oficial
-- [ ] 5.3 Empurrar os dois e exercitar o caminho feliz: criar um animal e vê-lo na listagem do dono; editar e conferir que ele continua na listagem
-- [ ] 5.4 Verificar que `id_tutor` enviado no corpo do POST é ignorado e que o animal nasce do tutor da credencial
-- [ ] 5.5 Verificar que `id_tutor` enviado no corpo do PATCH não transfere o animal — nem para outra conta, nem de uma conta para a própria
-- [ ] 5.6 Verificar que a conta B editando o animal da conta A recebe "não encontrado" e que o animal permanece inalterado
-- [ ] 5.7 Verificar que uma edição não apaga raça, peso e observações que não foram mencionados — é dado clínico, e perdê-lo por omissão é o pior defeito desta change (D8/D4 do dossiê)
-- [ ] 5.8 Verificar que conta sem ficha de tutor recebe recusa explícita sobre a própria conta ao tentar criar, e que nenhum animal é gravado
+- [x] 5.1 Escrever `POST /pet` com colunas declaradas uma a uma (sem `dblink`), dono vindo só da função do grupo 3, e `precondition` de dono maior que zero antes do `db.add` (D3, D5); verificar com o parser oficial
+- [x] 5.2 Escrever `PATCH /pet/{pet_id}` com as três instruções do D1 dentro de `db.transaction` — prova com `lock` e `output`, `precondition` de não encontrado, e `db.patch` por `$meu.id`; verificar com o parser oficial
+- [x] 5.3 Empurrar os dois e exercitar o caminho feliz: criar um animal e vê-lo na listagem do dono; editar e conferir que ele continua na listagem
+- [x] 5.4 Verificar que `id_tutor` enviado no corpo do POST é ignorado e que o animal nasce do tutor da credencial
+- [x] 5.5 Verificar que `id_tutor` enviado no corpo do PATCH não transfere o animal — nem para outra conta, nem de uma conta para a própria
+- [x] 5.6 Verificar que a conta B editando o animal da conta A recebe "não encontrado" e que o animal permanece inalterado
+- [x] 5.7 Verificar que uma edição não apaga raça, peso e observações que não foram mencionados — é dado clínico, e perdê-lo por omissão é o pior defeito desta change (D8/D4 do dossiê)
+- [x] 5.8 Verificar que conta sem ficha de tutor recebe recusa explícita sobre a própria conta ao tentar criar, e que nenhum animal é gravado
 
 ## 6. Corrigir o vazamento do cadastro público
 
