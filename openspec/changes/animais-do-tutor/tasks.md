@@ -13,9 +13,9 @@ abordagem inteira depende da primeira.
 
 ## 2. Tabela de animais
 
-- [ ] 2.1 Escrever `tables/pet.xs` com nome e espécie obrigatórios, demais campos opcionais, `id_tutor` ligado a `tutor`, **nenhuma coluna com índice único** (D8) e índices btree em `id_tutor` e composto `(id_tutor, nome)` para cobrir a ordenação; verificar com o parser oficial
-- [ ] 2.2 Empurrar a tabela e conferir que ela existe com as colunas e índices declarados; verificar lendo o schema pela API de metadados
-- [ ] 2.3 Registrar no design a escolha de identificador sequencial como decisão consciente, com o que ela vaza por inferência; verificar que a seção existe no design.md
+- [x] 2.1 Escrever `tables/pet.xs` com nome e espécie obrigatórios, demais campos opcionais, `id_tutor` ligado a `tutor`, **nenhuma coluna com índice único** (D8) e índices btree em `id_tutor` e composto `(id_tutor, nome)` para cobrir a ordenação; verificar com o parser oficial
+- [x] 2.2 Empurrar a tabela e conferir que ela existe com as colunas e índices declarados; verificar lendo o schema pela API de metadados
+- [x] 2.3 Registrar no design a escolha de identificador sequencial como decisão consciente, com o que ela vaza por inferência; verificar que a seção existe no design.md
 
 ## 3. Resolver o tutor de quem escreve
 

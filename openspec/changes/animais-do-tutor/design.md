@@ -347,6 +347,32 @@ prefixada e um teste que afirme o conjunto exato de chaves.
 é removido do requisito de busca e ordenação — não há parâmetro de página para
 validar. Ele volta com a paginação.
 
+### D11 — Identificador sequencial, por escolha
+
+A tabela de animais usa identificador inteiro sequencial, como as demais do
+projeto. Isso **vaza volume de negócio por inferência**: cadastrar dois animais
+com intervalo conhecido e ler os identificadores revela o ritmo da clínica.
+
+Fica como escolha, e não como descuido, por três razões: a severidade é baixa
+diante do que o 404 uniforme já fecha; trocar o tipo é barato **apenas antes**
+de a tabela existir, e esta é a hora de decidir; e identificador opaco custaria
+legibilidade em toda depuração, num projeto onde a verificação manual é a
+principal rede de proteção.
+
+Se o projeto mudar de ideia, a troca é uma change própria — e o custo dela
+cresce com o número de linhas.
+
+**Confirmação documental do `0`.** O schema publicado da tabela traz, para a
+coluna de vínculo, `"nullable": false, "default": "0", "required": true`. Isto é
+a medição da change anterior aparecendo na definição: a coluna obrigatória tem
+**zero** como valor padrão, e zero satisfaz "obrigatório". O que impede o órfão
+é a `precondition` antes da gravação, não a obrigatoriedade da coluna.
+
+Vale registrar também que `data_nascimento`, do tipo `date`, tem `"default":
+""` — string vazia num campo de data. É o tipo de combinação que já causou
+`500` neste projeto quando a entrada foi declarada à mão. Será exercitado no
+grupo 5, com o cadastro omitindo os campos opcionais.
+
 ## Risks / Trade-offs
 
 **A premissa central não foi medida em runtime** → `$db.<tabela_juntada>.<coluna>`
