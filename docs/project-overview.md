@@ -154,6 +154,28 @@ Cada change delimita uma mudança funcional que pode ser planejada, revisada e
 verificada por inteiro. A ordem das changes é decidida no Explore e revisada
 conforme o sistema cresce.
 
+### Roteiro atual — cinco changes
+
+| # | Change | O que passa a ser possível |
+|---|---|---|
+| 1 | `acesso-do-tutor` ✓ | Criar conta pelo site, entrar, sair; sessão que sobrevive ao recarregar |
+| 2 | `animais-do-tutor` | O tutor cadastra e mantém os próprios animais |
+| 3 | `operacao-da-clinica` | A equipe entra e declara quem atende e o que a clínica oferece |
+| 4 | `agendamento` | O tutor marca e cancela atendimento; a equipe vê a agenda |
+| 5 | `historico-clinico` | A equipe registra o atendimento; o tutor lê o dos seus animais |
+
+As cinco cobrem o núcleo clínico de ponta a ponta. A ordem não é arbitrária:
+a change 2 estabelece o **padrão de posse** que a 4 e a 5 repetem, e a 3
+precisa existir antes da 4 porque sem serviço cadastrado não há duração, e
+sem duração não há agenda calculável.
+
+**Fora do roteiro, por ora:** o petshop (produtos, pedidos e itens). Ele é o
+único ramo do domínio independente do agendamento, então adiá-lo não bloqueia
+nada. Entra como sexta change se houver fôlego.
+
+O roteiro é revisado conforme o sistema cresce — ele registra a intenção
+atual, não um compromisso.
+
 ## 12. Fonte de verdade e documentação
 
 | Documento | Responde |
