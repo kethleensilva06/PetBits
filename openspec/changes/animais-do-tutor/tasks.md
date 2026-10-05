@@ -60,8 +60,8 @@ abordagem inteira depende da primeira.
 
 ## 8. Verificação de integração
 
-- [ ] 8.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta, com duas contas; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
+- [x] 8.1 Percorrer no navegador todos os cenários das duas specs de ponta a ponta, com duas contas; verificar que cada cenário se comporta como escrito e anotar qualquer divergência
 - [x] 8.2 Conferir por requisição crua que as quatro operações de animal recusam sem credencial e com credencial forjada
 - [x] 8.3 Verificar que uma expressão enviada como busca ou ordenação não altera o filtro de dono, e que página zero ou negativa é recusada sem erro interno
 - [x] 8.4 Contar as requisições ao Xano ao abrir a tela de animais; verificar que não passa de duas
-- [ ] 8.5 Remover todos os dados de teste criados e confirmar que a base ficou no estado anterior
+- [x] 8.5 Remover todos os dados de teste criados e confirmar que a base ficou no estado anterior
