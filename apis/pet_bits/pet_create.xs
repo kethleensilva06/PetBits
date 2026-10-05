@@ -43,6 +43,19 @@ query pet verb=POST {
       error = "Esta conta nao tem um cadastro de tutor para vincular o animal."
     }
 
+    // `filters=trim` reduz "   " a string vazia DEPOIS de a obrigatoriedade da
+    // entrada ser satisfeita -- a chave esta presente, entao o Xano aceita. Sem
+    // estas duas guardas, um animal nasce sem nome por requisicao direta.
+    precondition ($input.nome != "") {
+      error_type = "inputerror"
+      error = "O nome do animal nao pode ficar em branco."
+    }
+
+    precondition ($input.especie != "") {
+      error_type = "inputerror"
+      error = "A especie nao pode ficar em branco."
+    }
+
     db.add pet {
       data = {
         created_at     : "now"

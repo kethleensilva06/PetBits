@@ -74,6 +74,7 @@ class PetState(rx.State):
     animais: list[dict] = []
     load_error: str = ""
     carregando: bool = False
+    ja_carregou: bool = False
 
     show_dialog: bool = False
     editando_id: Optional[int] = None
@@ -113,6 +114,32 @@ class PetState(rx.State):
         return len(self.animais) > 0
 
     @rx.var
+    def mostrar_vazio(self) -> bool:
+        """Só depois de carregar sem erro é que "vazio" quer dizer vazio.
+
+        Sem esta distinção, a tela diz "Nenhum animal cadastrado ainda"
+        enquanto a lista ainda está vindo — e também quando a requisição
+        falhou. Um tutor com animais lê isso como se tivessem sumido.
+        """
+        return self.ja_carregou and not self.carregando and not self.load_error and not self.animais
+
+    def limpar_dados(self):
+        """Apaga tudo o que pertence a uma pessoa. Chamado ao sair."""
+        self.animais = []
+        self.load_error = ""
+        self.carregando = False
+        self.ja_carregou = False
+        self.show_dialog = False
+        self.editando_id = None
+        self.form_error = ""
+        self.f_nome = ""
+        self.f_especie = ""
+        self.f_raca = ""
+        self.f_nascimento = ""
+        self.f_peso = ""
+        self.f_observacoes = ""
+
+    @rx.var
     def titulo_dialogo(self) -> str:
         return "Editar animal" if self.editando_id is not None else "Novo animal"
 
@@ -136,6 +163,10 @@ class PetState(rx.State):
     async def carregar(self):
         self.load_error = ""
         self.carregando = True
+        # Defesa em profundidade: a limpeza autoritativa é no `sair`, mas
+        # zerar aqui também fecha qualquer janela em que a lista de uma
+        # pessoa apareça para outra.
+        self.animais = []
         try:
             token = await self._token()
             registros = await xano.listar_animais(token=token)
@@ -146,6 +177,7 @@ class PetState(rx.State):
             self.animais = []
             self.load_error = str(erro)
             self.carregando = False
+            self.ja_carregou = True
             return
 
         self.animais = [
@@ -165,6 +197,7 @@ class PetState(rx.State):
             for a in registros
         ]
         self.carregando = False
+        self.ja_carregou = True
 
     # --- formulário -------------------------------------------------------
 

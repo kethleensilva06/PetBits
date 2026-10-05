@@ -55,6 +55,30 @@ query "pet/{pet_id}" verb=PATCH {
       error = "Informe ao menos um campo para alterar."
     }
 
+    // `nome` e `especie` sao obrigatorios no cadastro; permitir esvazia-los na
+    // edicao deixaria o animal sem identificacao, e hoje so a validacao da
+    // tela segurava isso. Uma requisicao direta passava.
+    //
+    // A checagem e condicional porque a edicao e parcial: quem nao envia o
+    // campo nao o esta esvaziando.
+    conditional {
+      if (($dados|has:"nome") == true) {
+        precondition ((($dados|get:"nome")|trim) != "") {
+          error_type = "inputerror"
+          error = "O nome do animal nao pode ficar em branco."
+        }
+      }
+    }
+
+    conditional {
+      if (($dados|has:"especie") == true) {
+        precondition ((($dados|get:"especie")|trim) != "") {
+          error_type = "inputerror"
+          error = "A especie nao pode ficar em branco."
+        }
+      }
+    }
+
     db.transaction {
       stack {
         db.query pet {

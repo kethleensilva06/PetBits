@@ -204,7 +204,26 @@ class AuthState(rx.State):
         self.enviando = False
         yield rx.redirect("/")
 
-    def sair(self):
+    async def sair(self):
+        """Encerra a sessão e **apaga os dados que já estavam na tela**.
+
+        Limpar só o token não basta. O identificador que o Reflex usa para
+        reconhecer o navegador vive em `sessionStorage` e não muda ao sair, e
+        o redirecionamento é navegação de página única — o estado do cliente
+        não é reconstruído. Sem apagar aqui, quem entrasse em seguida no mesmo
+        navegador veria a lista de animais da pessoa anterior, com observações
+        clínicas, até a primeira carga terminar.
+
+        O import é local de propósito: `pet_state` importa este módulo, e um
+        import no topo fecharia o ciclo. A consequência a carregar adiante é
+        que **todo State novo que guardar dado de alguém precisa entrar aqui**
+        — é uma lista que cresce, e esquecer de atualizá-la é silencioso.
+        """
+        from petbits.states.pet_state import PetState
+
+        pet = await self.get_state(PetState)
+        pet.limpar_dados()
+
         self._limpar()
         return rx.redirect("/entrar")
 

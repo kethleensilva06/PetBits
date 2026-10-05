@@ -85,14 +85,6 @@ class CredenciaisInvalidas(XanoError):
     """E-mail ou senha incorretos na entrada."""
 
 
-class EmailEmUso(XanoError):
-    """Já existe conta com o e-mail informado."""
-
-
-class DocumentoEmUso(XanoError):
-    """Já existe tutor com o documento informado."""
-
-
 class DadosInvalidos(XanoError):
     """400 — o Xano recusou os dados enviados."""
 
@@ -277,18 +269,40 @@ async def obter_animal(animal_id: int, *, token: str) -> Optional[dict]:
     return await _requisitar("GET", f"/pet/{animal_id}", token=token)
 
 
-async def criar_animal(dados: dict, *, token: str) -> Optional[dict]:
+class NaoEncontrado(XanoError):
+    """O registro pedido nao existe, ou nao e de quem pediu.
+
+    Os dois casos chegam aqui iguais de proposito: o backend responde o mesmo
+    404 para "nao existe" e para "nao e seu", para nao permitir descobrir
+    quantos registros existem.
+    """
+
+
+async def criar_animal(dados: dict, *, token: str) -> dict:
     """Cria um animal para o tutor autenticado."""
-    return await _requisitar("POST", "/pet", token=token, json=dados)
+    criado = await _requisitar("POST", "/pet", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano nao confirmou a criacao do animal.")
+    return criado
 
 
-async def atualizar_animal(
-    animal_id: int, dados: dict, *, token: str
-) -> Optional[dict]:
+async def atualizar_animal(animal_id: int, dados: dict, *, token: str) -> dict:
     """Altera os campos informados de um animal do tutor.
 
     So o que estiver em `dados` e alterado: o backend monta a gravacao a partir
     do corpo recebido, entao um campo ausente aqui permanece como esta no
     banco. E o que impede uma edicao de apagar observacoes clinicas.
+
+    Uma recusa por "nao encontrado" levanta `NaoEncontrado` em vez de devolver
+    None. Sem isto, `_requisitar` traduz o 404 do backend para None -- que e o
+    resultado legitimo de uma busca sem resultado -- e a tela mostraria como
+    salva uma edicao que o backend recusou.
     """
-    return await _requisitar("PATCH", f"/pet/{animal_id}", token=token, json=dados)
+    atualizado = await _requisitar(
+        "PATCH", f"/pet/{animal_id}", token=token, json=dados
+    )
+    if atualizado is None:
+        raise NaoEncontrado(
+            "Este animal nao esta mais disponivel para edicao.", status=404
+        )
+    return atualizado

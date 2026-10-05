@@ -290,6 +290,56 @@ e-mail e para documento, com a distinção indo para o registro do servidor.
 É a mesma decisão de D6 aplicada ao endpoint que a antecede — e é o berço de
 todo identificador de tutor em que o resto do sistema confia.
 
+**Correção: esta decisão fecha menos do que eu afirmei.** A revisão
+adversarial feita antes do arquivamento mostrou que igualar as duas *recusas*
+não fecha o oráculo, porque o canal que vaza não é a mensagem — é a diferença
+entre **recusar e aceitar**.
+
+O ataque: `POST /tutor/cadastro`, sem credencial nenhuma, com o CPF alvo e um
+e-mail **inédito a cada tentativa**. Sendo o e-mail novo, só o documento pode
+causar recusa. Então `400` significa "este CPF já é cliente da clínica" e `200`
+significa "não é". Variando apenas o documento, varre-se a lista que se quiser.
+
+A verificação que eu fiz comparou recusa com recusa — e elas são de fato
+idênticas. Não comparei recusa com sucesso, que é onde o oráculo mora. O
+mecanismo é o mesmo que o D8 recusa em `microchip` ("viraria oráculo de
+existência"), e eu não reconheci isso no endpoint sem credencial.
+
+**O que ficou melhor mesmo assim:** a distinção entre e-mail e documento sumiu
+da resposta, e com ela o oráculo trivial — aquele em que uma única requisição
+dizia qual dos dois dados já existia. O que sobrou exige uma requisição por CPF
+testado, cria uma conta a cada tentativa que não acerta, e é limitado pelas 10
+requisições por 20 segundos do plano.
+
+**Por que não fechei agora.** Não dá para fechar mantendo um cadastro público
+que exige documento e devolve credencial na hora: o próprio sucesso é o sinal.
+As saídas reais são tirar o documento do cadastro público e coletá-lo depois da
+autenticação — o que muda um requisito de `tutores`, consolidado na change
+anterior — ou aceitar o residual. Qualquer uma das duas é uma change, não um
+ajuste. Fica registrado como **risco conhecido e aberto**, e não como corrigido.
+
+### Achados da revisão que esta change não corrigiu
+
+A revisão confirmou 18 defeitos. Oito foram corrigidos aqui. Os demais ficam
+registrados para não se perderem:
+
+- **O `event_log` passou a receber escrita sem credencial** e guarda o e-mail
+  de quem tentou se cadastrar — inclusive de quem não é cliente. Entrou com o
+  D9 e precisa de limite de volume e de retenção.
+- **`GET /me/tutor` ficou fora da regra do D8**: é o único endpoint privado do
+  grupo sem `precondition ($auth.id > 0)`, e devolve a ficha inteira do tutor,
+  com documento e contato. Não é falha hoje, é inconsistência que vira falha
+  quando alguém copiar o arquivo como modelo.
+- **Apagar peso ou nascimento no formulário não apaga no banco**, enquanto
+  apagar raça e observações funciona. A assimetria vem de o State só incluir
+  os numéricos quando preenchidos.
+- **Dois cliques em Salvar cadastram o animal duas vezes**: o botão só
+  desabilita depois da ida e volta do websocket.
+- **A listagem não tem busca nem ordenação**, então o cenário do oitavo
+  requisito é vacuamente verdadeiro. Ele afirma um comportamento que não
+  existe, e vai assim para a spec consolidada.
+- **O 400 de "informe ao menos um campo" não é descrito por nenhuma spec.**
+
 ### D10 — O que o grupo 1 mediu, e o que mudou por causa disso
 
 As três premissas do desenho foram medidas com endpoints descartáveis antes de

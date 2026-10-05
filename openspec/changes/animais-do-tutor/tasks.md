@@ -24,7 +24,7 @@ abordagem inteira depende da primeira.
 
 ## 4. Listagem e leitura por identificador
 
-- [x] 4.1 Escrever `GET /pet` com o padrão de leitura do D1 — join inner até `tutor`, `where` com `===`, `output` explícito sem `id_tutor`, `totals: false`, e `precondition ($auth.id > 0)` no topo; verificar com o parser oficial
+- [x] 4.1 Escrever `GET /pet` com o padrão de leitura do D1 — join inner até `tutor`, `where` com `==` (o `===` não existe em runtime — D10), `output` explícito sem `id_tutor`, sem paginação, e `precondition ($auth.id > 0)` no topo; verificar com o parser oficial
 - [x] 4.2 Escrever `GET /pet/{pet_id}` com o mesmo padrão e `return single`; verificar com o parser oficial
 - [x] 4.3 Empurrar os dois e exercitar com **duas contas reais**: cada tutor vê só os seus; a conta B pede o animal da conta A e recebe "não encontrado", não 200 nem "sem permissão"
 - [x] 4.4 Verificar que um identificador inexistente devolve **exatamente** a mesma resposta (status, corpo e mensagem) que o animal alheio — comparar as duas respostas byte a byte

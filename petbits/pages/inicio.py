@@ -138,6 +138,19 @@ def _vazio() -> rx.Component:
     )
 
 
+def _carregando() -> rx.Component:
+    """Enquanto a lista não chegou, não dizer que ela está vazia."""
+    return rx.center(
+        rx.hstack(
+            rx.spinner(size="2"),
+            rx.text("Carregando os seus animais...", size="2",
+                    color=rx.color("gray", 10)),
+            spacing="2", align="center",
+        ),
+        padding="3rem", width="100%",
+    )
+
+
 def inicio_page() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -177,7 +190,7 @@ def inicio_page() -> rx.Component:
                     columns=rx.breakpoints(initial="1", md="2"),
                     spacing="3", width="100%",
                 ),
-                _vazio(),
+                rx.cond(PetState.mostrar_vazio, _vazio(), _carregando()),
             ),
             _dialogo(),
             spacing="4", align_items="start", padding_y="3rem", width="100%",

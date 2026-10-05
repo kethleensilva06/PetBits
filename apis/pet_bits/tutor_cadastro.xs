@@ -22,6 +22,20 @@ query "tutor/cadastro" verb=POST {
   }
 
   stack {
+    // `123.456.789-01` e `12345678901` sao o MESMO documento. Sem normalizar,
+    // os dois criam duas fichas para a mesma pessoa -- exatamente o que o
+    // indice unico existe para impedir, contornado por pontuacao. O filtro de
+    // entrada nao aceita `replace`, entao a normalizacao acontece aqui, e e
+    // este valor que vai tanto para a conferencia quanto para a gravacao.
+    var $documento {
+      value = $input.documento|replace:".":""|replace:"-":""|replace:"/":""|replace:" ":""
+    }
+
+    precondition (($documento|strlen) == 11) {
+      error_type = "inputerror"
+      error = "O documento precisa ter 11 digitos."
+    }
+
     db.has user {
       field_name = "email"
       field_value = $input.email
@@ -29,7 +43,7 @@ query "tutor/cadastro" verb=POST {
 
     db.has tutor {
       field_name = "documento"
-      field_value = $input.documento
+      field_value = $documento
     } as $documento_existe
 
     // As duas recusas saem IGUAIS -- mesma mensagem, mesmo error_type, logo
@@ -106,7 +120,7 @@ query "tutor/cadastro" verb=POST {
           data = {
             created_at: "now"
             nome      : $input.nome
-            documento : $input.documento
+            documento : $documento
             email     : $input.email
             telefone  : $input.telefone
             endereco  : $input.endereco
