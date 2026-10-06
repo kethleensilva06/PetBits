@@ -178,6 +178,40 @@ def inicio_page() -> rx.Component:
                 ),
                 width="100%", align="center",
             ),
+            # Conta cujo papel não é nem equipe nem tutor. Acontece de
+            # verdade: `role` é coluna opcional e as contas de equipe nascem
+            # à mão no painel do Xano. Antes desta change a pessoa caía aqui
+            # e lia "Nenhum animal cadastrado ainda", que é absurdo — ela não
+            # tem animais porque não é tutora, não porque não cadastrou.
+            #
+            # O aviso não vaza nada: só é visto por quem já tem a senha da
+            # própria conta.
+            rx.cond(
+                AuthState.papel_indefinido,
+                rx.callout(
+                    "Sua conta está sem perfil definido. Procure a clínica para "
+                    "liberar o seu acesso.",
+                    icon="circle_alert",
+                    color_scheme="amber",
+                    size="1",
+                    width="100%",
+                ),
+            ),
+            # Atalho para quem é da equipe e caiu aqui por digitar o endereço.
+            rx.cond(
+                AuthState.eh_equipe,
+                rx.callout(
+                    rx.hstack(
+                        rx.text("Você tem acesso à área da clínica."),
+                        rx.link("Abrir o painel", href="/equipe", weight="medium"),
+                        spacing="2",
+                        wrap="wrap",
+                    ),
+                    icon="info",
+                    size="1",
+                    width="100%",
+                ),
+            ),
             rx.cond(
                 PetState.load_error,
                 rx.callout(PetState.load_error, icon="triangle_alert",

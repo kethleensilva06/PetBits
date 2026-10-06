@@ -57,6 +57,20 @@ class AuthState(rx.State):
     # página — e ler query string exigiria uma API deprecada no Reflex 0.9.
     sessao_expirou: bool = False
 
+    # A aba escolhida na tela de entrada: "cliente" ou "colaborador".
+    #
+    # Ela existe **só** para a clínica poder dizer "entre pela aba
+    # Colaborador". Não participa da verificação e **nunca é enviada ao
+    # servidor** — nem no corpo, nem na query, nem em cabeçalho, nem no
+    # caminho. Não é "enviada e ignorada": enquanto o backend não souber qual
+    # aba foi usada, nenhuma mudança futura consegue fazer a resposta depender
+    # dela.
+    #
+    # Se as duas abas verificassem de jeitos diferentes, descobrir quem é
+    # colaborador seria tentar o mesmo e-mail nas duas e ver em qual passa.
+    # Por isso as duas usam este mesmo manipulador, e não dois.
+    aba: str = "cliente"
+
     login_email: str = ""
     login_senha: str = ""
 
@@ -70,6 +84,9 @@ class AuthState(rx.State):
 
     erro: str = ""
     enviando: bool = False
+
+    def set_aba(self, value: str):
+        self.aba = value
 
     def set_login_email(self, value: str):
         self.login_email = value
@@ -110,12 +127,41 @@ class AuthState(rx.State):
     def papel_exibido(self) -> str:
         return xano.papel_legivel(self.usuario_papel)
 
+    @rx.var
+    def eh_equipe(self) -> bool:
+        """Serve para **desenhar** o menu, nunca para proteger dado.
+
+        Quem editar `petbits_papel` no armazenamento local vê o menu da
+        equipe e recebe 403 em cada requisição: a interface mente, o backend
+        não. Isso é por desenho — a proteção real lê o papel do banco a cada
+        requisição, e nenhuma tela pode substituí-la.
+        """
+        return xano.eh_equipe(self.usuario_papel)
+
+    @rx.var
+    def papel_indefinido(self) -> bool:
+        """Conta autenticada cujo papel não é nem equipe nem tutor.
+
+        Acontece de verdade: `role` é coluna opcional, as contas de equipe
+        nascem à mão no painel do Xano, e esquecer a coluna — ou pôr
+        `member` por engano, que é o outro valor válido do enum — é o erro de
+        operação mais provável desta change.
+        """
+        return bool(self.token) and not xano.papel_conhecido(self.usuario_papel)
+
     # --- gestão da sessão -----------------------------------------------
 
     def _guardar(self, token: str, perfil: dict):
         self.token = token
         self.usuario_nome = perfil.get("name") or ""
-        self.usuario_papel = perfil.get("role") or xano.PAPEL_TUTOR
+        # O papel é guardado **cru**, como o servidor o devolveu. A versão
+        # anterior fazia `or xano.PAPEL_TUTOR`, o que transformava papel
+        # vazio em "tutor" silenciosamente — e uma conta de equipe criada
+        # sem a coluna `role` (o erro de operação mais provável, já que
+        # promover alguém acontece fora do app) caía na lista de animais e
+        # lia "Nenhum animal cadastrado ainda". Vazio agora continua vazio,
+        # e a tela diz isso.
+        self.usuario_papel = perfil.get("role") or ""
         self.sessao_validada = True
         self.sessao_expirou = False
         self.erro = ""
@@ -136,6 +182,7 @@ class AuthState(rx.State):
         # descobre quem usou o sistema antes dela.
         self.login_email = ""
         self.login_senha = ""
+        self.aba = "cliente"
         self.erro = ""
 
     # --- ações ------------------------------------------------------------
@@ -159,7 +206,12 @@ class AuthState(rx.State):
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
         self.enviando = False
-        yield rx.redirect("/")
+        # O destino vem do papel que o servidor devolveu em `/auth/me`,
+        # **nunca** da aba escolhida. Quem entra pela aba "errada" com
+        # credencial correta entra em silêncio e vai para a área do papel
+        # dela: "esta conta não é da equipe" seria a única diferença
+        # observável entre as abas, e seria o oráculo de papel inteiro.
+        yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
 
     async def cadastrar(self):
         self.erro = ""
@@ -202,7 +254,7 @@ class AuthState(rx.State):
         self.cad_senha = ""
         self.cad_confirmar = ""
         self.enviando = False
-        yield rx.redirect("/")
+        yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
 
     async def sair(self):
         """Encerra a sessão e **apaga os dados que já estavam na tela**.
@@ -219,10 +271,14 @@ class AuthState(rx.State):
         que **todo State novo que guardar dado de alguém precisa entrar aqui**
         — é uma lista que cresce, e esquecer de atualizá-la é silencioso.
         """
+        from petbits.states.equipe_state import EquipeState
         from petbits.states.pet_state import PetState
 
         pet = await self.get_state(PetState)
         pet.limpar_dados()
+
+        equipe = await self.get_state(EquipeState)
+        equipe.limpar_dados()
 
         self._limpar()
         return rx.redirect("/entrar")

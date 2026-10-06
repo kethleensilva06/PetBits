@@ -6,10 +6,24 @@ Antes de escrever qualquer endpoint definitivo. As duas premissas abaixo o
 parser aceita, mas o motor do Xano nunca foi exercitado nesta conta — e a
 primeira decide a forma do painel inteiro (design.md, D8).
 
-- [ ] 1.1 Medir `return = {type: "count"}` num endpoint descartável sobre `pet`, com linhas na base; verificar que o número devolvido bate com a contagem real — se devolver lista vazia com 200, ou qualquer coisa que não seja o número, registrar no design e manter a forma `output = ["id"] + |count|`
-- [ ] 1.2 Medir `|count` sobre uma consulta cujo `output` traz só `["id"]` de uma tabela com coluna `enum`; verificar que o número bate, porque é a forma que o painel usa em `user` e `colaborador`
-- [ ] 1.3 Medir o que `security.check_password` faz com `hash_password` vazio: endpoint descartável que chama com `""`; verificar se devolve falso ou lança — se lançar, o hash de descarte da tarefa 8.2 tem de ser um bcrypt real guardado em constante, e isso vai para o design
-- [ ] 1.4 Remover os endpoints descartáveis; verificar pela listagem de endpoints do grupo PetBits que nenhum sobrou
+- [x] 1.1 Medir `return = {type: "count"}` num endpoint descartável sobre `pet`, com linhas na base; verificar que o número devolvido bate com a contagem real — se devolver lista vazia com 200, ou qualquer coisa que não seja o número, registrar no design e manter a forma `output = ["id"] + |count|`
+- [x] 1.2 Medir `|count` sobre uma consulta cujo `output` traz só `["id"]` de uma tabela com coluna `enum`; verificar que o número bate, porque é a forma que o painel usa em `user` e `colaborador`
+- [x] 1.3 Medir o que `security.check_password` faz com `hash_password` vazio: endpoint descartável que chama com `""`; verificar se devolve falso ou lança — se lançar, o hash de descarte da tarefa 8.2 tem de ser um bcrypt real guardado em constante, e isso vai para o design
+- [x] 1.4 Remover os endpoints descartáveis; verificar pela listagem de endpoints do grupo PetBits que nenhum sobrou
+
+**O que o grupo 1 mediu** (detalhe em design.md, D11):
+`return = {type: "count"}` **funciona** — conferido contra a forma por lista,
+2 == 2 em `pet` e 3 == 3 em `user`, que tem coluna `enum`. O painel usa a
+forma barata. E `security.check_password` com hash vazio **lança**
+`ERROR_FATAL: Invalid password syntax.` — a entrada de tempo constante precisa
+de um bcrypt real em constante.
+
+A primeira rodada da medição deu **zero em tudo**, porque a base tinha sido
+limpa no fim da change anterior. Zero batendo com zero é consistente tanto com
+"`count` funciona" quanto com "`count` falha devolvendo vazio" — que é
+exatamente o modo de falha que a medição existe para pegar. Foi preciso semear
+a base e repetir. Fica como aviso para as próximas: **medição sobre base vazia
+não mede nada.**
 
 ## 2. Tabelas novas
 
@@ -65,6 +79,7 @@ Mexem no que derruba todo mundo se der errado, então vêm depois de a
 superfície nova estar provada (design.md, Migration Plan).
 
 - [ ] 8.1 Despublicar `POST /auth/signup`; verificar com `curl` que ele deixou de responder, e que `POST /tutor/cadastro` continua criando tutor normalmente — é o endpoint que o projeto de fato usa (D6)
+- [ ] 8.1b Despublicar **também** `POST /auth/login`, junto com o signup; verificar com `curl` que ele parou de responder e que `POST /entrar` atende no lugar — sem isto o `entrar.xs` da tarefa seguinte não conserta nada, porque o oráculo de tempo continua alcançável na URL irmã com as mesmas credenciais. `auth/me` **fica**: o roteamento por papel depende dele e ele exige token
 - [ ] 8.2 Escrever `apis/pet_bits/entrar.xs`, endpoint próprio de entrada que roda `security.check_password` **sempre**, inclusive quando a conta não existe, contra o hash de descarte que a tarefa 1.3 determinou; verificar que ele devolve `{authToken, user_id}` e **não** devolve o papel
 - [ ] 8.3 Medir o tempo de resposta de `PetBits/entrar` com e-mail inexistente e com e-mail existente + senha errada, dez vezes cada; verificar que as distribuições se sobrepõem — se não se sobrepuserem, o desenho não cumpriu o que prometeu e volta para o design (D6)
 - [ ] 8.4 Confirmar que a recusa dos dois casos sai com o mesmo status, o mesmo `error_type` e a mesma mensagem; verificar comparando os dois corpos byte a byte

@@ -354,6 +354,21 @@ contra um hash de descarte. Próprio, e não uma edição do `auth/login` do
 template, pelo mesmo motivo do item 6 do D3: objeto `xano:quick-start` é
 desfeito por um re-push.
 
+**Correção ao próprio desenho, encontrada na aplicação.** O parágrafo acima
+estava incompleto, e do jeito mais constrangedor: ele manda escrever um
+endpoint novo e **não manda aposentar o velho**. Com `auth/login` continuando
+publicado, o oráculo de tempo segue alcançável na URL irmã, com as mesmas
+credenciais — e `PetBits/entrar` não conserta absolutamente nada. É palavra
+por palavra o argumento que este mesmo D6 usa contra o `auth/signup`
+("enquanto esse endpoint responder assim, a propriedade crítica está quebrada
+por um irmão"), e ele não foi aplicado ao irmão óbvio. **`auth/login` é
+despublicado junto com `auth/signup`**; `auth/me` fica, porque o roteamento
+por papel depende dele e ele exige token.
+
+A lição que fica para as próximas changes: **defesa nova sem aposentadoria da
+antiga é decoração.** Vale a pena perguntar, para toda defesa, por qual outra
+porta a mesma pergunta continua sendo respondida.
+
 **E um terceiro achado, que não é sobre abas:** o `auth/login` do template
 inclui `"password"` no `output` e manda `metadata: $user` para o
 `log_event` — então **o hash da senha é copiado para `event_log` a cada
@@ -468,6 +483,32 @@ A alteração segue o padrão `pick` do `pet_update.xs` — só os campos presen
 no corpo cru são tocados, para que "os campos não mencionados permanecem" seja
 estrutural.
 
+### D11 — O que o grupo 1 mediu, e o que mudou por causa disso
+
+**`return = {type: "count"}` funciona.** Conferido contra a forma por lista no
+mesmo endpoint: 2 == 2 em `pet`, 3 == 3 em `user` — que tem coluna `enum`, que
+era a parte duvidosa. **O D8 fica revisto:** o painel usa `count`, não
+`output = ["id"]` + `|count`. Some o risco de carregar quatro listas de id para
+a memória só para contar, e o limite que estava registrado em Risks deixa de
+existir.
+
+**`security.check_password` com hash vazio lança** — `ERROR_FATAL: Invalid
+password syntax.`, HTTP 500. Então a bifurcação que a tarefa 1.3 previa se
+resolveu para o lado caro: a entrada de tempo constante do D6 **precisa de um
+bcrypt real guardado em constante**, e não de uma string vazia. Um hash
+inválido não "falha a comparação": ele derruba a requisição, e derrubar só no
+caminho da conta inexistente seria um oráculo melhor do que o que a defesa
+veio corrigir.
+
+**E um aviso de método, que vale mais que as duas medições.** A primeira
+rodada devolveu **zero em tudo** — a base tinha sido limpa no fim da change
+anterior, e eu quase registrei isso como resultado. Zero batendo com zero é
+consistente tanto com "`count` funciona" quanto com "`count` falha devolvendo
+lista vazia com 200", que é precisamente o modo de falha que a medição existia
+para pegar (fato medido 5). **Medição sobre base vazia não mede nada**, e o
+construto cujo erro é silencioso é justamente aquele em que o falso verde
+passa despercebido. Foi preciso semear e repetir.
+
 ## Risks / Trade-offs
 
 **+1 consulta ao banco em toda requisição de equipe, sem exceção.** É o preço
@@ -531,9 +572,9 @@ acrescenta uma consulta e nada o limita. Ele existe por causa do limite de
 10/20s — é concessão à plataforma, não boa arquitetura, e merece estar escrito
 como tal.
 
-**`|count` sobre quatro consultas carrega quatro listas de id para a memória
-só para contar.** Tolerável em escala de clínica (centenas), ruim em milhares.
-Depende da medição do D8 para melhorar.
+~~**`|count` sobre quatro consultas carrega quatro listas de id para a
+memória.**~~ **Resolvido pela medição** — o painel usa `return =
+{type: "count"}` (D11).
 
 **Que o valor de um `enum?` vazio seja `""` e não nulo é inferência por
 analogia** (o `0` do vínculo, o `"default": ""` observado no schema de um
@@ -541,10 +582,12 @@ campo `date`), **não medição**. A igualdade contra `"admin"` está correta so
 as duas hipóteses, então a decisão não depende disso — mas a ênfase sobre
 `!= null` no D4 depende.
 
-**Nada aqui foi medido em runtime.** Os rascunhos passam no **parser** oficial.
-Ficam sem medição: a forma de contagem, o comportamento de
-`security.check_password` com hash vazio, e `|count` sobre coluna `enum`
-dentro de `output`. É o que o grupo 1 das tarefas existe para resolver.
+**O que o grupo 1 mediu está no D11; o que ele não cobriu continua suposto.**
+A contagem e o `check_password` com hash vazio foram medidos. **Não** foram:
+o comportamento de `db.patch` sobre a tabela `servico` com valor zero
+informado (a guarda está escrita, mas a interação `pick` + zero só se prova
+exercitando), e o custo real do painel em requisições, que a tarefa 6.6 mede
+na aba de rede. Até lá, os números do D7 são aritmética, não observação.
 
 ## Migration Plan
 

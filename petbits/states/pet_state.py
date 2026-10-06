@@ -12,62 +12,23 @@ filtro da tela os animais dos outros apareceriam — porque nunca deveriam ter
 chegado ao navegador.
 """
 
-from datetime import datetime, timezone
 from typing import Optional
 
 import reflex as rx
 
-from petbits import xano
+from petbits import datas, xano
 from petbits.states.auth_state import AuthState
+from petbits.states.sessao import SemSessao
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
 
-class SemSessao(Exception):
-    """Não há sessão válida. `destino` é para onde mandar a pessoa."""
-
-    def __init__(self, destino: str = "/entrar"):
-        super().__init__(destino)
-        self.destino = destino
-
-
-def _data_para_tela(valor) -> str:
-    """Campo de data do Xano no formato do input `type="date"`.
-
-    O Xano guarda `timestamp` em milissegundos e grava **0** quando o campo não
-    foi informado — não nulo. Zero é 1970, não uma data: vira campo vazio.
-
-    A leitura é em **UTC**, de propósito. Uma data de nascimento é uma data de
-    calendário, não um instante: o Xano recebe `2022-03-15` e guarda a
-    meia-noite UTC daquele dia. Lendo em hora local (UTC−3) o resultado seria
-    14/03 às 21:00 — e a tela mostraria o dia errado, sempre um a menos.
-
-    Isto **não** vale para um instante de verdade, como o horário de um
-    atendimento: ali o fuso importa e a conversão tem de acontecer.
-    """
-    if not valor:
-        return ""
-    try:
-        return (
-            datetime.fromtimestamp(float(valor) / 1000, tz=timezone.utc)
-            .date()
-            .isoformat()
-        )
-    except (TypeError, ValueError, OverflowError, OSError):
-        return ""
-
-
-def _data_para_exibir(valor) -> str:
-    iso = _data_para_tela(valor)
-    if not iso:
-        return "-"
-    ano, mes, dia = iso.split("-")
-    return f"{dia}/{mes}/{ano}"
-
-
-def _numero_para_tela(valor) -> str:
-    if valor in (None, "", 0, 0.0):
-        return ""
-    return str(valor)
+# As conversões de data moram em `petbits.datas` desde que os colaboradores
+# passaram a ter data de entrada: duas cópias de uma regra de data divergem em
+# silêncio. Os apelidos locais ficam para não espalhar a mudança por este
+# arquivo inteiro.
+_data_para_tela = datas.para_campo
+_data_para_exibir = datas.para_exibir
+_numero_para_tela = datas.numero_para_campo
 
 
 class PetState(rx.State):

@@ -23,3 +23,6 @@ skills-lock.json
 # Estado local da extensão do Xano: identifica a conta e o workspace de quem
 # está trabalhando, e o cache do último pull. Não é decisão do projeto.
 .xano/
+
+# credenciais de teste, nunca versionadas
+contas-de-teste.local.txt

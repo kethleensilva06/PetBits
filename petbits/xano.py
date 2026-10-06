@@ -37,6 +37,9 @@ GRUPO_AUTH = "auth"
 PAPEL_TUTOR = "member"
 PAPEL_EQUIPE = "admin"
 
+ROTA_EQUIPE = "/equipe"
+ROTA_TUTOR = "/"
+
 
 def eh_tutor(papel: str) -> bool:
     return papel == PAPEL_TUTOR
@@ -46,9 +49,42 @@ def eh_equipe(papel: str) -> bool:
     return papel == PAPEL_EQUIPE
 
 
+def papel_conhecido(papel: str) -> bool:
+    """A coluna `role` é opcional no Xano, então vazio é um estado real.
+
+    Uma conta de equipe nasce à mão no painel, e esquecer a coluna é o erro de
+    operação mais provável do projeto — é assim que o primeiro admin da
+    clínica vai ser criado.
+    """
+    return papel in (PAPEL_TUTOR, PAPEL_EQUIPE)
+
+
 def papel_legivel(papel: str) -> str:
-    """O papel como a pessoa o vê na tela."""
-    return "Equipe" if eh_equipe(papel) else "Tutor"
+    """O papel como a pessoa o vê na tela.
+
+    A versão anterior devolvia "Tutor" para tudo que não fosse `"admin"`, e
+    por isso uma conta sem papel caía na área do tutor, não achava ficha
+    nenhuma e lia "Nenhum animal cadastrado ainda" — o sintoma absurdo que
+    esta change existe para matar. Papel desconhecido agora se chama pelo
+    nome.
+    """
+    if eh_equipe(papel):
+        return "Equipe"
+    if eh_tutor(papel):
+        return "Tutor"
+    return "Sem perfil"
+
+
+def rota_do_papel(papel: str) -> str:
+    """Para onde a pessoa vai depois de entrar.
+
+    O papel vem de `/auth/me`, **nunca** da aba escolhida na tela de entrada:
+    é essa separação que impede descobrir quem é da equipe tentando o mesmo
+    e-mail nas duas abas. Papel desconhecido vai para a área do tutor, onde um
+    aviso explícito diz o que aconteceu — e, como a conta não tem ficha, ela
+    não alcança dado de ninguém.
+    """
+    return ROTA_EQUIPE if eh_equipe(papel) else ROTA_TUTOR
 
 
 # --- erros --------------------------------------------------------------------
@@ -194,18 +230,26 @@ async def _requisitar(
 
 
 async def entrar(email: str, senha: str) -> dict:
-    """Autentica e devolve `{authToken, ...}`.
+    """Autentica e devolve `{authToken, user_id}`.
 
-    O Xano responde 403 tanto para senha errada quanto para e-mail
-    inexistente, e em inglês. A tradução acontece aqui, e a mensagem é
-    genérica de propósito: dizer "esse usuário não existe" permitiria
-    descobrir quem tem conta no sistema.
+    Usa o endpoint **próprio** do PetBits, não o `auth/login` do template. O
+    do template confere se a conta existe **antes** de comparar a senha, então
+    um e-mail inexistente responde sem nunca pagar o custo do hash: o corpo da
+    recusa é idêntico nos dois casos, mas o relógio não é, e isso basta para
+    descobrir quem tem conta. O nosso compara sempre.
+
+    A resposta **não traz o papel**, de propósito. Se trouxesse, a tela de
+    entrada poderia decidir o destino sem o `GET /auth/me`, e aí a aba
+    Colaborador conseguiria recusar sozinha — que é o oráculo de papel inteiro
+    de volta.
+
+    A mensagem de recusa é genérica: dizer "esse usuário não existe"
+    permitiria descobrir quem tem conta no sistema.
     """
     try:
         return await _requisitar(
             "POST",
-            "/auth/login",
-            grupo=GRUPO_AUTH,
+            "/entrar",
             json={"email": email, "password": senha},
         )
     except (SemPermissao, DadosInvalidos) as erro:
@@ -306,3 +350,129 @@ async def atualizar_animal(animal_id: int, dados: dict, *, token: str) -> dict:
             "Este animal nao esta mais disponivel para edicao.", status=404
         )
     return atualizado
+
+
+# --- área da equipe -----------------------------------------------------------
+#
+# Caminhos SEPARADOS dos do tutor, com prefixo `equipe/`. Não é organização de
+# URL: é a decisão central desta change. Um ramo por papel dentro dos endpoints
+# do tutor faria o 403 desaparecer — um tutor sondando a superfície da clínica
+# receberia 200 com os dados dele, e sondar viraria tráfego normal, sem deixar
+# linha nenhuma no registro do servidor.
+#
+# Como nos animais, o `token` é nomeado e obrigatório: esquecê-lo falha na hora
+# com TypeError, em vez de sair uma requisição anônima.
+#
+# Nenhuma destas funções envia o papel. Quem decide se a credencial é de equipe
+# é o backend, lendo o papel do banco a cada requisição.
+
+
+async def painel_equipe(*, token: str) -> dict:
+    """Os contadores do painel, numa requisição só.
+
+    Existe por causa do limite de 10 requisições a cada 20 segundos, **por
+    instância**: as quatro listas soltas no carregamento custariam metade do
+    orçamento numa única abertura de tela, e dois colaboradores simultâneos
+    derrubariam o painel e a tela dos tutores junto.
+
+    A economia vem de juntar **recursos**, não papéis — um ramo por papel não
+    pouparia requisição nenhuma, porque o painel faria as mesmas quatro
+    chamadas de qualquer jeito.
+    """
+    dados = await _requisitar("GET", "/equipe/painel", token=token)
+    return dados if isinstance(dados, dict) else {}
+
+
+# --- colaboradores ---
+
+
+async def listar_colaboradores(*, token: str) -> list[dict]:
+    dados = await _requisitar("GET", "/equipe/colaboradores", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def obter_colaborador(colaborador_id: int, *, token: str) -> Optional[dict]:
+    return await _requisitar(
+        "GET", f"/equipe/colaboradores/{colaborador_id}", token=token
+    )
+
+
+async def criar_colaborador(dados: dict, *, token: str) -> dict:
+    criado = await _requisitar("POST", "/equipe/colaboradores", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou a criação do colaborador.")
+    return criado
+
+
+async def atualizar_colaborador(
+    colaborador_id: int, dados: dict, *, token: str
+) -> dict:
+    """Altera só os campos informados; os ausentes permanecem.
+
+    Como na edição de animal, uma recusa por "não encontrado" levanta
+    `NaoEncontrado` em vez de devolver None — sem isso a tela mostraria como
+    salva uma alteração que o backend recusou.
+    """
+    atualizado = await _requisitar(
+        "PATCH", f"/equipe/colaboradores/{colaborador_id}", token=token, json=dados
+    )
+    if atualizado is None:
+        raise NaoEncontrado("Este colaborador não está mais disponível.", status=404)
+    return atualizado
+
+
+# --- serviços ---
+
+
+async def listar_servicos(*, token: str) -> list[dict]:
+    dados = await _requisitar("GET", "/equipe/servicos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def obter_servico(servico_id: int, *, token: str) -> Optional[dict]:
+    return await _requisitar("GET", f"/equipe/servicos/{servico_id}", token=token)
+
+
+async def criar_servico(dados: dict, *, token: str) -> dict:
+    criado = await _requisitar("POST", "/equipe/servicos", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou a criação do serviço.")
+    return criado
+
+
+async def atualizar_servico(servico_id: int, dados: dict, *, token: str) -> dict:
+    atualizado = await _requisitar(
+        "PATCH", f"/equipe/servicos/{servico_id}", token=token, json=dados
+    )
+    if atualizado is None:
+        raise NaoEncontrado("Este serviço não está mais disponível.", status=404)
+    return atualizado
+
+
+# --- a visão da clínica ---
+#
+# Só leitura. A escrita de tutor e de animal pela equipe não foi desenhada
+# nesta change: o padrão "prova + ação" fica mais apertado aqui, porque a
+# consulta-prova da equipe não tem cláusula de dono e vira apenas "existe?".
+
+
+async def listar_tutores_da_clinica(*, token: str) -> list[dict]:
+    """Todos os tutores, inclusive os de balcão, que não têm conta de acesso.
+
+    Esta lista leva documento, telefone e endereço. É o requisito — a recepção
+    precisa disso —, mas significa que uma credencial de equipe comprometida é
+    a base de clientes inteira.
+    """
+    dados = await _requisitar("GET", "/equipe/tutores", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def listar_animais_da_clinica(*, token: str) -> list[dict]:
+    """Todos os animais, com o tutor responsável de cada um.
+
+    Inclui o animal sem tutor válido: para o tutor ele é invisível por
+    construção, mas esconder da clínica um registro quebrado é pior do que
+    mostrá-lo.
+    """
+    dados = await _requisitar("GET", "/equipe/animais", token=token)
+    return dados if isinstance(dados, list) else []

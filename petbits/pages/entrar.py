@@ -79,8 +79,39 @@ def _casca(
     )
 
 
+def _abas() -> rx.Component:
+    """Cliente e Colaborador.
+
+    As duas abas são **o mesmo formulário e o mesmo manipulador de estado**,
+    não dois. Isso não é economia de código: é o que faz o número de
+    requisições e o tempo de resposta serem iguais nas duas **por
+    construção**, e não por cuidado de quem revisa.
+
+    A aba não é enviada ao servidor — nem no corpo, nem na query, nem em
+    cabeçalho, nem no caminho. Enquanto o backend não souber qual aba foi
+    usada, nenhuma mudança futura consegue fazer a resposta depender dela.
+
+    Se as duas verificassem de jeitos diferentes, descobrir quem é
+    colaborador da clínica seria tentar o mesmo e-mail nas duas e ver em qual
+    passa — e isso entrega o organograma a qualquer pessoa.
+
+    **Quem entrar pela aba "errada" com a senha certa entra em silêncio**, e
+    vai para a área do papel da conta. Um aviso de "esta conta não é da
+    equipe" seria a única diferença observável entre as abas, e seria o
+    oráculo inteiro de volta.
+    """
+    return rx.segmented_control.root(
+        rx.segmented_control.item("Cliente", value="cliente"),
+        rx.segmented_control.item("Colaborador", value="colaborador"),
+        value=AuthState.aba,
+        on_change=AuthState.set_aba,
+        width="100%",
+    )
+
+
 def entrar_page() -> rx.Component:
     return _casca(
+        _abas(),
         _campo(
             "E-mail",
             rx.input(
@@ -104,7 +135,7 @@ def entrar_page() -> rx.Component:
             ),
         ),
         titulo="Entrar",
-        subtitulo="Acesse sua conta para continuar.",
+        subtitulo="Clientes e equipe da clínica entram por aqui.",
         rotulo_envio="Entrar",
         on_submit=AuthState.entrar,
         # O aviso de credencial vencida vem antes dos campos: quem foi levado
@@ -119,10 +150,23 @@ def entrar_page() -> rx.Component:
                 width="100%",
             ),
         ),
-        rodape=rx.hstack(
-            rx.text("Ainda não tem conta?", size="2", color=rx.color("gray", 10)),
-            rx.link("Cadastre-se", href="/cadastro", size="2", weight="medium"),
-            spacing="2",
+        # O rodapé é IGUAL nas duas abas, de propósito. Esconder o
+        # "Cadastre-se" na aba Colaborador pareceria arrumação e seria uma
+        # diferença observável entre as abas antes de qualquer requisição
+        # sair — o formulário viraria o oráculo sozinho.
+        rodape=rx.vstack(
+            rx.hstack(
+                rx.text("Ainda não tem conta?", size="2", color=rx.color("gray", 10)),
+                rx.link("Cadastre-se", href="/cadastro", size="2", weight="medium"),
+                spacing="2",
+            ),
+            rx.text(
+                "Colaboradores recebem o acesso da clínica.",
+                size="1",
+                color=rx.color("gray", 9),
+            ),
+            spacing="1",
+            align_items="start",
         ),
     )
 
