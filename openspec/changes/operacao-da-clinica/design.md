@@ -390,11 +390,21 @@ o limite é por instância. **Rejeitada.**
 
 **Forma adotada: `GET /equipe/painel`, só com contagens.**
 
-| | HTTP | Banco |
+Os números abaixo foram **medidos** (tarefa 6.6), instrumentando a camada HTTP
+do Reflex — o painel de rede do navegador não serve, porque ele vê o WebSocket
+e as chamadas ao Xano saem do backend Python:
+
+| | HTTP | Medido |
 |---|---|---|
-| Painel, carga fria | 2 de 10 (`auth/me` + painel) | 5 (1 prova + 4 contagens) |
-| Painel, navegação quente | 1 | 5 |
-| Cada listagem aberta depois | +1 | 2 (1 prova + 1 consulta) |
+| Entrar (as duas abas) | 2 | `POST /entrar` + `GET /auth/me` |
+| Painel, carga fria (aba nova) | 2 de 10 | `GET /auth/me` + `GET /equipe/painel` |
+| Painel, navegação quente | 1 | só `GET /equipe/painel` |
+| Cada listagem aberta depois | +1 | uma por clique, **nenhum `auth/me` repetido** |
+| As quatro áreas, a partir do painel | 5 no total | distribuídas por clique |
+
+A linha que mais importa é a última: a forma ingênua gastaria as mesmas 5 **de
+uma vez**, no `on_load` do painel. É a diferença entre caber no orçamento e
+estourá-lo.
 
 Explorar as quatro áreas continua custando 5 no total, mas **distribuídas por
 cliques** em vez de uma rajada no `on_load`. É a diferença entre caber no
@@ -582,12 +592,11 @@ campo `date`), **não medição**. A igualdade contra `"admin"` está correta so
 as duas hipóteses, então a decisão não depende disso — mas a ênfase sobre
 `!= null` no D4 depende.
 
-**O que o grupo 1 mediu está no D11; o que ele não cobriu continua suposto.**
-A contagem e o `check_password` com hash vazio foram medidos. **Não** foram:
-o comportamento de `db.patch` sobre a tabela `servico` com valor zero
-informado (a guarda está escrita, mas a interação `pick` + zero só se prova
-exercitando), e o custo real do painel em requisições, que a tarefa 6.6 mede
-na aba de rede. Até lá, os números do D7 são aritmética, não observação.
+~~**O que o grupo 1 mediu está no D11; o que ele não cobriu continua
+suposto.**~~ **Resolvido.** Os números do D7 deixaram de ser aritmética e
+passaram a ser observação (2 na carga fria, 1 quente, uma por área). E a
+interação `pick` + valor zero na alteração de serviço foi exercitada: duração
+`0` recusada com a duração anterior preservada, preço `0` aceito.
 
 ## Migration Plan
 

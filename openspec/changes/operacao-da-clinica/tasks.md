@@ -63,7 +63,7 @@ janela em que um endpoint de equipe esteja publicado sem prova.
 - [x] 6.3 Confirmar que `pet_list.xs` **não** foi tocado; verificar com `git diff` que o arquivo do tutor segue idêntico, e com token de tutor que ele continua devolvendo só os animais dele
 - [x] 6.4 `equipe_painel.xs`: uma prova de equipe e quatro contagens (colaboradores, serviços, tutores, animais), na forma que a tarefa 1.1 determinou; verificar que os quatro números batem com as listas, e que a contagem de animais **não** tem `join` até `tutor`, para não esconder o órfão (D8)
 - [x] 6.5 Confirmar que o painel devolve **só contagens**, nenhuma linha de nenhuma lista; verificar lendo o `response` — primeiras linhas no painel custam as quatro requisições que ele existe para evitar, e no caso de tutor põem documento e contato numa tela de recepção (D7)
-- [ ] 6.6 **(aberta)** Medir o custo real da abertura do painel: contar as requisições HTTP na aba de rede do navegador, em carga fria e em navegação quente; verificar que são 2 e 1, e anotar o número no design se divergir
+- [x] 6.6 Medir o custo real da abertura do painel: contar as requisições HTTP na aba de rede do navegador, em carga fria e em navegação quente; verificar que são 2 e 1, e anotar o número no design se divergir
 
 ## 7. As redes
 
@@ -84,7 +84,7 @@ superfície nova estar provada (design.md, Migration Plan).
 - [x] 8.3 Medir o tempo de resposta de `PetBits/entrar` com e-mail inexistente e com e-mail existente + senha errada, dez vezes cada; verificar que as distribuições se sobrepõem — se não se sobrepuserem, o desenho não cumpriu o que prometeu e volta para o design (D6)
 - [x] 8.4 Confirmar que a recusa dos dois casos sai com o mesmo status, o mesmo `error_type` e a mesma mensagem; verificar comparando os dois corpos byte a byte
 - [x] 8.5 Tirar `"password"` do `output` do `db.get user` da entrada e parar de passar `$user` cru como `metadata` para `log_event`, passando um objeto montado com id, e-mail e ação; verificar que uma entrada nova **não** grava hash no `event_log`
-- [ ] 8.6 **(aberta)** Pôr `output` explícito em `GET /logs/user/my_events`; verificar que a resposta deixou de trazer o campo de metadata cru — hoje o dono da conta lê de volta o próprio hash de senha pelos eventos (D6)
+- [x] 8.6 Pôr `output` explícito em `GET /logs/user/my_events`; verificar que a resposta deixou de trazer o campo de metadata cru — hoje o dono da conta lê de volta o próprio hash de senha pelos eventos (D6)
 - [x] 8.7 Corrigir `apis/pet_bits/me_tutor.xs`: acrescentar `precondition ($auth.id > 0)` como primeira instrução e trocar `db.get tutor` por `db.query tutor` com `where = $db.tutor.id_user == $auth.id`; verificar que a ficha certa continua voltando, e que é o único endpoint privado do grupo que estava sem a guarda
 
 ## 9. Aplicação Reflex
@@ -112,22 +112,42 @@ superfície nova estar provada (design.md, Migration Plan).
 - [x] 10.7 Rodar `openspec validate --strict` e a guarda da tarefa 7.1; verificar que os dois passam limpos antes de arquivar
 
 
-## O que ficou aberto, e por quê
+## O que as medições do fim acharam
 
-**6.6 — contagem de requisições da abertura do painel, medida pela tela.**
-O que está provado: `GET /equipe/painel` devolve **as quatro contagens numa
-requisição só** (exercitado no teste de duas contas), e o carregador da tela
-chama `xano.painel_equipe` **uma vez** — há um único ponto de chamada no
-código. O que **não** foi medido ponta a ponta é a soma com o `GET /auth/me`
-que `carregar_sessao` dispara em carga fria, porque o painel do navegador
-desta sessão passou a suspender a rede com a janela oculta. Os números do D7
-seguem sendo aritmética sobre código lido, não observação — e é assim que
-estão descritos.
+**6.6 — custo do painel, medido.** Instrumentando a camada HTTP do Reflex (o
+painel de rede do navegador não enxerga: as chamadas ao Xano saem do backend
+Python):
 
-**8.6 — `output` explícito em `GET /logs/user/my_events`.**
-Depende de republicar um endpoint do grupo *Event Logs*, que é objeto do
-template. O vazamento que ela fecha (o dono da conta lendo o próprio hash de
-senha pelos eventos) **já não cresce**: a entrada nova monta o `metadata`
-campo a campo, e o `auth/login` do template, que copiava `$user` cru, foi
-despublicado. Os eventos antigos continuam no `event_log`, e limpá-los é a
-mesma conversa de retenção que o D9 da change anterior deixou pendente.
+| | requisições |
+|---|---|
+| Entrar | 2 — `POST /entrar` + `GET /auth/me` |
+| Painel, carga fria (aba nova) | **2 de 10** |
+| Painel, navegação quente | 1 |
+| Cada área aberta depois | +1, **sem `auth/me` repetido** |
+| As quatro áreas | 5 no total, distribuídas por clique |
+
+A forma ingênua gastaria as mesmas 5 **numa rajada só**, no carregamento do
+painel. O gancho de medição ficou em `petbits/xano.py`, desligado por padrão —
+liga com a variável de ambiente `PETBITS_MEDIR` apontando para um arquivo.
+
+**8.6 — `my_events` fechado e conferido.** A resposta agora traz apenas
+`id`, `created_at` e `action`. Conferido com uma conta real: nem `metadata`
+nem `password` aparecem no corpo.
+
+Fechar a **leitura** resolveu mais do que a tarefa pedia. Além do `auth/login`
+e do `auth/signup` já despublicados, outros dois endpoints do template
+continuam no ar gravando o objeto `$user` cru no log — `reset/magic-link-login`
+e `reset/update_password`. Nenhum deles serve o dado de volta agora.
+
+## O que fica registrado como pendente
+
+**Os hashes já gravados continuam na tabela `event_log`.** Nada os serve mais,
+mas eles estão lá, em repouso. Apagá-los é a conversa de retenção do
+`event_log` que a change anterior já deixou pendente (D9) — e que agora tem um
+motivo a mais. Não foi feito aqui porque apagar dado da base é decisão de
+quem é dono dela, não da change.
+
+**`my_events` é objeto do template** (`xano:quick-start`). Um re-push do
+template substitui o arquivo e o vazamento volta, em silêncio. Foi por isso
+que a entrada nova nasceu como endpoint próprio; aqui não havia essa escolha,
+porque o endpoint já existia e é o único que serve esta leitura.
