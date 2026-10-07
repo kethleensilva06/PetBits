@@ -24,5 +24,21 @@ skills-lock.json
 # está trabalhando, e o cache do último pull. Não é decisão do projeto.
 .xano/
 
+# Export do workspace pela extensão, no layout dela (`xano/api/...`,
+# `xano/table/...`). É o MESMO backend que já está em `apis/`, `tables/` e
+# `functions/`, escrito de outro jeito — e duas cópias da mesma coisa divergem
+# em silêncio: a primeira pessoa a corrigir uma delas não descobre que existe
+# a outra.
+#
+# A fonte é `apis/`, `tables/` e `functions/`: é de lá que o push
+# (`scripts/xano_meta.py`), o validador (`scripts/validar_xanoscript.mjs`) e a
+# guarda (`scripts/verificar_equipe.py`) leem, e é lá que moram os comentários
+# que explicam por que cada decisão é o que é — o export traz o código, mas
+# quem for mexer precisa do porquê.
+#
+# A regra `.xano/` acima já existia por este motivo; a extensão passou a
+# escrever também em `xano/`, sem ponto, e escapou dela.
+xano/
+
 # credenciais de teste, nunca versionadas
 contas-de-teste.local.txt

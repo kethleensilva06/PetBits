@@ -43,6 +43,7 @@ Sai com código 1 quando acusa e 0 quando passa limpa, para servir em CI.
 """
 
 import re
+import subprocess
 from pathlib import Path
 
 PROJETO = Path(__file__).resolve().parent.parent
@@ -277,6 +278,49 @@ def conferencia_1() -> tuple[int, list[Path]]:
     return falhas, arquivos
 
 
+def ignorado_pelo_git(caminho: Path) -> bool:
+    """O que o git ignora não é do repositório, e esta é uma guarda de
+    REPOSITÓRIO.
+
+    Existe por um caso concreto: a extensão do Xano exporta o workspace
+    inteiro para `xano/`, no layout dela — o **mesmo** backend que já está em
+    `apis/`, `tables/` e `functions/`, escrito de outro jeito. Varrendo o
+    disco, a conferência 2 via essas cópias chamando a prova fora da
+    convenção de nomes e acusava as onze de uma vez.
+
+    E guarda que acusa onze coisas certas é guarda que ninguém mais lê. O
+    perigo não é o alarme falso em si: é ele treinar quem trabalha aqui a
+    ignorar a saída, e aí o alarme verdadeiro passa junto.
+    """
+    if _IGNORADOS is None:
+        return False
+    return caminho.resolve() in _IGNORADOS
+
+
+def _ler_ignorados() -> set[Path] | None:
+    """Os caminhos que o git ignora. `None` se o git não responder — fora de
+    um repositório a guarda continua servindo, varrendo tudo."""
+    try:
+        saida = subprocess.run(
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard",
+             "--directory", "-z"],
+            cwd=PROJETO, capture_output=True, text=True, timeout=30, check=True,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    ignorados: set[Path] = set()
+    for item in filter(None, saida.split(chr(0))):
+        alvo = (PROJETO / item).resolve()
+        if alvo.is_dir():
+            ignorados.update(f.resolve() for f in alvo.rglob("*.xs"))
+        else:
+            ignorados.add(alvo)
+    return ignorados
+
+
+_IGNORADOS: set[Path] | None = None
+
+
 def conferencia_2(endpoints_de_equipe: list[Path]) -> int:
     """A regra inversa: ninguém mais chama a prova."""
     print("2. A regra inversa: só endpoint de equipe chama a prova\n")
@@ -287,6 +331,8 @@ def conferencia_2(endpoints_de_equipe: list[Path]) -> int:
 
     for caminho in sorted(PROJETO.rglob("*.xs")):
         if ".git" in caminho.parts or caminho.resolve() in de_equipe:
+            continue
+        if ignorado_pelo_git(caminho):
             continue
         conferidos += 1
         codigo = ler(caminho)
@@ -367,6 +413,8 @@ def conferencia_3(chamadores: int) -> int:
 
 
 def main() -> int:
+    global _IGNORADOS
+    _IGNORADOS = _ler_ignorados()
     print("Guarda dos endpoints de equipe\n")
 
     falhas_1, endpoints = conferencia_1()
