@@ -251,17 +251,20 @@ class AuthState(rx.State):
         self.enviando = True
         yield
 
+        # O `finally`, e não um `enviando = False` em cada ramo: foi um ramo
+        # esquecido que deixou o botão cinza para sempre. Ele cobre a recusa,
+        # o erro inesperado e o sucesso pelo mesmo ponto.
         try:
             sessao = await xano.entrar(self.login_email.strip(), self.login_senha)
             perfil = await xano.usuario_atual(sessao["authToken"])
         except XanoError as erro:
-            self.enviando = False
             self.erro = str(erro)
             return
+        finally:
+            self.enviando = False
 
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
-        self.enviando = False
         # O destino vem do papel que o servidor devolveu em `/auth/me`,
         # **nunca** da aba escolhida. Quem entra pela aba "errada" com
         # credencial correta entra em silêncio e vai para a área do papel
@@ -302,14 +305,14 @@ class AuthState(rx.State):
             )
             perfil = await xano.usuario_atual(sessao["authToken"])
         except XanoError as erro:
-            self.enviando = False
             self.erro = str(erro)
             return
+        finally:
+            self.enviando = False
 
         self._guardar(sessao["authToken"], perfil)
         self.cad_senha = ""
         self.cad_confirmar = ""
-        self.enviando = False
         yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
 
     async def sair(self):
@@ -374,7 +377,14 @@ class AuthState(rx.State):
         return None
 
     def redirecionar_se_logado(self):
-        """`on_load` da entrada e do cadastro: quem já entrou não vê a porta."""
+        """`on_load` da entrada e do cadastro: quem já entrou não vê a porta.
+
+        Também libera o botão de envio. O `finally` de `entrar` e `cadastrar`
+        não cobre o processo que morre no meio da requisição — o backend de
+        desenvolvimento reinicia ao salvar um arquivo —, e o estado do Reflex
+        sobrevive ao recarregamento: sem isto, um `enviando` esquecido deixa a
+        porta trancada naquele navegador."""
+        self.enviando = False
         if self.token:
             return rx.redirect("/")
         return None
