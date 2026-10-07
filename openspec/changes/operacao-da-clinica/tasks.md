@@ -139,6 +139,16 @@ e do `auth/signup` já despublicados, outros dois endpoints do template
 continuam no ar gravando o objeto `$user` cru no log — `reset/magic-link-login`
 e `reset/update_password`. Nenhum deles serve o dado de volta agora.
 
+## 11. O que a revisão adversarial achou
+
+Um bloqueio, e ele estava publicado desde antes desta change.
+
+- [x] 11.1 Despublicar `GET /reset/request-reset-link`; verificar com `curl` sem credencial que ele parou de responder — era um oráculo de existência de conta **por status**, numa requisição GET, e enquanto esteve no ar o `entrar.xs` da tarefa 8.2 não tinha efeito prático nenhum
+- [x] 11.2 Despublicar `POST /message/send_welcome_email`; verificar que parou de responder — era enumeração de id de conta, pública, e os ids são sequenciais
+- [x] 11.3 Despublicar `POST /reset/magic-link-login`; verificar que parou de responder — público, grava `$user` cru no log, e sem o endpoint de pedir o link não tem uso
+- [x] 11.4 Conferir que `auth/me` e `reset/update_password` continuam no ar **com** `auth = "user"`, e que o percurso de tutor, de equipe e de gerente continua funcionando depois das três remoções
+- [x] 11.5 Registrar no design a forma correta da pergunta: não "qual é o irmão desta defesa", e sim "liste todo endpoint sem `auth = \"user\"` e diga que pergunta cada um responde a quem não tem credencial"
+
 ## O que fica registrado como pendente
 
 **Os hashes já gravados continuam na tabela `event_log`.** Nada os serve mais,

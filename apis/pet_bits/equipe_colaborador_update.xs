@@ -89,9 +89,9 @@ query "equipe/colaboradores/{colaborador_id}" verb=PATCH {
     // Funcao vazia cai do lado negado junto com a desconhecida.
     conditional {
       if (($dados|has:"funcao") == true) {
-        precondition ((($dados|get:"funcao") == "veterinario") || (($dados|get:"funcao") == "tosador") || (($dados|get:"funcao") == "atendente")) {
+        precondition ((($dados|get:"funcao") == "gerente") || (($dados|get:"funcao") == "veterinario") || (($dados|get:"funcao") == "tosador") || (($dados|get:"funcao") == "atendente")) {
           error_type = "inputerror"
-          error = "Funcao invalida. Use veterinario, tosador ou atendente."
+          error = "Funcao invalida. Use gerente, veterinario, tosador ou atendente."
         }
       }
     }

@@ -35,8 +35,13 @@ de entrada na clínica são opcionais.
 
 ### Requirement: A função vem de um conjunto fechado
 
-A função de um colaborador SHALL ser uma entre veterinário, tosador e
-atendente. Qualquer outro valor MUST ser recusado.
+A função de um colaborador SHALL ser uma entre **gerente**, veterinário,
+tosador e atendente. Qualquer outro valor MUST ser recusado.
+
+A função descreve **o que a pessoa faz na clínica**, e não o que ela alcança
+no sistema. Gerente é um cargo, não um nível de permissão: quem administra o
+sistema é definido pelo papel da **conta de acesso**, que é coisa separada e
+continua sendo concedida fora da aplicação.
 
 #### Scenario: Função reconhecida
 

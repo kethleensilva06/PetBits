@@ -28,9 +28,14 @@ from petbits.states.auth_state import AuthState
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
-FUNCOES = ["veterinario", "tosador", "atendente"]
+# A função é o CARGO, não o nível de acesso. "Gerente" aqui quer dizer quem
+# administra a clínica no dia a dia; quem administra o SISTEMA é definido pelo
+# papel da conta, que é outra coisa e mora na tabela `user`. Confundir os dois
+# seria o caminho mais curto para alguém ganhar acesso ao se autointitular.
+FUNCOES = ["gerente", "veterinario", "tosador", "atendente"]
 
 FUNCAO_LEGIVEL = {
+    "gerente": "Gerente",
     "veterinario": "Veterinário",
     "tosador": "Tosador",
     "atendente": "Atendente",

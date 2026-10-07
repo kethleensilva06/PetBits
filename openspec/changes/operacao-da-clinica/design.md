@@ -369,6 +369,46 @@ A lição que fica para as próximas changes: **defesa nova sem aposentadoria da
 antiga é decoração.** Vale a pena perguntar, para toda defesa, por qual outra
 porta a mesma pergunta continua sendo respondida.
 
+**E a lição foi violada na primeira oportunidade — pelo próprio parágrafo que
+a escreveu.** A pergunta foi feita para os dois irmãos óbvios, `auth/signup` e
+`auth/login`, e **não** foi feita para os outros três endpoints públicos que
+sobraram no mesmo API group. A revisão adversarial antes do arquivamento os
+encontrou, e o pior deles é estritamente mais grave do que os dois
+aposentados:
+
+`GET /reset/request-reset-link` é **público** e devolve, para um e-mail sem
+conta, `404 "No user found for that email."` — e para um e-mail com conta
+segue o caminho feliz e devolve outra coisa. Medido. Comparado aos dois
+fechados: o de `auth/login` era de **tempo**, exigia estatística sobre muitas
+requisições, e a tarefa 8.3 precisou de 24 amostras para mostrar que `/entrar`
+o fechou. Este é de **status**, numa requisição, por **GET** — reproduz-se na
+barra de endereço, sem corpo, sem cabeçalho, sem credencial. Enquanto ele
+esteve no ar, todo o trabalho do `entrar.xs` — o hash de descarte de 81
+caracteres, a conferência que roda sempre, as duas recusas byte a byte — não
+teve efeito prático nenhum.
+
+Pior: no caminho do e-mail **existente** ele grava um `password_reset` novo em
+`user` e dispara envio de e-mail. É um GET não autenticado que **escreve** na
+tabela da qual o login depende — então sondar um endereço também invalida
+qualquer link de recuperação pendente daquela pessoa.
+
+E `POST /message/send_welcome_email`, também público, devolve
+`404 "User not found."` para id inexistente: enumeração de contas por id, que
+são sequenciais e pequenos.
+
+**Os três foram despublicados** (`reset/request-reset-link`,
+`message/send_welcome_email`, `reset/magic-link-login`). Sobraram no grupo
+`Authentication` apenas `auth/me` e `reset/update_password`, os dois com
+`auth = "user"`. A aplicação não usa recuperação de senha nem e-mail de
+boas-vindas — conferido com `grep` em `petbits/`.
+
+**A forma correta da pergunta, que fica escrita para as próximas changes:**
+não é "qual é o irmão desta defesa?", é **"liste todo endpoint sem
+`auth = "user"`, e para cada um diga que pergunta ele responde a quem não
+tem credencial."** A primeira formulação depende de eu lembrar dos irmãos; a
+segunda é uma varredura que não depende de memória — e vira a regra de
+inventário que a guarda de repositório do D9 deveria estender.
+
 **E um terceiro achado, que não é sobre abas:** o `auth/login` do template
 inclui `"password"` no `output` e manda `metadata: $user` para o
 `log_event` — então **o hash da senha é copiado para `event_log` a cada
