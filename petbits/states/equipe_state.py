@@ -165,6 +165,22 @@ class EquipeState(rx.State):
         return self.ja_carregou and not self.carregando and not self.erro
 
     @rx.var
+    def mostrar_carregando(self) -> bool:
+        """Carregando é um estado, não o resto do mundo.
+
+        Sem esta var, "carregando" era o caso padrão de tudo que não fosse
+        "tem dado" nem "vazio" — e uma requisição recusada ficava mostrando
+        o erro **e** o spinner, para sempre. Visto com um papel forjado no
+        armazenamento local: o 403 aparecia certo, e embaixo dele a tela
+        prometia que os tutores ainda estavam vindo.
+
+        É a mesma família de defeito que a change anterior corrigiu do outro
+        lado, quando "ainda carregando" era mostrado como "não há animais".
+        Os três estados precisam ser disjuntos e explícitos.
+        """
+        return self.carregando or (not self.ja_carregou and not self.erro)
+
+    @rx.var
     def titulo_col(self) -> str:
         return "Editar colaborador" if self.col_editando is not None else "Novo colaborador"
 

@@ -160,6 +160,29 @@ def _detalhe(resposta: httpx.Response) -> str:
     return str(corpo)[:200]
 
 
+def _contar_para_medicao(metodo: str, caminho: str) -> None:
+    """Registra cada chamada ao Xano num arquivo, quando `PETBITS_MEDIR` aponta
+    para um.
+
+    Existe porque o orçamento do plano é de 10 requisições a cada 20 segundos
+    **por instância**, e o custo de uma tela é uma afirmação que o design faz
+    em números — então precisa ser medível, e não só argumentada. O painel do
+    navegador não serve para isto: ele vê o WebSocket do Reflex, e as chamadas
+    ao Xano saem do backend Python, onde ele não enxerga.
+
+    Desligado por padrão: sem a variável de ambiente, não faz nada.
+    """
+    destino = os.getenv("PETBITS_MEDIR", "").strip()
+    if not destino:
+        return
+    try:
+        with open(destino, "a", encoding="utf-8") as arquivo:
+            arquivo.write(f"{metodo} {caminho}\n")
+    except OSError:
+        # Medição nunca pode derrubar a aplicação.
+        pass
+
+
 async def _requisitar(
     metodo: str,
     caminho: str,
@@ -170,6 +193,8 @@ async def _requisitar(
 ) -> Any:
     """Executa uma requisição no Xano e devolve o JSON da resposta."""
     url = f"{_base_url(grupo)}{caminho}"
+
+    _contar_para_medicao(metodo, caminho)
 
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as cliente:

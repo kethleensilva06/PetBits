@@ -157,11 +157,22 @@ def _vazio(titulo: str, recado: str, acao: rx.Component | None = None) -> rx.Com
 
 
 def _lista(tem, itens, cartao, vazio, oque: str) -> rx.Component:
-    """Três estados diferentes: tem, está vindo, e está mesmo vazio."""
+    """QUATRO estados, e eles têm de ser disjuntos: tem dado, está vindo,
+    está mesmo vazio, e falhou.
+
+    O quarto é o que se esquece. Quando "carregando" é o caso padrão de tudo
+    que sobra, uma requisição recusada mostra o erro **e** o spinner, lado a
+    lado, para sempre — a tela contradiz a si mesma. Aqui o erro já aparece
+    no callout da casca, então o corpo não mostra nada.
+    """
     return rx.cond(
         tem,
         rx.vstack(rx.foreach(itens, cartao), spacing="2", width="100%"),
-        rx.cond(EquipeState.mostrar_vazio, vazio, _carregando(oque)),
+        rx.cond(
+            EquipeState.mostrar_carregando,
+            _carregando(oque),
+            rx.cond(EquipeState.mostrar_vazio, vazio, rx.fragment()),
+        ),
     )
 
 

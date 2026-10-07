@@ -4,7 +4,9 @@
     {
       "name": "petbits",
       "runtimeExecutable": ".venv/Scripts/reflex.exe",
-      "runtimeArgs": ["run"],
+      "runtimeArgs": [
+        "run"
+      ],
       "port": 3000,
       "env": {
         "PYTHONUTF8": "1",

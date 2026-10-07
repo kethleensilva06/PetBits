@@ -99,11 +99,37 @@ def tabelas() -> dict:
 
 
 def endpoints(grupo: int = APIGROUP_PETBITS) -> dict:
-    """Mapa nome -> id dos endpoints de um grupo."""
+    """Mapa **(verbo, nome) -> id** dos endpoints de um grupo.
+
+    A chave é o par, e não o nome sozinho, porque um endpoint do Xano é
+    identificado pelos dois: `GET equipe/servicos` e `POST equipe/servicos`
+    são rotas diferentes com o mesmo nome. Chavear só pelo nome faz um
+    publicar por cima do outro — o segundo push vira um PUT no id do
+    primeiro, e a rota de leitura some sem erro nenhum, substituída pela de
+    escrita. Aconteceu aqui, com quatro rotas de uma vez.
+    """
     st, b = req("GET", f"/workspace/{WORKSPACE}/apigroup/{grupo}/api")
     if st != 200:
         raise RuntimeError(f"não listou endpoints: {st} {b}")
-    return {e["name"]: e["id"] for e in _itens(b)}
+    return {(e.get("verb", "").upper(), e["name"]): e["id"] for e in _itens(b)}
+
+
+def _verbo_e_nome(fonte: str) -> tuple[str, str]:
+    """Lê o verbo e o nome da rota do próprio XanoScript.
+
+    Passá-los à mão é a origem do erro acima: a fonte da verdade é o arquivo.
+    """
+    primeira = next(
+        linha for linha in fonte.splitlines() if linha.strip().startswith("query ")
+    )
+    corpo = primeira.strip().removeprefix("query ").strip()
+    nome, _, resto = corpo.partition(" ")
+    nome = nome.strip().strip('"')
+    verbo = "GET"
+    for pedaco in resto.split():
+        if pedaco.startswith("verb="):
+            verbo = pedaco.removeprefix("verb=").strip("{} ").upper()
+    return verbo, nome
 
 
 def funcoes() -> dict:
@@ -132,24 +158,37 @@ def publicar_funcao(nome: str, caminho_xs: str) -> tuple[int, object]:
 
 
 def publicar_endpoint(
-    nome: str, caminho_xs: str, grupo: int = APIGROUP_PETBITS
+    caminho_xs: str, grupo: int = APIGROUP_PETBITS
 ) -> tuple[int, object]:
-    """O content-type `text/x-xanoscript` é o que identifica a fonte; o
-    caminho é o mesmo do CRUD normal, sem sufixo."""
-    existentes = endpoints(grupo)
+    """Publica um endpoint a partir do arquivo, criando ou atualizando.
+
+    O verbo e o nome saem do próprio XanoScript — não são passados por fora,
+    justamente para não poderem discordar dele. O content-type
+    `text/x-xanoscript` é o que identifica a fonte; o caminho é o mesmo do
+    CRUD normal, sem sufixo.
+    """
     fonte = xs(caminho_xs)
-    if nome in existentes:
+    chave = _verbo_e_nome(fonte)
+    existentes = endpoints(grupo)
+    if chave in existentes:
         return enviar_xs(
-            "PUT", f"/workspace/{WORKSPACE}/apigroup/{grupo}/api/{existentes[nome]}", fonte
+            "PUT",
+            f"/workspace/{WORKSPACE}/apigroup/{grupo}/api/{existentes[chave]}",
+            fonte,
         )
     return enviar_xs("POST", f"/workspace/{WORKSPACE}/apigroup/{grupo}/api", fonte)
 
 
-def apagar_endpoint(nome: str, grupo: int = APIGROUP_PETBITS) -> tuple[int, object]:
+def apagar_endpoint(
+    verbo: str, nome: str, grupo: int = APIGROUP_PETBITS
+) -> tuple[int, object]:
     existentes = endpoints(grupo)
-    if nome not in existentes:
+    chave = (verbo.upper(), nome)
+    if chave not in existentes:
         return 404, "não existe"
-    return req("DELETE", f"/workspace/{WORKSPACE}/apigroup/{grupo}/api/{existentes[nome]}")
+    return req(
+        "DELETE", f"/workspace/{WORKSPACE}/apigroup/{grupo}/api/{existentes[chave]}"
+    )
 
 
 def linhas(tabela_id: int, pagina: int = 1) -> list:
@@ -188,4 +227,5 @@ if __name__ == "__main__":
     print(f"workspace {WORKSPACE} acessível: {b.get('name')!r}")
     print(f"tabelas: {sorted(tabelas())}")
     print(f"funções: {sorted(funcoes())}")
-    print(f"endpoints PetBits: {sorted(endpoints())}")
+    for (verbo, nome) in sorted(endpoints()):
+        print(f"  {verbo:7} {nome}")

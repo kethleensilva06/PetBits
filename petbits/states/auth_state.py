@@ -85,8 +85,15 @@ class AuthState(rx.State):
     erro: str = ""
     enviando: bool = False
 
-    def set_aba(self, value: str):
-        self.aba = value
+    def set_aba(self, value: str | list[str]):
+        """O `segmented_control` do Radix entrega `str | list[str]` — ele
+        serve também para seleção múltipla, e o Reflex cobra a anotação
+        correspondente. Aqui a seleção é única, então a lista é reduzida ao
+        primeiro item, e vazio volta para "cliente" em vez de virar uma aba
+        sem nome."""
+        if isinstance(value, list):
+            value = value[0] if value else "cliente"
+        self.aba = value or "cliente"
 
     def set_login_email(self, value: str):
         self.login_email = value
