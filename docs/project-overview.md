@@ -179,6 +179,7 @@ clínica, mas passam pelo mesmo fluxo.
 | Change | O que passa a ser possível |
 |---|---|
 | `atalho-contas-de-teste` ✓ | Em desenvolvimento, `Alt+1` na entrada lista as contas de teste e preenche o formulário |
+| `entrada-sem-trava` ✓ | O botão Entrar nunca fica travado depois de uma tentativa interrompida |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
