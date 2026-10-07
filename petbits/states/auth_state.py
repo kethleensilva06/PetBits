@@ -265,12 +265,15 @@ class AuthState(rx.State):
 
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
-        # O destino vem do papel que o servidor devolveu em `/auth/me`,
-        # **nunca** da aba escolhida. Quem entra pela aba "errada" com
-        # credencial correta entra em silêncio e vai para a área do papel
-        # dela: "esta conta não é da equipe" seria a única diferença
-        # observável entre as abas, e seria o oráculo de papel inteiro.
-        yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
+        # O destino combina o papel que o servidor devolveu em `/auth/me` com
+        # a aba — e a aba só é lida AQUI, depois de a senha ser aceita
+        # (change `aba-define-a-area`, D1). A aba Cliente abre a área de
+        # cliente para qualquer conta; a equipe só se abre para papel de
+        # equipe pela aba Colaborador. Tutor pela aba Colaborador entra em
+        # silêncio na área de cliente: "esta conta não é da equipe" seria a
+        # única diferença observável entre as abas, e seria o oráculo de
+        # papel inteiro.
+        yield rx.redirect(xano.rota_do_papel(self.usuario_papel, self.aba))
 
     async def cadastrar(self):
         self.erro = ""

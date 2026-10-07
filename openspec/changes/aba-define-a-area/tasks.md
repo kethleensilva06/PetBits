@@ -1,7 +1,7 @@
 ## 1. Código
 
-- [ ] 1.1 `rota_do_papel(papel, aba)`: `/equipe` só para equipe + aba colaborador (D2); verificar as quatro combinações (equipe/tutor × cliente/colaborador) e papel vazio
-- [ ] 1.2 `AuthState.entrar` passa a aba para `rota_do_papel` depois do `/auth/me` (D1); verificar por leitura que a aba não entra em nenhuma requisição
+- [x] 1.1 `rota_do_papel(papel, aba)`: `/equipe` só para equipe + aba colaborador (D2); verificar as quatro combinações (equipe/tutor × cliente/colaborador) e papel vazio
+- [x] 1.2 `AuthState.entrar` passa a aba para `rota_do_papel` depois do `/auth/me` (D1); verificar por leitura que a aba não entra em nenhuma requisição
 
 ## 2. Percurso
 
