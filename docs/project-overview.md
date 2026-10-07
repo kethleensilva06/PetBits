@@ -159,8 +159,8 @@ conforme o sistema cresce.
 | # | Change | O que passa a ser possível |
 |---|---|---|
 | 1 | `acesso-do-tutor` ✓ | Criar conta pelo site, entrar, sair; sessão que sobrevive ao recarregar |
-| 2 | `animais-do-tutor` | O tutor cadastra e mantém os próprios animais |
-| 3 | `operacao-da-clinica` | A equipe entra e declara quem atende e o que a clínica oferece |
+| 2 | `animais-do-tutor` ✓ | O tutor cadastra e mantém os próprios animais |
+| 3 | `operacao-da-clinica` ✓ | A equipe entra e declara quem atende e o que a clínica oferece |
 | 4 | `agendamento` | O tutor marca e cancela atendimento; a equipe vê a agenda |
 | 5 | `historico-clinico` | A equipe registra o atendimento; o tutor lê o dos seus animais |
 
