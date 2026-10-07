@@ -5,8 +5,8 @@ o `.gitignore` exclui. É o mesmo arquivo e o mesmo formato que
 `scripts/teste_duas_contas.py` já lê: uma linha que começa com maiúscula abre
 um bloco e vira o rótulo dele; dentro do bloco, `email:` e `senha:`.
 
-    EQUIPE — Otávio Lins
-      email: otavio@exemplo.com
+    EQUIPE — Nome da pessoa
+      email: pessoa@exemplo.com
       senha: ...
 
     TUTOR — conta do cadastro público
