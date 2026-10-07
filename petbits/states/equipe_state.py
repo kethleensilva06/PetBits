@@ -19,10 +19,12 @@ segundos, compartilhadas por todo mundo) numa única abertura de tela — e um
 F5 derrubaria o painel e a tela dos tutores junto.
 """
 
+from datetime import date, timedelta
 from typing import Optional
 
 import reflex as rx
 
+from petbits import agenda as regras_da_agenda
 from petbits import datas, xano
 from petbits.states.auth_state import AuthState
 from petbits.states.sessao import SemSessao
@@ -32,6 +34,8 @@ from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 # administra a clínica no dia a dia; quem administra o SISTEMA é definido pelo
 # papel da conta, que é outra coisa e mora na tabela `user`. Confundir os dois
 # seria o caminho mais curto para alguém ganhar acesso ao se autointitular.
+CATEGORIAS = regras_da_agenda.CATEGORIAS
+
 FUNCOES = ["gerente", "veterinario", "clinico_geral", "tosador", "atendente"]
 
 FUNCAO_LEGIVEL = {
@@ -106,6 +110,11 @@ class EquipeState(rx.State):
     srv_descricao: str = ""
     srv_preco: str = ""
     srv_duracao: str = ""
+    srv_categoria: str = ""
+
+    # Agenda do dia (change `agendamento`, D8). Só leitura.
+    agenda_dia_iso: str = ""
+    agenda: list[dict] = []
 
     salvando: bool = False
 
@@ -142,6 +151,9 @@ class EquipeState(rx.State):
 
     def set_srv_duracao(self, v: str):
         self.srv_duracao = v
+
+    def set_srv_categoria(self, v: str):
+        self.srv_categoria = v
 
     # --- vars de tela ---
 
@@ -211,6 +223,8 @@ class EquipeState(rx.State):
         self.servicos = []
         self.tutores = []
         self.animais = []
+        self.agenda = []
+        self.agenda_dia_iso = ""
         self.carregando = False
         self.erro = ""
         self.ja_carregou = False
@@ -408,6 +422,8 @@ class EquipeState(rx.State):
                 "duracao": _duracao(s.get("duracao_minutos")),
                 "_preco": datas.numero_para_campo(s.get("preco")) or "0",
                 "_duracao": str(s.get("duracao_minutos") or ""),
+                "categoria": CATEGORIAS.get(s.get("categoria") or "", "Sem categoria"),
+                "_categoria": s.get("categoria") or "",
             }
             for s in registros
         ]
@@ -419,6 +435,7 @@ class EquipeState(rx.State):
         self.srv_descricao = ""
         self.srv_preco = ""
         self.srv_duracao = ""
+        self.srv_categoria = ""
 
     def novo_servico(self):
         self.srv_editando = None
@@ -433,6 +450,7 @@ class EquipeState(rx.State):
         self.srv_descricao = registro["descricao"]
         self.srv_preco = registro["_preco"]
         self.srv_duracao = registro["_duracao"]
+        self.srv_categoria = registro["_categoria"]
         self.srv_dialogo = True
 
     def fechar_servico(self):
@@ -469,6 +487,9 @@ class EquipeState(rx.State):
             "preco": preco,
             "duracao_minutos": duracao,
         }
+        # Só vai quando escolhida: na alteração, não mandar é não mexer.
+        if self.srv_categoria:
+            dados["categoria"] = self.srv_categoria
 
         self.salvando = True
         yield
@@ -494,6 +515,64 @@ class EquipeState(rx.State):
         resultado = await self.carregar_servicos()
         if resultado is not None:
             yield resultado
+
+    # --- agenda do dia (change `agendamento`, D8) ---------------------------
+
+    @rx.var
+    def agenda_titulo(self) -> str:
+        if not self.agenda_dia_iso:
+            return ""
+        return regras_da_agenda.data_por_extenso(date.fromisoformat(self.agenda_dia_iso))
+
+    @rx.var
+    def tem_agenda(self) -> bool:
+        return len(self.agenda) > 0
+
+    async def carregar_agenda(self):
+        self._comecar()
+        self.agenda = []
+        if not self.agenda_dia_iso:
+            self.agenda_dia_iso = regras_da_agenda.hoje().isoformat()
+        dia = date.fromisoformat(self.agenda_dia_iso)
+        try:
+            token = await self._token_de_equipe()
+            registros = await xano.agenda_da_clinica(
+                regras_da_agenda.inicio_do_dia_ms(dia), token=token
+            )
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+
+        self.agenda = [
+            {
+                "id": a.get("id"),
+                "horario": f"{regras_da_agenda.hora(a.get('inicio'))}–"
+                           f"{regras_da_agenda.hora(a.get('fim'))}",
+                "animal": " · ".join(filter(None, [a.get("pet_nome") or "-",
+                                                   a.get("pet_especie") or ""])),
+                "tutor": " · ".join(filter(None, [a.get("tutor_nome") or "-",
+                                                  a.get("tutor_telefone") or ""])),
+                "servico": a.get("servico_nome") or "-",
+                "profissional": a.get("profissional_nome") or "-",
+                "situacao": regras_da_agenda.SITUACOES.get(a.get("situacao") or "", "-"),
+                "cancelado": a.get("situacao") == "cancelado",
+                "observacoes": a.get("observacoes") or "",
+            }
+            for a in registros
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    async def mudar_dia_da_agenda(self, passo: int):
+        dia = date.fromisoformat(self.agenda_dia_iso or regras_da_agenda.hoje().isoformat())
+        self.agenda_dia_iso = (dia + timedelta(days=passo)).isoformat()
+        return await self.carregar_agenda()
+
+    async def agenda_de_hoje(self):
+        self.agenda_dia_iso = regras_da_agenda.hoje().isoformat()
+        return await self.carregar_agenda()
 
     # --- a visão da clínica -----------------------------------------------
     #

@@ -18,6 +18,7 @@ from petbits.states.equipe_state import FUNCOES, EquipeState
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
+    ("/equipe/agenda", "Agenda", "calendar-days"),
     ("/equipe/colaboradores", "Colaboradores", "users"),
     ("/equipe/servicos", "Serviços", "scissors"),
     ("/equipe/tutores", "Tutores", "contact"),
@@ -369,6 +370,8 @@ def _cartao_servico(s: dict) -> rx.Component:
                     rx.badge(s["preco"], variant="soft", radius="full"),
                     rx.badge(s["duracao"], color_scheme="gray", variant="soft",
                              radius="full"),
+                    rx.badge(s["categoria"], radius="full",
+                             color_scheme=rx.cond(s["_categoria"] == "", "amber", "teal")),
                     spacing="2", align="center", wrap="wrap",
                 ),
                 rx.cond(
@@ -411,6 +414,19 @@ def _dialogo_servico() -> rx.Component:
                                                      width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
+                # Change `agendamento`, D5: sem categoria, o serviço não é
+                # oferecido ao tutor.
+                _campo("Categoria", rx.select.root(
+                    rx.select.trigger(placeholder="Escolha: Clínica ou Banho e tosa",
+                                      width="100%"),
+                    rx.select.content(
+                        rx.select.item("Clínica", value="clinica"),
+                        rx.select.item("Banho e tosa", value="banho_tosa"),
+                    ),
+                    value=EquipeState.srv_categoria,
+                    on_change=EquipeState.set_srv_categoria,
+                    width="100%",
+                )),
                 # A duração é o que torna a agenda calculável: sem ela não há
                 # como saber se dois atendimentos se sobrepõem.
                 rx.text(
@@ -463,6 +479,61 @@ def servicos_page() -> rx.Component:
                       on_click=EquipeState.novo_servico),
             rx.fragment(),
         ),
+    )
+
+
+# --- agenda do dia (change `agendamento`) -----------------------------------------
+
+
+def _item_da_agenda(a: dict) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.text(a["horario"], weight="bold", min_width="6.5rem"),
+            rx.vstack(
+                rx.hstack(
+                    rx.text(a["servico"], weight="medium"),
+                    rx.badge(a["situacao"], radius="full",
+                             color_scheme=rx.cond(a["cancelado"], "gray", "teal")),
+                    spacing="2", align="center", wrap="wrap",
+                ),
+                rx.text(a["animal"], " — ", a["tutor"], size="2",
+                        color=rx.color("gray", 11)),
+                rx.text("Com ", a["profissional"], size="1", color=rx.color("gray", 10)),
+                rx.cond(a["observacoes"],
+                        rx.text(a["observacoes"], size="1", color=rx.color("gray", 11))),
+                spacing="1", align_items="start",
+            ),
+            spacing="4", align="start", width="100%",
+            opacity=rx.cond(a["cancelado"], "0.55", "1"),
+        ),
+        width="100%",
+    )
+
+
+def agenda_equipe_page() -> rx.Component:
+    return _casca(
+        rx.hstack(
+            rx.icon_button(rx.icon("chevron_left"), variant="soft",
+                           on_click=EquipeState.mudar_dia_da_agenda(-1),
+                           aria_label="Dia anterior"),
+            rx.text(EquipeState.agenda_titulo, weight="bold", size="4"),
+            rx.icon_button(rx.icon("chevron_right"), variant="soft",
+                           on_click=EquipeState.mudar_dia_da_agenda(1),
+                           aria_label="Próximo dia"),
+            rx.button("Hoje", variant="ghost", on_click=EquipeState.agenda_de_hoje),
+            spacing="3", align="center",
+        ),
+        _lista(
+            EquipeState.tem_agenda,
+            EquipeState.agenda,
+            _item_da_agenda,
+            _vazio("Nenhum agendamento neste dia",
+                   "Os agendamentos marcados pelos tutores aparecem aqui."),
+            "a agenda",
+        ),
+        rota="/equipe/agenda",
+        titulo="Agenda",
+        subtitulo="Os agendamentos do dia, de todos os profissionais. Só leitura.",
     )
 
 

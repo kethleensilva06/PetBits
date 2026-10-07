@@ -65,19 +65,23 @@ No Python, o mesmo expediente usa um fuso fixo UTC−3. O Brasil não tem
 horário de verão desde 2019; se voltar a ter, o Python passa a sugerir
 horários que o Xano recusa — falha visível, e não agendamento errado.
 
-### D4 — Profissional escolhido por laço, e conferido de novo depois de gravar
+### D4 — Profissional escolhido por laço, dentro de uma transação com trava
 
 O `POST` lista os profissionais ativos da função compatível (ordem de id) e,
 para cada um, conta os agendamentos não cancelados que cruzam o intervalo. O
 primeiro com zero é o escolhido. Nenhum livre → recusa.
 
-O Xano não oferece trava entre duas requisições simultâneas. Duas marcações
-no mesmo instante podem escolher o mesmo profissional. Por isso, **depois** do
-`db.add`, o endpoint conta de novo os agendamentos não cancelados daquele
-profissional que cruzam o intervalo; se houver mais de um, marca o recém-criado
-como cancelado e recusa com "horário não está mais disponível". Das duas
-requisições, pelo menos uma vê a outra — o pior caso é as duas recusarem, e
-nunca as duas gravarem.
+Duas marcações no mesmo instante poderiam escolher o mesmo profissional. Por
+isso a listagem dos profissionais, a escolha e o `db.add` acontecem dentro de
+um `db.transaction`, e a listagem usa `lock = true` — a mesma forma que
+`pet_update.xs` já usa. A segunda marcação para a mesma função espera a
+primeira terminar e, quando roda, já enxerga o agendamento gravado.
+
+*Alternativa descartada (versão anterior deste D4):* gravar e conferir de novo
+depois, cancelando o recém-criado se houvesse duplicata. Funciona, mas deixa
+agendamentos cancelados que ninguém pediu no histórico; a trava evita a
+duplicata em vez de desfazê-la. O comportamento da trava sob concorrência real
+é verificado na tarefa 3.3.
 
 ### D5 — Categoria opcional na tabela, obrigatória para o tutor
 
@@ -112,8 +116,8 @@ guarda.
 
 ## Risks / Trade-offs
 
-- [Requisições simultâneas] → D4: conferência depois de gravar; o pior caso é
-  recusa dupla.
+- [Requisições simultâneas] → D4: transação com trava nas linhas dos profissionais;
+  verificada com duas marcações concorrentes na tarefa 3.3.
 - [Horário de verão volta] → D3: o Python sugere errado, o Xano recusa.
 - [`GET agenda/ocupacao` mostra a qualquer tutor quanto a clínica está
   ocupada] → É inerente a oferecer horários livres; não revela de quem são os

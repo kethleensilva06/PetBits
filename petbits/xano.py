@@ -501,3 +501,67 @@ async def listar_animais_da_clinica(*, token: str) -> list[dict]:
     """
     dados = await _requisitar("GET", "/equipe/animais", token=token)
     return dados if isinstance(dados, list) else []
+
+
+# --- agendamento (change `agendamento`) ----------------------------------------
+#
+# Do lado do tutor, a tela só **sugere** horários: quem decide é o
+# `POST agendamentos`, que refaz no Xano a conta inteira — posse, expediente,
+# grade, profissional livre (design.md da change, D2).
+
+
+async def listar_servicos_agendaveis(*, token: str) -> list[dict]:
+    """O catálogo que o tutor vê: só serviços com categoria."""
+    dados = await _requisitar("GET", "/servicos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def ocupacao_do_dia(servico_id: int, dia_ms: int, *, token: str) -> dict:
+    """Profissionais compatíveis e intervalos ocupados de um dia.
+
+    `dia_ms` é a meia-noite de São Paulo daquele dia, em ms UTC.
+    """
+    dados = await _requisitar(
+        "GET",
+        "/agenda/ocupacao",
+        token=token,
+        params={"servico_id": servico_id, "dia": dia_ms},
+    )
+    return dados if isinstance(dados, dict) else {}
+
+
+async def listar_agendamentos(*, token: str) -> list[dict]:
+    """Os agendamentos dos animais do tutor, do mais recente para o mais antigo."""
+    dados = await _requisitar("GET", "/agendamentos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def criar_agendamento(dados: dict, *, token: str) -> dict:
+    """Marca um agendamento. O profissional é escolhido pelo backend."""
+    criado = await _requisitar("POST", "/agendamentos", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou o agendamento.")
+    return criado
+
+
+async def cancelar_agendamento(agendamento_id: int, *, token: str) -> dict:
+    """Cancela um agendamento do tutor, até 24 h antes.
+
+    Agendamento alheio e inexistente chegam iguais, como 404 — e o 404 vira
+    `NaoEncontrado` aqui, pelo mesmo motivo da edição de animal: devolver None
+    deixaria a tela mostrar como cancelado o que o backend recusou.
+    """
+    cancelado = await _requisitar(
+        "POST", f"/agendamentos/{agendamento_id}/cancelar", token=token
+    )
+    if cancelado is None:
+        raise NaoEncontrado("Este agendamento não está mais disponível.", status=404)
+    return cancelado
+
+
+async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
+    """A agenda de um dia, para a equipe. Só leitura."""
+    dados = await _requisitar(
+        "GET", "/equipe/agenda", token=token, params={"dia": dia_ms}
+    )
+    return dados if isinstance(dados, list) else []

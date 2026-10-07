@@ -31,6 +31,9 @@ query "equipe/servicos" verb=POST {
     text descricao? filters=trim
     decimal preco
     int duracao_minutos
+
+    // Change `agendamento`, D5: opcional, e quando vier tem de ser uma das duas.
+    text categoria? filters=trim
   }
 
   stack {
@@ -92,6 +95,11 @@ query "equipe/servicos" verb=POST {
     // `?=true` declarado. Se nao disparar, todo servico nasce sem data de
     // criacao e nada acusa -- a familia de falha silenciosa que o D8 manda
     // evitar. Mandar custa nada e esta certo nos dois mundos.
+    precondition (($input.categoria == "") || ($input.categoria == "clinica") || ($input.categoria == "banho_tosa")) {
+      error_type = "inputerror"
+      error = "A categoria tem de ser clinica ou banho_tosa."
+    }
+
     db.add servico {
       data = {
         created_at     : "now"
@@ -101,6 +109,18 @@ query "equipe/servicos" verb=POST {
         duracao_minutos: $input.duracao_minutos
       }
     } as $novo
+
+    // A categoria entra por um patch, e so quando veio: `db.add` exige objeto
+    // literal, e gravar "" numa coluna enum nunca foi medido aqui.
+    conditional {
+      if ($input.categoria != "") {
+        db.patch servico {
+          field_name = "id"
+          field_value = $novo.id
+          data = {categoria: $input.categoria}
+        } as $classificado
+      }
+    }
   }
 
   // Montada campo a campo, com o mesmo conjunto de chaves da listagem: assim
@@ -112,5 +132,6 @@ query "equipe/servicos" verb=POST {
     descricao      : $novo.descricao
     preco          : $novo.preco
     duracao_minutos: $novo.duracao_minutos
+    categoria      : $input.categoria
   }
 }

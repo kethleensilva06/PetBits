@@ -40,6 +40,7 @@ query "equipe/servicos/{servico_id}" verb=PATCH {
     text descricao? filters=trim
     decimal preco?
     int duracao_minutos?
+    text categoria? filters=trim
   }
 
   stack {
@@ -113,6 +114,17 @@ query "equipe/servicos/{servico_id}" verb=PATCH {
       }
     }
 
+    // Change `agendamento`, D5: quem manda a categoria tem de mandar uma das
+    // duas. Quem nao manda, nao mexe nela.
+    conditional {
+      if (($dados|has:"categoria") == true) {
+        precondition ((($dados|get:"categoria") == "clinica") || (($dados|get:"categoria") == "banho_tosa")) {
+          error_type = "inputerror"
+          error = "A categoria tem de ser clinica ou banho_tosa."
+        }
+      }
+    }
+
     db.query servico {
       where = $db.servico.id == $input.servico_id
       output = ["id"]
@@ -141,5 +153,6 @@ query "equipe/servicos/{servico_id}" verb=PATCH {
     descricao      : $atualizado.descricao
     preco          : $atualizado.preco
     duracao_minutos: $atualizado.duracao_minutos
+    categoria      : $atualizado.categoria
   }
 }

@@ -1,7 +1,7 @@
 ## 1. Preparação
 
 - [ ] 1.1 Conferir o login do Xano CLI (`xano profile me`) contra o workspace 169225; puxar o workspace para uma pasta **temporária** fora do projeto e registrar o formato de pastas que o CLI usa — nada é publicado neste passo
-- [ ] 1.2 Validar com `scripts/validar_xanoscript.mjs` todo `.xs` novo ou alterado antes de qualquer publicação
+- [x] 1.2 Validar com `scripts/validar_xanoscript.mjs` todo `.xs` novo ou alterado antes de qualquer publicação
 
 ## 2. Tabelas
 
@@ -24,7 +24,7 @@
 ## 5. Reflex
 
 - [ ] 5.1 Cliente HTTP em `petbits/xano.py` para os endpoints novos
-- [ ] 5.2 Cálculo dos horários livres em Python (D2, D3) com testes dos cenários da spec: dia útil vazio, sábado com 90 min, domingo, profissional ocupado em parte, sem profissional
+- [x] 5.2 Cálculo dos horários livres em Python (D2, D3) com testes dos cenários da spec: dia útil vazio, sábado com 90 min, domingo, profissional ocupado em parte, sem profissional
 - [ ] 5.3 Página `/agenda` do tutor: categoria, serviço, animal, calendário do mês (domingos e dias passados desabilitados), horários livres, observações, confirmar; "Meus agendamentos" com Cancelar só quando faltar mais de 24 h
 - [ ] 5.4 Link para a agenda na tela inicial do tutor
 - [ ] 5.5 Página `/equipe/agenda` só leitura, com troca de dia, e item no menu da equipe

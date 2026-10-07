@@ -330,6 +330,7 @@ class AuthState(rx.State):
         que **todo State novo que guardar dado de alguém precisa entrar aqui**
         — é uma lista que cresce, e esquecer de atualizá-la é silencioso.
         """
+        from petbits.states.agenda_state import AgendaState
         from petbits.states.equipe_state import EquipeState
         from petbits.states.pet_state import PetState
 
@@ -338,6 +339,9 @@ class AuthState(rx.State):
 
         equipe = await self.get_state(EquipeState)
         equipe.limpar_dados()
+
+        agenda = await self.get_state(AgendaState)
+        agenda.limpar_dados()
 
         self._limpar()
         return rx.redirect("/entrar")
