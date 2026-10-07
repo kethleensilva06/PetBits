@@ -35,13 +35,9 @@ de entrada na clínica são opcionais.
 
 ### Requirement: A função vem de um conjunto fechado
 
-A função de um colaborador SHALL ser uma entre **gerente**, veterinário,
-tosador e atendente. Qualquer outro valor MUST ser recusado.
-
-A função descreve **o que a pessoa faz na clínica**, e não o que ela alcança
-no sistema. Gerente é um cargo, não um nível de permissão: quem administra o
-sistema é definido pelo papel da **conta de acesso**, que é coisa separada e
-continua sendo concedida fora da aplicação.
+A função de um colaborador SHALL ser uma entre gerente, veterinário, clínico
+geral, tosador e atendente. Qualquer outro valor MUST ser recusado. A função
+descreve o cargo, e MUST NOT determinar o que a conta alcança no sistema.
 
 #### Scenario: Função reconhecida
 
@@ -52,6 +48,12 @@ continua sendo concedida fora da aplicação.
 
 - **WHEN** a requisição informa uma função fora do conjunto previsto
 - **THEN** a operação é recusada, mesmo feita fora da interface
+
+#### Scenario: A função não concede acesso
+
+- **WHEN** um colaborador é cadastrado com a função de gerente
+- **THEN** nenhuma conta de acesso é criada nem alterada
+- **AND** o que qualquer conta alcança continua vindo do papel dela
 
 ### Requirement: Manter e consultar colaboradores
 
