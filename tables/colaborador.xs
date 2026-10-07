@@ -30,7 +30,7 @@ table colaborador {
     // do conjunto que chegue ao db.add vira 500 cru, e a spec pede que o
     // motivo seja informado (design.md, D10).
     enum funcao {
-      values = ["gerente", "veterinario", "tosador", "atendente"]
+      values = ["gerente", "veterinario", "clinico_geral", "tosador", "atendente"]
     }
 
     // Contato -- opcional, porque a spec exige so nome e funcao, e o cadastro

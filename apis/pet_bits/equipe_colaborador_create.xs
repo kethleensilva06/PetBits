@@ -68,9 +68,9 @@ query "equipe/colaboradores" verb=POST {
     // digitacao caem todos do mesmo lado -- o lado negado. A forma por negacao
     // (`!= "recepcionista"`) le como se estivesse certa e passaria em revisao,
     // mas deixa entrar tudo que ninguem listou.
-    precondition (($input.funcao == "gerente") || ($input.funcao == "veterinario") || ($input.funcao == "tosador") || ($input.funcao == "atendente")) {
+    precondition (($input.funcao == "gerente") || ($input.funcao == "veterinario") || ($input.funcao == "clinico_geral") || ($input.funcao == "tosador") || ($input.funcao == "atendente")) {
       error_type = "inputerror"
-      error = "Funcao invalida. Use gerente, veterinario, tosador ou atendente."
+      error = "Funcao invalida. Use gerente, veterinario, clinico_geral, tosador ou atendente."
     }
 
     // `ativo` nao e entrada -- quem acaba de ser cadastrado esta na clinica.
