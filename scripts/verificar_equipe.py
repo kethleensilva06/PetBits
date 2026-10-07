@@ -54,6 +54,21 @@ GLOB_EQUIPE = "equipe_*.xs"
 PROVA = "PetBits/exige_equipe"
 ARQUIVO_DA_FUNCAO = PROJETO / "functions" / "pet_bits" / "exige_equipe.xs"
 
+# A prova de GERÊNCIA, um degrau acima. Desde a change `papeis-e-abas`, manter
+# o quadro de colaboradores é da gerência; ler continua sendo de toda a equipe.
+PROVA_GERENCIA = "PetBits/exige_gerencia"
+ARQUIVO_DA_GERENCIA = PROJETO / "functions" / "pet_bits" / "exige_gerencia.xs"
+
+# Exatamente os dois arquivos que mantêm o quadro — nem um a mais, nem um a
+# menos. Trocar uma prova pela outra é a alteração que não se vê num diff: as
+# duas linhas têm o mesmo formato e quase o mesmo tamanho. O efeito é
+# silencioso — o endpoint continua recusando tutor, continua passando no teste
+# de duas contas, e passa a aceitar equipe comum onde devia exigir gerência.
+ESCRITAS_DE_COLABORADOR = {
+    "equipe_colaborador_create.xs",
+    "equipe_colaborador_update.xs",
+}
+
 # `auth` precisa ser exatamente "user": a captura existe para a mensagem poder
 # dizer *qual* valor está lá, em vez de só "faltou".
 RE_AUTH = re.compile(r'^[ \t]*auth[ \t]*=[ \t]*"([^"]*)"[ \t]*$', re.MULTILINE)
@@ -63,7 +78,19 @@ RE_SESSAO = re.compile(r"precondition[ \t]*\([ \t]*\$auth\.id[ \t]*>[ \t]*0[ \t]
 # `node scripts/validar_xanoscript.mjs`. Exigir o espaço deixava a conferência
 # 2 cega para um portão de papel escrito dessa forma numa superfície de tutor
 # — que é exatamente o ramo do D1.
-RE_CHAMADA = re.compile(r'function\.run[ \t]*"' + re.escape(PROVA) + r'"')
+def _re_chamada(nome: str) -> "re.Pattern[str]":
+    return re.compile(r'function\.run[ \t]*"' + re.escape(nome) + r'"')
+
+
+# Qualquer uma das duas serve para a conferência 1 (todo endpoint de equipe
+# prova alguma coisa) e para a 2 (ninguém de fora prova nada). *Qual* das duas
+# é a pergunta da conferência 4.
+RE_CHAMADA = re.compile(
+    r'function\.run[ \t]*"(?:'
+    + "|".join(re.escape(x) for x in (PROVA, PROVA_GERENCIA))
+    + r')"'
+)
+RE_CHAMADA_GERENCIA = _re_chamada(PROVA_GERENCIA)
 RE_DEFINICAO = re.compile(r'^[ \t]*function[ \t]*"' + re.escape(PROVA) + r'"', re.MULTILINE)
 RE_DB = re.compile(r"^[ \t]*db\.[a-z_]+\b")
 RE_STACK = re.compile(r"^[ \t]*stack[ \t]*\{", re.MULTILINE)
@@ -210,9 +237,10 @@ def conferir_endpoint(codigo: str) -> list[str]:
     chamada = RE_CHAMADA.search(codigo)
     if chamada is None:
         falhas.append(
-            f'1ª conferência: sem `function.run "{PROVA}"` — sem coluna de '
-            "dono não há `where` para recortar a consulta, então a tabela "
-            "inteira vai para qualquer conta autenticada"
+            f'1ª conferência: sem `function.run "{PROVA}"` nem '
+            f'`"{PROVA_GERENCIA}"` — sem coluna de dono não há `where` para '
+            "recortar a consulta, então a tabela inteira vai para qualquer "
+            "conta autenticada"
         )
     else:
         # A ordem é desenho, não arrumação (design.md, D2): o arquivo pode ter
@@ -412,6 +440,71 @@ def conferencia_3(chamadores: int) -> int:
     return falhas
 
 
+def conferencia_4(endpoints: list[Path]) -> int:
+    """A prova de gerência aparece exatamente onde deve.
+
+    As conferências 1 e 2 só perguntam se *alguma* prova existe. Isso deixa
+    passar a troca de uma pela outra, que é o erro mais provável desta
+    superfície: as duas linhas têm o mesmo formato, e quem copia um arquivo de
+    leitura como modelo de uma escrita leva junto a prova errada.
+
+    O efeito é silencioso — o endpoint continua recusando tutor, continua
+    passando no teste de duas contas, e passa a aceitar equipe comum onde
+    deveria exigir gerência. É o mesmo tipo de falha que a ausência da prova,
+    um degrau acima e sem nada que a denuncie.
+    """
+    print("4. A prova de gerência aparece exatamente nas escritas de colaborador\n")
+
+    falhas = 0
+
+    if not ARQUIVO_DA_GERENCIA.exists():
+        chamam = [c for c in endpoints if RE_CHAMADA_GERENCIA.search(ler(c))]
+        if chamam:
+            print(f"   FALHA  {relativo(ARQUIVO_DA_GERENCIA)} não existe")
+            print(f"          e {len(chamam)} endpoint(s) a chamam mesmo assim")
+            print()
+            return 1
+        print(f"   AVISO  {relativo(ARQUIVO_DA_GERENCIA)} não existe ainda\n")
+        return 0
+
+    if RE_CHAMADA_GERENCIA.search(ler(ARQUIVO_DA_GERENCIA)) is not None:
+        falhas += 1
+        print(f"   FALHA  {relativo(ARQUIVO_DA_GERENCIA)}")
+        print(f"          declara `{PROVA_GERENCIA}` e também a chama")
+    else:
+        print(f"   ok     {relativo(ARQUIVO_DA_GERENCIA)} declara a prova de gerência")
+
+    exigem = {c.name for c in endpoints if RE_CHAMADA_GERENCIA.search(ler(c))}
+
+    for nome in sorted(ESCRITAS_DE_COLABORADOR - exigem):
+        falhas += 1
+        print(f"   FALHA  apis/pet_bits/{nome}")
+        print(
+            f"          mantém o quadro e NÃO exige `{PROVA_GERENCIA}`\n"
+            "          uma conta de equipe comum passa a editar o cadastro de "
+            "um colaborador"
+        )
+
+    for nome in sorted(exigem - ESCRITAS_DE_COLABORADOR):
+        falhas += 1
+        print(f"   FALHA  apis/pet_bits/{nome}")
+        print(
+            f"          exige `{PROVA_GERENCIA}` sem manter o quadro\n"
+            "          ou a lista de escritas está desatualizada, ou uma "
+            "leitura ficou\n          restrita à gerência sem ninguém decidir "
+            "isso"
+        )
+
+    if not falhas:
+        print(
+            f"   ok     as {len(ESCRITAS_DE_COLABORADOR)} escritas de "
+            "colaborador exigem gerência, e só elas"
+        )
+
+    print()
+    return falhas
+
+
 def main() -> int:
     global _IGNORADOS
     _IGNORADOS = _ler_ignorados()
@@ -421,8 +514,9 @@ def main() -> int:
     falhas_2 = conferencia_2(endpoints)
     chamadores = sum(1 for c in endpoints if RE_CHAMADA.search(ler(c)))
     falhas_3 = conferencia_3(chamadores)
+    falhas_4 = conferencia_4(endpoints)
 
-    total = falhas_1 + falhas_2 + falhas_3
+    total = falhas_1 + falhas_2 + falhas_3 + falhas_4
     if total == 0:
         print(f"{len(endpoints)} endpoint(s) de equipe conferido(s), nenhuma acusação")
         return 0

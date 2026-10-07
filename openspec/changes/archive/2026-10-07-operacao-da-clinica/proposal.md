@@ -21,7 +21,8 @@ colaborador cadastrado não há quem atenda, e sem serviço cadastrado não há
 - Quem entra é levado à **sua** área: o tutor para os animais, a equipe para
   o painel da clínica.
 - A equipe **cadastra e mantém colaboradores**: nome, função (veterinário,
-  tosador, atendente) e contato.
+  tosador, atendente) e contato. *(O conjunto ganhou `gerente` e
+  `clinico_geral` ainda durante a aplicação — ver D12 no design.)*
 - A equipe **cadastra e mantém serviços**: nome, preço e duração estimada.
 - A equipe **vê todos os tutores e todos os animais** da clínica — a visão
   que o tutor não tem.

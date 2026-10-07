@@ -86,6 +86,14 @@ class AuthState(rx.State):
     erro: str = ""
     enviando: bool = False
 
+    # O olho da senha. Começa oculto e **não** é persistido de propósito: um
+    # campo que lembra que estava visível mostra a senha para a próxima pessoa
+    # que abrir o navegador — e este sistema roda num computador de recepção.
+    # Sair da tela e voltar recomeça oculto, porque o estado se perde junto
+    # com a navegação.
+    senha_visivel: bool = False
+    cad_senha_visivel: bool = False
+
     # Atalho Alt+1 da tela de entrada, só em desenvolvimento. A lista que vai
     # ao navegador tem rótulo e e-mail, **nunca** a senha: ela só sai do
     # backend quando a conta é escolhida, e aí vai para o campo do formulário,
@@ -102,6 +110,28 @@ class AuthState(rx.State):
         if isinstance(value, list):
             value = value[0] if value else "cliente"
         self.aba = value or "cliente"
+
+    def alternar_senha(self):
+        self.senha_visivel = not self.senha_visivel
+
+    def alternar_cad_senha(self):
+        self.cad_senha_visivel = not self.cad_senha_visivel
+
+    @rx.var
+    def tipo_senha(self) -> str:
+        return "text" if self.senha_visivel else "password"
+
+    @rx.var
+    def tipo_cad_senha(self) -> str:
+        return "text" if self.cad_senha_visivel else "password"
+
+    @rx.var
+    def icone_senha(self) -> str:
+        return "eye-off" if self.senha_visivel else "eye"
+
+    @rx.var
+    def icone_cad_senha(self) -> str:
+        return "eye-off" if self.cad_senha_visivel else "eye"
 
     def set_login_email(self, value: str):
         self.login_email = value
@@ -195,6 +225,17 @@ class AuthState(rx.State):
         return xano.eh_equipe(self.usuario_papel)
 
     @rx.var
+    def eh_gerencia(self) -> bool:
+        """Mantém o quadro de colaboradores.
+
+        Como `eh_equipe`, serve para **desenhar** a tela, nunca para proteger
+        dado: quem editar `petbits_papel` no armazenamento local vê os botões
+        de criar e alterar, e recebe 403 em cada requisição. Quem recusa é o
+        `exige_gerencia`, no Xano, lendo o papel do banco a cada chamada.
+        """
+        return xano.eh_gerencia(self.usuario_papel)
+
+    @rx.var
     def papel_indefinido(self) -> bool:
         """Conta autenticada cujo papel não é nem equipe nem tutor.
 
@@ -238,6 +279,8 @@ class AuthState(rx.State):
         # descobre quem usou o sistema antes dela.
         self.login_email = ""
         self.login_senha = ""
+        self.senha_visivel = False
+        self.cad_senha_visivel = False
         self.aba = "cliente"
         self.erro = ""
 
@@ -263,13 +306,43 @@ class AuthState(rx.State):
         finally:
             self.enviando = False
 
+        # --- daqui para baixo, a credencial JÁ foi confirmada ---
+        #
+        # É o único lugar onde a aba pode significar alguma coisa. Antes deste
+        # ponto nada depende dela: as duas requisições acima são byte a byte
+        # as mesmas nas duas abas, na mesma ordem, e a aba não chegou ao
+        # servidor. Quem errou a senha continua sem aprender se o e-mail
+        # existe ou que papel a conta tem.
+        #
+        # Depois deste ponto, pode: quem acertou a senha já sabe de quem é a
+        # conta, e dizer "esta é de colaborador" não entrega nada.
+        papel = perfil.get("role") or ""
+
+        if not xano.papel_conhecido(papel):
+            self.login_senha = ""
+            self.erro = (
+                "Sua conta está sem perfil definido. Procure a clínica para "
+                "liberar o seu acesso."
+            )
+            return
+
+        if xano.aba_do_papel(papel) != self.aba:
+            # A sessão **não é guardada**: o Xano emitiu um token e nós o
+            # descartamos aqui. A recusa é da aplicação, não da autenticação —
+            # fazer o backend recusar exigiria contar a ele qual aba foi
+            # usada, que é exatamente o que não pode acontecer.
+            self.login_senha = ""
+            self.erro = (
+                "Esta conta entra pela aba Colaborador."
+                if xano.eh_equipe(papel)
+                else "Esta conta entra pela aba Cliente."
+            )
+            return
+
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
-        # O destino vem do papel que o servidor devolveu em `/auth/me`,
-        # **nunca** da aba escolhida. Quem entra pela aba "errada" com
-        # credencial correta entra em silêncio e vai para a área do papel
-        # dela: "esta conta não é da equipe" seria a única diferença
-        # observável entre as abas, e seria o oráculo de papel inteiro.
+        # O destino vem do papel que o servidor devolveu, não da aba: a aba só
+        # decidiu se a entrada era permitida, e a área é consequência do papel.
         yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
 
     async def cadastrar(self):
@@ -386,5 +459,11 @@ class AuthState(rx.State):
         porta trancada naquele navegador."""
         self.enviando = False
         if self.token:
-            return rx.redirect("/")
+            # Para a área do PAPEL, não para `/` sempre. Com `/` fixo, uma
+            # conta de equipe que voltasse à porta caía na lista de animais e
+            # lia "Nenhum animal cadastrado ainda" — exatamente o sintoma
+            # absurdo que a change `operacao-da-clinica` abriu reclamando, e
+            # que ela corrigiu só no caminho da entrada. Este caminho ficou
+            # para trás e só apareceu quando a gerência foi testada.
+            return rx.redirect(xano.rota_do_papel(self.usuario_papel))
         return None

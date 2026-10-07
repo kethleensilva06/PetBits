@@ -35,10 +35,16 @@ GRUPO_AUTH = "auth"
 # nenhuma outra parte do código compara com as strings cruas.
 
 PAPEL_TUTOR = "member"
-PAPEL_EQUIPE = "admin"
+PAPEL_GERENCIA = "admin"
+PAPEL_EQUIPE_COMUM = "staff"
 
 ROTA_EQUIPE = "/equipe"
 ROTA_TUTOR = "/"
+
+# Mantido para quem ainda importa pelo nome antigo. `admin` deixou de querer
+# dizer "equipe" e passou a querer dizer "gerencia" quando o terceiro papel
+# entrou — e um apelido que mente é pior que um import quebrado.
+PAPEL_EQUIPE = PAPEL_GERENCIA
 
 
 def eh_tutor(papel: str) -> bool:
@@ -46,17 +52,35 @@ def eh_tutor(papel: str) -> bool:
 
 
 def eh_equipe(papel: str) -> bool:
-    return papel == PAPEL_EQUIPE
+    """Alcança a área da clínica: gerência **ou** equipe comum.
+
+    Comparação por igualdade contra cada valor esperado, e não
+    `!= PAPEL_TUTOR`. A negação leria igual e deixaria passar papel vazio — e
+    a coluna é opcional, então vazio é um estado real — além de qualquer valor
+    que alguém acrescente ao enum amanhã sem lembrar desta linha.
+    """
+    return papel in (PAPEL_GERENCIA, PAPEL_EQUIPE_COMUM)
+
+
+def eh_gerencia(papel: str) -> bool:
+    """Mantém o quadro de colaboradores. Um degrau acima de `eh_equipe`.
+
+    Serve para **esconder** controle, nunca para proteger dado: quem edita o
+    armazenamento local vê os botões e recebe 403 em cada requisição. Quem
+    recusa é o `exige_gerencia`, no Xano, lendo o papel do banco.
+    """
+    return papel == PAPEL_GERENCIA
 
 
 def papel_conhecido(papel: str) -> bool:
     """A coluna `role` é opcional no Xano, então vazio é um estado real.
 
     Uma conta de equipe nasce à mão no painel, e esquecer a coluna é o erro de
-    operação mais provável do projeto — é assim que o primeiro admin da
-    clínica vai ser criado.
+    operação mais provável do projeto. Com três valores em vez de dois, há
+    agora duas formas de errar a criação, e a mais provável é gravar gerência
+    como equipe comum — que só aparece quando a pessoa tenta editar.
     """
-    return papel in (PAPEL_TUTOR, PAPEL_EQUIPE)
+    return papel in (PAPEL_TUTOR, PAPEL_GERENCIA, PAPEL_EQUIPE_COMUM)
 
 
 def papel_legivel(papel: str) -> str:
@@ -68,7 +92,9 @@ def papel_legivel(papel: str) -> str:
     esta change existe para matar. Papel desconhecido agora se chama pelo
     nome.
     """
-    if eh_equipe(papel):
+    if papel == PAPEL_GERENCIA:
+        return "Gerência"
+    if papel == PAPEL_EQUIPE_COMUM:
         return "Equipe"
     if eh_tutor(papel):
         return "Tutor"
@@ -85,6 +111,21 @@ def rota_do_papel(papel: str) -> str:
     não alcança dado de ninguém.
     """
     return ROTA_EQUIPE if eh_equipe(papel) else ROTA_TUTOR
+
+
+def aba_do_papel(papel: str) -> str:
+    """Qual aba da tela de entrada corresponde a este papel.
+
+    Usada **só depois** de a credencial ter sido confirmada. Antes disso nada
+    pode depender da aba — nem status, nem corpo, nem tempo, nem número de
+    requisições —, e é por isso que a aba não é enviada ao servidor: a
+    comparação acontece aqui, com o papel que o `/auth/me` devolveu.
+    """
+    return ABA_COLABORADOR if eh_equipe(papel) else ABA_CLIENTE
+
+
+ABA_CLIENTE = "cliente"
+ABA_COLABORADOR = "colaborador"
 
 
 # --- erros --------------------------------------------------------------------

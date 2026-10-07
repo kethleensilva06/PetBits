@@ -130,7 +130,7 @@ Ser o responsável por um atendimento — quem executou o serviço.
 ### Principais informações
 
 - nome;
-- função (veterinário, tosador, atendente);
+- função (gerente, veterinário, clínico geral, tosador, atendente);
 - contato;
 - data de entrada na clínica.
 

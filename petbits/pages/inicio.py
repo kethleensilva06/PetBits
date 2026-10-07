@@ -224,7 +224,15 @@ def inicio_page() -> rx.Component:
                     columns=rx.breakpoints(initial="1", md="2"),
                     spacing="3", width="100%",
                 ),
-                rx.cond(PetState.mostrar_vazio, _vazio(), _carregando()),
+                # QUATRO estados disjuntos: tem, está vindo, está vazio, e
+                # falhou. O quarto é o que se esquece — com "carregando" como
+                # caso padrão, a tela mostrava o erro e o spinner juntos. O
+                # erro já aparece no callout acima, então aqui não vai nada.
+                rx.cond(
+                    PetState.mostrar_carregando,
+                    _carregando(),
+                    rx.cond(PetState.mostrar_vazio, _vazio(), rx.fragment()),
+                ),
             ),
             _dialogo(),
             spacing="4", align_items="start", padding_y="3rem", width="100%",

@@ -27,7 +27,7 @@
 // fechando. Alem disso ela e objeto `xano:quick-start`: um re-push do template
 // a substitui.
 function "PetBits/exige_equipe" {
-  description = "Confirma que a conta autenticada e da equipe e devolve o id dela"
+  description = "Confirma que a conta autenticada e da equipe (gerencia ou comum) e devolve o id dela"
 
   input {
     // Sempre o $auth.id do endpoint que chamou, NUNCA um id vindo do corpo ou
@@ -96,7 +96,19 @@ function "PetBits/exige_equipe" {
     //
     // `==`, e nao `===`: o parser aceita os dois, o motor devolve ERROR_FATAL
     // no segundo (fato medido 2).
-    precondition ($conta.role == "admin") {
+    // DOIS literais, cada um por IGUALDADE -- e nao `!= "member"`.
+    //
+    // A tentacao, agora que ha tres valores, e dizer "nao e tutor, logo e
+    // equipe". Ela compila limpa e passa em revisao, e deixa entrar: papel
+    // vazio (coluna opcional, e e assim que a conta nasce a mao), papel com
+    // erro de digitacao ("Admin", "stafff"), e qualquer valor que alguem
+    // acrescente ao enum amanha sem lembrar desta linha. Igualdade contra o
+    // que se espera falha fechada nos tres casos.
+    //
+    // `admin` e gerencia, `staff` e equipe comum. Os dois alcancam a area da
+    // clinica; so a gerencia mantem o quadro, e isso quem cobra e a irma
+    // `exige_gerencia`, nao esta funcao.
+    precondition (($conta.role == "admin") || ($conta.role == "staff")) {
       error_type = "accessdenied"
       error = "Sem permissao para esta area."
     }

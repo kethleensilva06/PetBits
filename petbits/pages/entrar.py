@@ -11,6 +11,50 @@ from reflex.utils.exec import is_prod_mode
 from petbits.states.auth_state import AuthState
 
 
+def _campo_senha(
+    rotulo: str, placeholder: str, valor, on_change, tipo, icone, alternar
+) -> rx.Component:
+    """Campo de senha com o olho de conferir o que foi digitado.
+
+    Numa tela onde a recusa é genérica de propósito — "credenciais
+    inválidas", sem dizer o quê —, errar a senha e não poder conferir o que
+    foi digitado é atrito gratuito.
+
+    O botão fica **fora** da ordem de tabulação (`tab_index=-1`): quem navega
+    pelo teclado vai do campo direto para o Entrar, como antes. E ele não é
+    `type="submit"`, senão clicar no olho enviaria o formulário.
+    """
+    return rx.vstack(
+        rx.text(rotulo, size="2", weight="medium"),
+        rx.hstack(
+            rx.input(
+                placeholder=placeholder,
+                type=tipo,
+                value=valor,
+                on_change=on_change,
+                size="3",
+                width="100%",
+            ),
+            rx.icon_button(
+                rx.icon(icone, size=18),
+                on_click=alternar,
+                type="button",
+                tab_index=-1,
+                variant="soft",
+                color_scheme="gray",
+                size="3",
+                aria_label="Mostrar ou ocultar a senha",
+            ),
+            spacing="2",
+            width="100%",
+            align="center",
+        ),
+        spacing="1",
+        width="100%",
+        align_items="start",
+    )
+
+
 def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
     return rx.vstack(
         rx.text(rotulo, size="2", weight="medium"),
@@ -208,16 +252,14 @@ def _formulario_de_entrada() -> rx.Component:
                 width="100%",
             ),
         ),
-        _campo(
+        _campo_senha(
             "Senha",
-            rx.input(
-                placeholder="Sua senha",
-                type="password",
-                value=AuthState.login_senha,
-                on_change=AuthState.set_login_senha,
-                size="3",
-                width="100%",
-            ),
+            "Sua senha",
+            AuthState.login_senha,
+            AuthState.set_login_senha,
+            AuthState.tipo_senha,
+            AuthState.icone_senha,
+            AuthState.alternar_senha,
         ),
         titulo="Entrar",
         subtitulo="Clientes e equipe da clínica entram por aqui.",
@@ -309,27 +351,23 @@ def cadastro_page() -> rx.Component:
                 width="100%",
             ),
         ),
-        _campo(
+        _campo_senha(
             "Senha",
-            rx.input(
-                placeholder="Mínimo 8 caracteres",
-                type="password",
-                value=AuthState.cad_senha,
-                on_change=AuthState.set_cad_senha,
-                size="3",
-                width="100%",
-            ),
+            "Mínimo 8 caracteres",
+            AuthState.cad_senha,
+            AuthState.set_cad_senha,
+            AuthState.tipo_cad_senha,
+            AuthState.icone_cad_senha,
+            AuthState.alternar_cad_senha,
         ),
-        _campo(
+        _campo_senha(
             "Confirmar senha",
-            rx.input(
-                placeholder="Repita a senha",
-                type="password",
-                value=AuthState.cad_confirmar,
-                on_change=AuthState.set_cad_confirmar,
-                size="3",
-                width="100%",
-            ),
+            "Repita a senha",
+            AuthState.cad_confirmar,
+            AuthState.set_cad_confirmar,
+            AuthState.tipo_cad_senha,
+            AuthState.icone_cad_senha,
+            AuthState.alternar_cad_senha,
         ),
         # A regra aparece antes de o erro acontecer: descobri-la por tentativa
         # e erro é o que faz gente desistir do cadastro.

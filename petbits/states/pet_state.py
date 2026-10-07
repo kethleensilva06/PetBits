@@ -84,6 +84,22 @@ class PetState(rx.State):
         """
         return self.ja_carregou and not self.carregando and not self.load_error and not self.animais
 
+    @rx.var
+    def mostrar_carregando(self) -> bool:
+        """Carregando é um estado, não o resto do mundo.
+
+        Sem esta var, "carregando" era o caso padrão de tudo que não fosse
+        "tem animais" nem "vazio" — e uma carga que falhou ficava mostrando o
+        erro **e** o spinner, lado a lado, para sempre, sem nada reagendar a
+        tentativa.
+
+        A área da equipe corrigiu isso quando apareceu; esta tela ficou para
+        trás, e a revisão adversarial a encontrou. É o mesmo defeito da outra
+        ponta, que esta tela já tinha corrigido: dizer "nenhum animal
+        cadastrado" enquanto a lista ainda vinha.
+        """
+        return self.carregando or (not self.ja_carregou and not self.load_error)
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado ao sair."""
         self.animais = []

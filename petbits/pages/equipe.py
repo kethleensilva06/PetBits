@@ -14,7 +14,7 @@ tutor e animal não foi desenhada nesta change.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
-from petbits.states.equipe_state import FUNCOES, EquipeState
+from petbits.states.equipe_state import FUNCAO_LEGIVEL, FUNCOES, EquipeState
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -263,11 +263,18 @@ def _cartao_colaborador(c: dict) -> rx.Component:
                 align_items="start",
             ),
             rx.spacer(),
-            rx.button(
-                "Editar",
-                on_click=lambda: EquipeState.editar_colaborador(c),
-                variant="soft",
-                size="1",
+            # Manter o quadro e da gerencia. Esconder e CONVENIENCIA: quem
+            # forjar o papel no armazenamento local ve o botao e recebe 403
+            # do `exige_gerencia` em cada tentativa.
+            rx.cond(
+                AuthState.eh_gerencia,
+                rx.button(
+                    "Editar",
+                    on_click=lambda: EquipeState.editar_colaborador(c),
+                    variant="soft",
+                    size="1",
+                ),
+                rx.fragment(),
             ),
             width="100%",
             align="start",
@@ -286,8 +293,16 @@ def _dialogo_colaborador() -> rx.Component:
                                         value=EquipeState.col_nome,
                                         on_change=EquipeState.set_col_nome,
                                         width="100%")),
-                _campo("Função", rx.select(
-                    FUNCOES,
+                # `rx.select` com lista de strings renderiza a string crua, e
+                # o cartao ao lado ja mostra o rotulo traduzido -- "Clinico
+                # geral" na lista e `clinico_geral` no seletor, no mesmo
+                # clique. O mapa de rotulos ja existia duas linhas abaixo da
+                # lista; faltava aplica-lo aqui.
+                _campo("Função", rx.select.root(
+                    rx.select.trigger(width="100%"),
+                    rx.select.content(
+                        *[rx.select.item(FUNCAO_LEGIVEL[v], value=v) for v in FUNCOES]
+                    ),
                     value=EquipeState.col_funcao,
                     on_change=EquipeState.set_col_funcao,
                     width="100%",
@@ -339,8 +354,13 @@ def colaboradores_page() -> rx.Component:
             _vazio(
                 "Nenhum colaborador cadastrado",
                 "Cadastre quem trabalha na clínica para poder montar a agenda depois.",
-                rx.button("Cadastrar colaborador",
-                          on_click=EquipeState.novo_colaborador, size="3"),
+                rx.cond(
+                    AuthState.eh_gerencia,
+                    rx.button("Cadastrar colaborador",
+                              on_click=EquipeState.novo_colaborador, size="3"),
+                    rx.text("Peça à gerência para cadastrar.", size="2",
+                            color=rx.color("gray", 10)),
+                ),
             ),
             "os colaboradores",
         ),
@@ -349,7 +369,7 @@ def colaboradores_page() -> rx.Component:
         titulo="Colaboradores",
         subtitulo="Quem trabalha na clínica. Cadastrar aqui não cria conta de acesso.",
         acao=rx.cond(
-            EquipeState.tem_colaboradores,
+            AuthState.eh_gerencia & EquipeState.tem_colaboradores,
             rx.button(rx.icon("plus", size=16), "Novo colaborador",
                       on_click=EquipeState.novo_colaborador),
             rx.fragment(),
