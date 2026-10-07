@@ -50,7 +50,7 @@ equipe por nenhuma aba.
 - **WHEN** uma conta de equipe autentica com sucesso pela aba Colaborador
 - **THEN** ela é levada à área da equipe
 
-#### Scenario: Tutor entra pela aba Colaborador
+#### Scenario: Pessoa entra pela aba que não corresponde ao papel dela
 
 - **WHEN** uma conta de tutor autentica com sucesso pela aba Colaborador
 - **THEN** a sessão é iniciada normalmente
