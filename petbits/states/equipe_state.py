@@ -32,11 +32,12 @@ from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 # administra a clínica no dia a dia; quem administra o SISTEMA é definido pelo
 # papel da conta, que é outra coisa e mora na tabela `user`. Confundir os dois
 # seria o caminho mais curto para alguém ganhar acesso ao se autointitular.
-FUNCOES = ["gerente", "veterinario", "tosador", "atendente"]
+FUNCOES = ["gerente", "veterinario", "clinico_geral", "tosador", "atendente"]
 
 FUNCAO_LEGIVEL = {
     "gerente": "Gerente",
     "veterinario": "Veterinário",
+    "clinico_geral": "Clínico geral",
     "tosador": "Tosador",
     "atendente": "Atendente",
 }

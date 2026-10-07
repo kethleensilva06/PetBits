@@ -559,6 +559,36 @@ para pegar (fato medido 5). **Medição sobre base vazia não mede nada**, e o
 construto cujo erro é silencioso é justamente aquele em que o falso verde
 passa despercebido. Foi preciso semear e repetir.
 
+### D12 — Cargo não é permissão, e o conjunto fechado tem uma imprecisão aceita
+
+O conjunto de funções cresceu durante a aplicação, a pedido da clínica:
+`gerente` e `clinico_geral` entraram junto com veterinário, tosador e
+atendente. Duas coisas valem ficar escritas, porque nenhuma delas é óbvia
+daqui a seis meses.
+
+**Cargo não é permissão.** "Gerente" é o que a pessoa faz na clínica; o que a
+conta dela alcança vem do **papel**, que mora em `user.role` e continua sendo
+concedido fora da aplicação. Se um dia alguém quiser que gerente alcance mais
+que atendente, isso é um **terceiro papel**, não uma leitura do cargo — e a
+diferença importa: derivar permissão do cargo faria qualquer pessoa com
+escrita em `colaborador` conceder acesso a si mesma, e a escrita em
+`colaborador` é justamente o que toda conta de equipe tem.
+
+Foi por isso que `gestor` **não** entrou como valor novo: é sinônimo de
+gerente, e dois valores sinônimos num conjunto fechado tornam o dado inútil —
+ninguém sabe por qual filtrar, e as duas metades da clínica acabam em listas
+diferentes.
+
+**A imprecisão aceita:** `clinico_geral` é uma **especialidade de
+veterinário**, não um cargo irmão dele. Num conjunto fechado e exclusivo os
+dois não coexistem numa ficha, então "veterinário, clínico geral" — o caso
+mais comum de uma clínica — não tem como ser dito, e um veterinário clínico
+geral some de qualquer filtro por `veterinario`. A forma correta é um campo de
+especialidade separado da função. Entrou assim porque foi o que a clínica
+pediu e porque a change ainda não estava arquivada; fica registrado como a
+primeira coisa a refazer quando houver motivo, e **não** como se estivesse
+certo.
+
 ## Risks / Trade-offs
 
 **+1 consulta ao banco em toda requisição de equipe, sem exceção.** É o preço
