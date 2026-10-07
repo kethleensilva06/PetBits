@@ -15,8 +15,9 @@ Xano.
 from typing import Optional
 
 import reflex as rx
+from reflex.utils.exec import is_prod_mode
 
-from petbits import xano
+from petbits import contas_de_teste, xano
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
 # Espelha os filtros da coluna `password` da tabela user no Xano
@@ -85,6 +86,13 @@ class AuthState(rx.State):
     erro: str = ""
     enviando: bool = False
 
+    # Atalho Alt+1 da tela de entrada, só em desenvolvimento. A lista que vai
+    # ao navegador tem rótulo e e-mail, **nunca** a senha: ela só sai do
+    # backend quando a conta é escolhida, e aí vai para o campo do formulário,
+    # como se tivesse sido digitada.
+    painel_teste_aberto: bool = False
+    contas_teste: list[dict[str, str]] = []
+
     def set_aba(self, value: str | list[str]):
         """O `segmented_control` do Radix entrega `str | list[str]` — ele
         serve também para seleção múltipla, e o Reflex cobra a anotação
@@ -100,6 +108,47 @@ class AuthState(rx.State):
 
     def set_login_senha(self, value: str):
         self.login_senha = value
+
+    # --- atalho de contas de teste ---------------------------------------
+    #
+    # A página só monta o ouvinte de teclado fora de produção, mas esconder
+    # não é proteger: o evento pode chegar pelo WebSocket na mão. Por isso os
+    # dois manipuladores conferem o modo de novo e não fazem nada em produção.
+    # Nenhum deles lê nem altera `aba` — uma lista diferente por aba seria a
+    # primeira diferença observável entre elas.
+
+    def tecla_na_entrada(self, tecla: str, modificadores: dict):
+        """`Alt+1` alterna a lista; `Esc` fecha. O "¡" é o `Alt+1` do macOS."""
+        if is_prod_mode():
+            return
+        if tecla == "Escape":
+            self.painel_teste_aberto = False
+        elif modificadores.get("alt_key") and tecla in ("1", "¡"):
+            if not self.painel_teste_aberto:
+                self.contas_teste = [
+                    {"rotulo": c["rotulo"], "email": c["email"]}
+                    for c in contas_de_teste.ler()
+                ]
+            self.painel_teste_aberto = not self.painel_teste_aberto
+
+    def fechar_painel_teste(self):
+        self.painel_teste_aberto = False
+
+    def escolher_conta_teste(self, indice: int):
+        """Preenche o formulário com a conta escolhida. Não entra: a entrada
+        continua sendo o envio do formulário, pela verificação de sempre.
+
+        O arquivo é relido aqui, em vez de guardar as senhas no estado na
+        abertura — guardadas, elas iriam ao navegador junto com a lista."""
+        if is_prod_mode():
+            return
+        contas = contas_de_teste.ler()
+        if not 0 <= indice < len(contas):
+            return
+        self.login_email = contas[indice]["email"]
+        self.login_senha = contas[indice]["senha"]
+        self.erro = ""
+        self.painel_teste_aberto = False
 
     def set_cad_nome(self, value: str):
         self.cad_nome = value

@@ -6,6 +6,7 @@ como defeito mas todo mundo sente.
 """
 
 import reflex as rx
+from reflex.utils.exec import is_prod_mode
 
 from petbits.states.auth_state import AuthState
 
@@ -109,7 +110,91 @@ def _abas() -> rx.Component:
     )
 
 
+def _conta_teste(conta: rx.Var, indice: rx.Var) -> rx.Component:
+    return rx.button(
+        rx.text(conta["email"], size="2", weight="medium", trim="both"),
+        rx.spacer(),
+        rx.text(conta["rotulo"], size="1", color=rx.color("gray", 10), trim="both"),
+        on_click=AuthState.escolher_conta_teste(indice),
+        variant="ghost",
+        color_scheme="gray",
+        width="100%",
+        justify="between",
+        padding="0.4rem 0.5rem",
+        margin="0",
+        cursor="pointer",
+    )
+
+
+def _painel_contas_teste() -> rx.Component:
+    """A janelinha do `Alt+1`, igual à do projeto Mercadinho.
+
+    Só é montada fora de produção (`entrar_page`), e os manipuladores recusam
+    em produção mesmo assim. A lista é a mesma nas duas abas.
+    """
+    return rx.fragment(
+        rx.window_event_listener(on_key_down=AuthState.tecla_na_entrada),
+        rx.cond(
+            AuthState.painel_teste_aberto,
+            rx.box(
+                rx.hstack(
+                    rx.text(
+                        "Contas de teste (Alt+1)",
+                        size="1",
+                        weight="bold",
+                        color=rx.color("gray", 10),
+                    ),
+                    rx.spacer(),
+                    rx.icon_button(
+                        rx.icon("x", size=14),
+                        on_click=AuthState.fechar_painel_teste,
+                        variant="ghost",
+                        color_scheme="gray",
+                        size="1",
+                        aria_label="Fechar",
+                    ),
+                    align="center",
+                    width="100%",
+                    margin_bottom="0.25rem",
+                ),
+                rx.cond(
+                    AuthState.contas_teste.length() > 0,
+                    rx.vstack(
+                        rx.foreach(AuthState.contas_teste, _conta_teste),
+                        spacing="1",
+                        width="100%",
+                    ),
+                    rx.text(
+                        "Nenhuma conta. Crie contas-de-teste.local.txt na raiz "
+                        "do projeto (veja o README).",
+                        size="1",
+                        color=rx.color("gray", 10),
+                    ),
+                ),
+                position="fixed",
+                left="1rem",
+                bottom="1rem",
+                width="20rem",
+                max_width="calc(100vw - 2rem)",
+                padding="0.75rem",
+                border_radius="12px",
+                background=rx.color("gray", 1),
+                border=f"1px solid {rx.color('gray', 6)}",
+                box_shadow="0 8px 24px rgba(0, 0, 0, 0.15)",
+                z_index="10",
+            ),
+        ),
+    )
+
+
 def entrar_page() -> rx.Component:
+    pagina = _formulario_de_entrada()
+    if is_prod_mode():
+        return pagina
+    return rx.fragment(pagina, _painel_contas_teste())
+
+
+def _formulario_de_entrada() -> rx.Component:
     return _casca(
         _abas(),
         _campo(
