@@ -173,6 +173,13 @@ sem duração não há agenda calculável.
 único ramo do domínio independente do agendamento, então adiá-lo não bloqueia
 nada. Entra como sexta change se houver fôlego.
 
+**Changes de apoio, fora da contagem:** não entregam funcionalidade para a
+clínica, mas passam pelo mesmo fluxo.
+
+| Change | O que passa a ser possível |
+|---|---|
+| `atalho-contas-de-teste` ✓ | Em desenvolvimento, `Alt+1` na entrada lista as contas de teste e preenche o formulário |
+
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
 
