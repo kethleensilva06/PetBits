@@ -53,13 +53,14 @@ letra ou sem ao menos um dígito, informando o motivo da recusa em português.
 
 O sistema SHALL autenticar a pessoa a partir de e-mail e senha. Credenciais
 inválidas MUST produzir sempre a mesma mensagem, independentemente de o
-e-mail existir ou não.
+e-mail existir ou não. A tela de entrada MAY oferecer abas por público, mas
+todas MUST usar a mesma verificação de credencial.
 
 #### Scenario: Credenciais corretas
 
 - **WHEN** a pessoa informa e-mail e senha corretos
 - **THEN** a sessão é iniciada
-- **AND** a pessoa é levada à tela pós-login
+- **AND** a pessoa é levada à área correspondente ao papel da conta dela
 
 #### Scenario: Senha incorreta
 
@@ -73,6 +74,23 @@ e-mail existir ou não.
 - **THEN** a entrada é recusada com **a mesma** mensagem do cenário anterior
 - **AND** a resposta não permite distinguir os dois casos, para não revelar
   quem possui conta
+
+#### Scenario: A aba escolhida não muda a verificação
+
+- **WHEN** as mesmas credenciais são enviadas por abas diferentes da tela de
+  entrada
+- **THEN** o resultado é idêntico: mesma recusa ou mesma aceitação, mesma
+  mensagem e mesmo tempo de resposta
+- **AND** não é possível deduzir o papel de uma conta pela aba em que ela
+  funciona
+
+#### Scenario: Pessoa entra pela aba que não corresponde ao papel dela
+
+- **WHEN** uma pessoa autentica com sucesso por uma aba diferente da do seu
+  papel
+- **THEN** a sessão é iniciada normalmente
+- **AND** ela é levada à área correspondente ao papel da conta, não à área
+  sugerida pela aba
 
 ### Requirement: Persistência da sessão
 
@@ -166,3 +184,27 @@ adaptar a interface e MUST NOT conceder acesso.
 - **WHEN** alguém altera o papel guardado no armazenamento local do navegador
 - **THEN** nenhum acesso adicional é concedido
 - **AND** o backend continua recusando o que aquele usuário não pode fazer
+
+### Requirement: As telas de entrada e de cadastro nunca ficam travadas
+
+Uma tentativa de entrar ou de criar conta que termine de qualquer forma —
+aceita, recusada, com erro inesperado ou interrompida — MUST NOT deixar o
+botão de envio desabilitado. Ao abrir a tela de entrada ou de cadastro, o
+botão de envio SHALL estar disponível.
+
+#### Scenario: Recusa libera o botão
+
+- **WHEN** a pessoa envia credenciais inválidas
+- **THEN** a recusa aparece e o botão Entrar volta a ficar disponível
+
+#### Scenario: Erro inesperado libera o botão
+
+- **WHEN** a tentativa de entrar termina com um erro que não é uma recusa do
+  Xano
+- **THEN** o botão Entrar volta a ficar disponível
+
+#### Scenario: Tentativa interrompida não trava a próxima visita
+
+- **WHEN** uma tentativa foi interrompida no meio, sem resposta, e a pessoa
+  abre ou recarrega a tela de entrada
+- **THEN** o botão Entrar está disponível
