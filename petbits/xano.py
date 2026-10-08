@@ -324,6 +324,16 @@ async def minha_ficha(token: str) -> Optional[dict]:
     return await _requisitar("GET", "/me/tutor", token=token)
 
 
+async def criar_minha_ficha(dados: dict, *, token: str) -> dict:
+    """Cria a ficha de tutor da conta logada (change
+    `cadastro-de-cliente-pela-conta`). O dono é o token; `dados` leva só
+    documento, telefone e endereço."""
+    criada = await _requisitar("POST", "/me/tutor", token=token, json=dados)
+    if criada is None:
+        raise XanoError("O Xano não confirmou o cadastro de cliente.")
+    return criada
+
+
 # --- animais ------------------------------------------------------------------
 #
 # O `token` e nomeado e **obrigatorio**, sem valor padrao. Esquece-lo falha na

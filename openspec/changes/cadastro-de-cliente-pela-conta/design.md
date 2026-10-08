@@ -37,11 +37,16 @@ CPF já existe, com o motivo no `event_log`. O endpoint exige login, mas uma
 conta qualquer sondando CPFs ainda descobriria quem é cliente da clínica se a
 recusa dissesse "CPF em uso".
 
-### D4 — Só a conta de equipe pergunta pela ficha
+### D4 — Só conta que não é de tutor pergunta pela ficha
 
 Conta de tutor nasce com ficha (cadastro público), então `PetState.carregar`
-só chama `GET me/tutor` quando o papel é de equipe. Para tutor o custo da
-tela não muda; para equipe é uma requisição a mais.
+só chama `GET me/tutor` quando o papel **não** é de tutor: equipe, ou conta
+sem papel. Para tutor o custo da tela não muda; para as outras é uma
+requisição a mais.
+
+*Corrigido na aplicação:* a primeira versão perguntava só para equipe. Uma
+conta de funcionário criada à mão sem `role` — o erro de operação que a change
+`operacao-da-clinica` já previa — caía na lista vazia, sem o formulário.
 
 ## Risks / Trade-offs
 

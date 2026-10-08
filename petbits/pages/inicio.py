@@ -138,6 +138,43 @@ def _vazio() -> rx.Component:
     )
 
 
+def _completar_cadastro() -> rx.Component:
+    """Conta de equipe sem ficha de tutor (change
+    `cadastro-de-cliente-pela-conta`). A ficha nasce ligada à própria conta,
+    com o nome e o e-mail dela; aqui só entram CPF, telefone e endereço."""
+    return rx.card(
+        rx.vstack(
+            rx.heading("Complete seu cadastro de cliente", size="4"),
+            rx.text(
+                "Sua conta ainda não tem cadastro de cliente. "
+                "Com ele, você pode cadastrar seus animais e marcar atendimentos.",
+                size="2", color=rx.color("gray", 10),
+            ),
+            _campo("CPF", rx.input(placeholder="000.000.000-00",
+                                   value=PetState.ficha_documento,
+                                   on_change=PetState.set_ficha_documento,
+                                   width="100%")),
+            _campo("Telefone", rx.input(placeholder="Opcional",
+                                        value=PetState.ficha_telefone,
+                                        on_change=PetState.set_ficha_telefone,
+                                        width="100%")),
+            _campo("Endereço", rx.input(placeholder="Opcional",
+                                        value=PetState.ficha_endereco,
+                                        on_change=PetState.set_ficha_endereco,
+                                        width="100%")),
+            rx.cond(
+                PetState.ficha_erro,
+                rx.callout(PetState.ficha_erro, icon="triangle_alert",
+                           color_scheme="red", size="1", width="100%"),
+            ),
+            rx.button("Concluir cadastro", on_click=PetState.completar_cadastro,
+                      disabled=PetState.ficha_enviando, size="3"),
+            spacing="3", align_items="start", width="100%", max_width="28rem",
+        ),
+        width="100%",
+    )
+
+
 def _carregando() -> rx.Component:
     """Enquanto a lista não chegou, não dizer que ela está vazia."""
     return rx.center(
@@ -222,13 +259,17 @@ def inicio_page() -> rx.Component:
                            color_scheme="red", size="1", width="100%"),
             ),
             rx.cond(
-                PetState.tem_animais,
-                rx.grid(
-                    rx.foreach(PetState.animais, _cartao),
-                    columns=rx.breakpoints(initial="1", md="2"),
-                    spacing="3", width="100%",
+                PetState.sem_ficha,
+                _completar_cadastro(),
+                rx.cond(
+                    PetState.tem_animais,
+                    rx.grid(
+                        rx.foreach(PetState.animais, _cartao),
+                        columns=rx.breakpoints(initial="1", md="2"),
+                        spacing="3", width="100%",
+                    ),
+                    rx.cond(PetState.mostrar_vazio, _vazio(), _carregando()),
                 ),
-                rx.cond(PetState.mostrar_vazio, _vazio(), _carregando()),
             ),
             _dialogo(),
             spacing="4", align_items="start", padding_y="3rem", width="100%",
