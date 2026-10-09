@@ -5,8 +5,8 @@
 
 ## 2. Percurso
 
-- [ ] 2.1 No navegador: conta de equipe pela aba Cliente vai para a área de cliente; pela aba Colaborador, para o painel
+- [ ] 2.1 No navegador: conta de equipe pela aba Cliente vai para a área de cliente; pela aba Colaborador, para o painel — NÃO FEITA: as abas foram substituídas por duas páginas de entrada na change `porta-de-entrada`, e a verificação equivalente é a dela
 
 ## 3. Fechamento
 
-- [ ] 3.1 `openspec validate --strict` e `verificar_equipe.py` limpos
+- [x] 3.1 `openspec validate --strict` e `verificar_equipe.py` limpos

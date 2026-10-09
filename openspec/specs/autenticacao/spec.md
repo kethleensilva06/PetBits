@@ -54,13 +54,17 @@ letra ou sem ao menos um dígito, informando o motivo da recusa em português.
 O sistema SHALL autenticar a pessoa a partir de e-mail e senha. Credenciais
 inválidas MUST produzir sempre a mesma mensagem, independentemente de o
 e-mail existir ou não. A tela de entrada MAY oferecer abas por público, mas
-todas MUST usar a mesma verificação de credencial.
+todas MUST usar a mesma verificação de credencial. Depois de a credencial ser
+aceita, a aba Cliente SHALL levar à área de cliente; a aba Colaborador SHALL
+levar à área da equipe quando a conta for de equipe, e à área de cliente
+quando não for. Uma conta que não é de equipe MUST NOT ser levada à área da
+equipe por nenhuma aba.
 
 #### Scenario: Credenciais corretas
 
 - **WHEN** a pessoa informa e-mail e senha corretos
 - **THEN** a sessão é iniciada
-- **AND** a pessoa é levada à área correspondente ao papel da conta dela
+- **AND** a pessoa é levada à área definida pela aba e pelo papel da conta
 
 #### Scenario: Senha incorreta
 
@@ -84,13 +88,23 @@ todas MUST usar a mesma verificação de credencial.
 - **AND** não é possível deduzir o papel de uma conta pela aba em que ela
   funciona
 
+#### Scenario: Equipe entra pela aba Cliente
+
+- **WHEN** uma conta de equipe autentica com sucesso pela aba Cliente
+- **THEN** a sessão é iniciada
+- **AND** ela é levada à área de cliente
+
+#### Scenario: Equipe entra pela aba Colaborador
+
+- **WHEN** uma conta de equipe autentica com sucesso pela aba Colaborador
+- **THEN** ela é levada à área da equipe
+
 #### Scenario: Pessoa entra pela aba que não corresponde ao papel dela
 
-- **WHEN** uma pessoa autentica com sucesso por uma aba diferente da do seu
-  papel
+- **WHEN** uma conta de tutor autentica com sucesso pela aba Colaborador
 - **THEN** a sessão é iniciada normalmente
-- **AND** ela é levada à área correspondente ao papel da conta, não à área
-  sugerida pela aba
+- **AND** ela é levada à área de cliente, sem aviso — um aviso de "esta conta
+  não é da equipe" seria uma diferença observável entre as abas
 
 ### Requirement: Persistência da sessão
 
