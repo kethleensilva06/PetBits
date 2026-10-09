@@ -29,6 +29,18 @@ class ContaDeTeste(TypedDict):
     rotulo: str
     email: str
     senha: str
+    grupo: str
+
+
+EQUIPE = "equipe"
+CLIENTES = "clientes"
+
+
+def _grupo(rotulo: str) -> str:
+    """`clientes` quando o rótulo começa com TUTOR ou CLIENTE; o resto é equipe
+    (change `atalho-de-clientes`, D1). É a convenção que o arquivo já usa."""
+    inicio = rotulo.upper()
+    return CLIENTES if inicio.startswith(("TUTOR", "CLIENTE")) else EQUIPE
 
 
 def ler() -> list[ContaDeTeste]:
@@ -46,7 +58,7 @@ def ler() -> list[ContaDeTeste]:
     for linha in ARQUIVO.read_text(encoding="utf-8").splitlines():
         texto = linha.strip()
         if re.match(r"^[A-Z]", texto):
-            atual = {"rotulo": texto}
+            atual = {"rotulo": texto, "grupo": _grupo(texto)}
             contas.append(atual)  # type: ignore[arg-type]
         elif atual is not None and ":" in texto:
             chave, _, valor = texto.partition(":")
@@ -54,3 +66,9 @@ def ler() -> list[ContaDeTeste]:
             if chave in ("email", "senha"):
                 atual[chave] = valor.strip()
     return [c for c in contas if c.get("email") and c.get("senha")]
+
+
+def do_grupo(grupo: str) -> list[ContaDeTeste]:
+    """As contas de um grupo, na ordem do arquivo. O índice da janelinha vale
+    dentro desta lista (D2)."""
+    return [c for c in ler() if c["grupo"] == grupo]

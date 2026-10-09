@@ -92,6 +92,10 @@ class AuthState(rx.State):
     # como se tivesse sido digitada.
     painel_teste_aberto: bool = False
     contas_teste: list[dict[str, str]] = []
+    # Qual lista está aberta: `equipe` (Alt+1) ou `clientes` (Alt+2). Fica no
+    # servidor e é ela que filtra a escolha — o clique manda só o índice
+    # (change `atalho-de-clientes`, D2).
+    painel_teste_grupo: str = contas_de_teste.EQUIPE
 
     def set_aba(self, value: str | list[str]):
         """O `segmented_control` do Radix entrega `str | list[str]` — ele
@@ -118,18 +122,40 @@ class AuthState(rx.State):
     # primeira diferença observável entre elas.
 
     def tecla_na_entrada(self, tecla: str, modificadores: dict):
-        """`Alt+1` alterna a lista; `Esc` fecha. O "¡" é o `Alt+1` do macOS."""
+        """`Alt+1` abre a equipe, `Alt+2` os clientes; `Esc` fecha.
+
+        O atalho da lista aberta fecha; o da outra troca de lista sem fechar
+        (change `atalho-de-clientes`). "¡" e "™" são `Alt+1` e `Alt+2` no
+        teclado do macOS.
+        """
         if is_prod_mode():
             return
         if tecla == "Escape":
             self.painel_teste_aberto = False
-        elif modificadores.get("alt_key") and tecla in ("1", "¡"):
-            if not self.painel_teste_aberto:
-                self.contas_teste = [
-                    {"rotulo": c["rotulo"], "email": c["email"]}
-                    for c in contas_de_teste.ler()
-                ]
-            self.painel_teste_aberto = not self.painel_teste_aberto
+            return
+        if not modificadores.get("alt_key"):
+            return
+        if tecla in ("1", "¡"):
+            grupo = contas_de_teste.EQUIPE
+        elif tecla in ("2", "™"):
+            grupo = contas_de_teste.CLIENTES
+        else:
+            return
+        if self.painel_teste_aberto and self.painel_teste_grupo == grupo:
+            self.painel_teste_aberto = False
+            return
+        self.painel_teste_grupo = grupo
+        self.contas_teste = [
+            {"rotulo": c["rotulo"], "email": c["email"]}
+            for c in contas_de_teste.do_grupo(grupo)
+        ]
+        self.painel_teste_aberto = True
+
+    @rx.var
+    def titulo_painel_teste(self) -> str:
+        if self.painel_teste_grupo == contas_de_teste.CLIENTES:
+            return "Clientes de teste (Alt+2)"
+        return "Equipe de teste (Alt+1)"
 
     def fechar_painel_teste(self):
         self.painel_teste_aberto = False
@@ -142,7 +168,8 @@ class AuthState(rx.State):
         abertura — guardadas, elas iriam ao navegador junto com a lista."""
         if is_prod_mode():
             return
-        contas = contas_de_teste.ler()
+        # O índice vale dentro do grupo aberto, que fica no servidor (D2).
+        contas = contas_de_teste.do_grupo(self.painel_teste_grupo)
         if not 0 <= indice < len(contas):
             return
         self.login_email = contas[indice]["email"]

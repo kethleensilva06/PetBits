@@ -72,11 +72,16 @@ própria.
 A sessão sobrevive a recarregar a página, a abrir outra aba e a reiniciar o
 `reflex run`. Sair limpa tudo.
 
-## Contas de teste (Alt+1)
+## Contas de teste (Alt+1 e Alt+2)
 
-Em desenvolvimento (`reflex run`), **Alt+1** na tela de entrada abre, no
-canto inferior esquerdo, a lista das contas de teste. Clicar numa delas
-preenche e-mail e senha; é só clicar em **Entrar**. **Esc** fecha.
+Em desenvolvimento (`reflex run`), na tela de entrada, **Alt+1** abre no
+canto inferior esquerdo a lista das contas de teste da **equipe**, e
+**Alt+2** a dos **clientes**. Clicar numa conta preenche e-mail e senha; é só
+clicar em **Entrar**. Com uma lista aberta, o atalho da outra troca de lista;
+**Esc** fecha.
+
+É cliente o bloco cujo rótulo começa com `TUTOR` ou `CLIENTE`; o resto é
+equipe. Só aparecem contas com a senha preenchida.
 
 As contas vêm de `contas-de-teste.local.txt`, na raiz do projeto. Ele é
 ignorado pelo git — cada pessoa cria o seu. Cada bloco começa com uma linha em

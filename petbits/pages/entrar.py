@@ -139,7 +139,7 @@ def _painel_contas_teste() -> rx.Component:
             rx.box(
                 rx.hstack(
                     rx.text(
-                        "Contas de teste (Alt+1)",
+                        AuthState.titulo_painel_teste,
                         size="1",
                         weight="bold",
                         color=rx.color("gray", 10),
@@ -165,8 +165,8 @@ def _painel_contas_teste() -> rx.Component:
                         width="100%",
                     ),
                     rx.text(
-                        "Nenhuma conta. Crie contas-de-teste.local.txt na raiz "
-                        "do projeto (veja o README).",
+                        "Nenhuma conta com senha neste grupo. Preencha a senha "
+                        "em contas-de-teste.local.txt (veja o README).",
                         size="1",
                         color=rx.color("gray", 10),
                     ),
