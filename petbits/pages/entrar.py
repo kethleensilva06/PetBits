@@ -80,36 +80,6 @@ def _casca(
     )
 
 
-def _abas() -> rx.Component:
-    """Cliente e Colaborador.
-
-    As duas abas são **o mesmo formulário e o mesmo manipulador de estado**,
-    não dois. Isso não é economia de código: é o que faz o número de
-    requisições e o tempo de resposta serem iguais nas duas **por
-    construção**, e não por cuidado de quem revisa.
-
-    A aba não é enviada ao servidor — nem no corpo, nem na query, nem em
-    cabeçalho, nem no caminho. Enquanto o backend não souber qual aba foi
-    usada, nenhuma mudança futura consegue fazer a resposta depender dela.
-
-    Se as duas verificassem de jeitos diferentes, descobrir quem é
-    colaborador da clínica seria tentar o mesmo e-mail nas duas e ver em qual
-    passa — e isso entrega o organograma a qualquer pessoa.
-
-    **Quem entrar pela aba "errada" com a senha certa entra em silêncio**, e
-    vai para a área do papel da conta. Um aviso de "esta conta não é da
-    equipe" seria a única diferença observável entre as abas, e seria o
-    oráculo inteiro de volta.
-    """
-    return rx.segmented_control.root(
-        rx.segmented_control.item("Cliente", value="cliente"),
-        rx.segmented_control.item("Colaborador", value="colaborador"),
-        value=AuthState.aba,
-        on_change=AuthState.set_aba,
-        width="100%",
-    )
-
-
 def _conta_teste(conta: rx.Var, indice: rx.Var) -> rx.Component:
     return rx.button(
         rx.text(conta["email"], size="2", weight="medium", trim="both"),
@@ -130,7 +100,7 @@ def _painel_contas_teste() -> rx.Component:
     """A janelinha do `Alt+1`, igual à do projeto Mercadinho.
 
     Só é montada fora de produção (`entrar_page`), e os manipuladores recusam
-    em produção mesmo assim. A lista é a mesma nas duas abas.
+    em produção mesmo assim. A lista é a mesma nas duas entradas.
     """
     return rx.fragment(
         rx.window_event_listener(on_key_down=AuthState.tecla_na_entrada),
@@ -187,16 +157,141 @@ def _painel_contas_teste() -> rx.Component:
     )
 
 
-def entrar_page() -> rx.Component:
-    pagina = _formulario_de_entrada()
+def _com_atalhos(pagina: rx.Component) -> rx.Component:
+    """Os atalhos Alt+1/Alt+2 só existem fora de produção."""
     if is_prod_mode():
         return pagina
     return rx.fragment(pagina, _painel_contas_teste())
 
 
-def _formulario_de_entrada() -> rx.Component:
+def entrar_page() -> rx.Component:
+    """Entrada de clientes (change `porta-de-entrada`)."""
+    return _com_atalhos(
+        _formulario_de_entrada(
+            titulo="Entrar",
+            subtitulo="Área do cliente: seus animais e seus agendamentos.",
+            rodape=rx.vstack(
+                rx.hstack(
+                    rx.text("Ainda não tem conta?", size="2", color=rx.color("gray", 10)),
+                    rx.link("Cadastre-se", href="/cadastro", size="2", weight="medium"),
+                    spacing="2",
+                ),
+                rx.hstack(
+                    rx.text("É da equipe?", size="2", color=rx.color("gray", 10)),
+                    rx.link("Entrada da equipe", href="/entrar/equipe", size="2",
+                            weight="medium"),
+                    spacing="2",
+                ),
+                spacing="1",
+                align_items="start",
+            ),
+        )
+    )
+
+
+def entrar_equipe_page() -> rx.Component:
+    """Entrada da equipe (change `porta-de-entrada`).
+
+    Sem "Cadastre-se" (D2): contas de equipe são dadas pela clínica. É uma
+    diferença entre PÁGINAS, fixa para qualquer conta — não diz nada sobre o
+    e-mail digitado.
+    """
+    return _com_atalhos(
+        _formulario_de_entrada(
+            titulo="Entrada da equipe",
+            subtitulo="Gerência da clínica: agenda, colaboradores, serviços e clientes.",
+            rodape=rx.vstack(
+                rx.text("O acesso da equipe é liberado pela clínica.", size="2",
+                        color=rx.color("gray", 10)),
+                rx.hstack(
+                    rx.text("É cliente?", size="2", color=rx.color("gray", 10)),
+                    rx.link("Entrada de clientes", href="/entrar", size="2",
+                            weight="medium"),
+                    spacing="2",
+                ),
+                spacing="1",
+                align_items="start",
+            ),
+        )
+    )
+
+
+def _caminho(icone: str, titulo: str, texto: str, rotulo: str, href: str,
+             variante: str = "solid") -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.icon(icone, size=28, color=rx.color("accent", 10)),
+            rx.heading(titulo, size="4"),
+            rx.text(texto, size="2", color=rx.color("gray", 10)),
+            rx.spacer(),
+            rx.link(rx.button(rotulo, variant=variante, size="3", width="100%"),
+                    href=href, width="100%"),
+            spacing="2",
+            align_items="start",
+            height="100%",
+        ),
+        width="100%",
+    )
+
+
+def boas_vindas_page() -> rx.Component:
+    """Página inicial pública (change `porta-de-entrada`).
+
+    Sem `on_load` que chame o Xano (D4): só redireciona quem já tem sessão.
+    """
+    return rx.center(
+        rx.vstack(
+            rx.hstack(
+                rx.icon("paw-print", size=32, color=rx.color("accent", 10)),
+                rx.heading("PetBits", size="8"),
+                spacing="3",
+                align="center",
+            ),
+            rx.text(
+                "Clínica veterinária e petshop. Acompanhe seus animais, marque "
+                "consultas e banho e tosa.",
+                size="4",
+                color=rx.color("gray", 11),
+                text_align="center",
+                max_width="36rem",
+            ),
+            rx.grid(
+                _caminho("heart", "Sou cliente",
+                         "Veja seus animais e marque atendimentos.",
+                         "Entrar", "/entrar"),
+                _caminho("stethoscope", "Sou da equipe",
+                         "Agenda do dia, serviços, colaboradores e clientes.",
+                         "Entrada da equipe", "/entrar/equipe", "soft"),
+                _caminho("user-plus", "Primeira vez?",
+                         "Crie sua conta de cliente em um minuto.",
+                         "Criar conta", "/cadastro", "outline"),
+                columns=rx.breakpoints(initial="1", md="3"),
+                spacing="4",
+                width="100%",
+            ),
+            spacing="6",
+            align="center",
+            width="100%",
+            max_width="60rem",
+        ),
+        min_height="100vh",
+        padding="2rem 1.5rem",
+        width="100%",
+    )
+
+
+def _formulario_de_entrada(*, titulo: str, subtitulo: str,
+                           rodape: rx.Component) -> rx.Component:
+    """O MESMO formulário e o MESMO manipulador nas duas entradas (D1).
+
+    Isso não é economia de código: é o que faz a verificação, o número de
+    requisições e o tempo de resposta serem iguais nas duas **por
+    construção**. A página só define `AuthState.aba` no `on_load`, e a aba
+    nunca é enviada ao servidor — ela só escolhe o destino depois de a senha
+    ser aceita. Se as duas verificassem de jeitos diferentes, descobrir quem é
+    da equipe seria tentar o mesmo e-mail nas duas e ver em qual passa.
+    """
     return _casca(
-        _abas(),
         _campo(
             "E-mail",
             rx.input(
@@ -219,8 +314,8 @@ def _formulario_de_entrada() -> rx.Component:
                 width="100%",
             ),
         ),
-        titulo="Entrar",
-        subtitulo="Clientes e equipe da clínica entram por aqui.",
+        titulo=titulo,
+        subtitulo=subtitulo,
         rotulo_envio="Entrar",
         on_submit=AuthState.entrar,
         # O aviso de credencial vencida vem antes dos campos: quem foi levado
@@ -235,22 +330,11 @@ def _formulario_de_entrada() -> rx.Component:
                 width="100%",
             ),
         ),
-        # O rodapé é IGUAL nas duas abas, de propósito. Esconder o
-        # "Cadastre-se" na aba Colaborador pareceria arrumação e seria uma
-        # diferença observável entre as abas antes de qualquer requisição
-        # sair — o formulário viraria o oráculo sozinho.
         rodape=rx.vstack(
-            rx.hstack(
-                rx.text("Ainda não tem conta?", size="2", color=rx.color("gray", 10)),
-                rx.link("Cadastre-se", href="/cadastro", size="2", weight="medium"),
-                spacing="2",
-            ),
-            rx.text(
-                "Colaboradores recebem o acesso da clínica.",
-                size="1",
-                color=rx.color("gray", 9),
-            ),
-            spacing="1",
+            rodape,
+            rx.link("← Voltar ao início", href="/boas-vindas", size="1",
+                    color=rx.color("gray", 10)),
+            spacing="3",
             align_items="start",
         ),
     )

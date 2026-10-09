@@ -97,16 +97,6 @@ class AuthState(rx.State):
     # (change `atalho-de-clientes`, D2).
     painel_teste_grupo: str = contas_de_teste.EQUIPE
 
-    def set_aba(self, value: str | list[str]):
-        """O `segmented_control` do Radix entrega `str | list[str]` — ele
-        serve também para seleção múltipla, e o Reflex cobra a anotação
-        correspondente. Aqui a seleção é única, então a lista é reduzida ao
-        primeiro item, e vazio volta para "cliente" em vez de virar uma aba
-        sem nome."""
-        if isinstance(value, list):
-            value = value[0] if value else "cliente"
-        self.aba = value or "cliente"
-
     def set_login_email(self, value: str):
         self.login_email = value
 
@@ -390,9 +380,19 @@ class AuthState(rx.State):
         deste navegador. Uma falha de rede aqui **não** desloga: só o 401
         desloga.
         """
+        return await self._validar_sessao("/entrar")
+
+    async def carregar_sessao_da_casa(self):
+        """O mesmo, para o endereço principal: quem chega sem sessão vê a
+        página inicial pública, e não um formulário (change
+        `porta-de-entrada`, D3). Sessão expirada continua indo para a
+        entrada, com o aviso."""
+        return await self._validar_sessao("/boas-vindas")
+
+    async def _validar_sessao(self, destino_sem_sessao: str):
         if not self.token:
             self.sessao_validada = False
-            return rx.redirect("/entrar")
+            return rx.redirect(destino_sem_sessao)
         if self.sessao_validada:
             return None
         try:
@@ -420,5 +420,17 @@ class AuthState(rx.State):
         porta trancada naquele navegador."""
         self.enviando = False
         if self.token:
-            return rx.redirect("/")
+            return rx.redirect(xano.rota_do_papel(self.usuario_papel))
         return None
+
+    def abrir_entrada_de_clientes(self):
+        """`on_load` de `/entrar`. A página faz o papel da aba (change
+        `porta-de-entrada`, D1): define a aba, e a aba só é lida no destino,
+        depois de a senha ser aceita."""
+        self.aba = "cliente"
+        return self.redirecionar_se_logado()
+
+    def abrir_entrada_da_equipe(self):
+        """`on_load` de `/entrar/equipe`."""
+        self.aba = "colaborador"
+        return self.redirecionar_se_logado()

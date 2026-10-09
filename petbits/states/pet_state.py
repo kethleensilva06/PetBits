@@ -136,7 +136,9 @@ class PetState(rx.State):
         """Token de quem está logado. Levanta `SemSessao` se não houver."""
         auth = await self.get_state(AuthState)
         if not auth.token:
-            raise SemSessao()
+            # Este State só carrega no endereço principal, cujo visitante
+            # sem sessão vê a página inicial (change `porta-de-entrada`, D3).
+            raise SemSessao("/boas-vindas")
         return auth.token
 
     async def _encerrar(self, erro: Exception):

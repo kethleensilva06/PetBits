@@ -62,7 +62,8 @@ class AgendaState(rx.State):
     # --- campos ---------------------------------------------------------
 
     def set_categoria(self, value: str | list[str]):
-        """O `segmented_control` entrega `str | list[str]` (ver `AuthState.set_aba`)."""
+        """O `segmented_control` do Radix entrega `str | list[str]`, porque serve
+        também para seleção múltipla; aqui a seleção é única."""
         if isinstance(value, list):
             value = value[0] if value else "clinica"
         self.categoria = value or "clinica"
