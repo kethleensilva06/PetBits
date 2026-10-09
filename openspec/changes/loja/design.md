@@ -39,7 +39,9 @@ grava o pedido e os itens. Qualquer recusa no meio desfaz tudo — o rollback do
 serializa dois pedidos da mesma unidade: o segundo lê o estoque já baixado.
 
 O `object[]` na entrada passa no parser oficial, mas **nunca rodou no motor
-nesta conta**: é medido antes de o resto do endpoint depender dele.
+nesta conta**. É medido sem endpoint descartável: o Xano valida a entrada
+antes do login, então o próprio `POST pedidos`, chamado sem token, responde
+401 quando a lista foi aceita e 400 quando um item viola o esquema.
 
 ### D3 — Pagamento online simulado
 
@@ -65,6 +67,23 @@ conta). O Python agrupa. Duas consultas no Xano, uma requisição HTTP.
 `/loja` e `/pedidos` são área de cliente: o mesmo bloqueio da change
 `porta-de-entrada` (D5) — conta de equipe vai para a gerência antes de
 qualquer requisição.
+
+## Registro da publicação (2026-10-09)
+
+Pelo Xano CLI, workspace 169225, com o procedimento do registro da change
+`agendamento`: pasta temporária com os nomes do CLI, `--dry-run` antes, e
+**só** os arquivos desta change, nomeados um a um.
+
+1. Tabelas: `CREATE produto`, `CREATE pedido`, `CREATE pedido_item` — nada
+   mais. Conferido por novo `pull`: colunas e enums como declarados.
+2. Endpoints: 6 criados (`equipe/produtos` GET, POST e PATCH,
+   `loja/produtos` GET, `pedidos` GET e POST) — nada atualizado.
+
+**Medição do `object[]` (tarefa 1.1)**, sem token: itens válidos → 401 (a
+lista foi aceita, e a recusa é só de login); item sem `produto_id` → 400
+`Missing param: produto_id`, com `param: itens.0.produto_id` — o Xano valida o
+esquema de **cada** elemento antes do login; `itens` que não é lista → 400
+pelo mesmo motivo. O `foreach` sobre a lista só roda com sessão de cliente.
 
 ## Risks / Trade-offs
 
