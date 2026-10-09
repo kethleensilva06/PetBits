@@ -123,6 +123,18 @@ com dados fictícios (e-mail `cliente.teste.<data>.<n>@exemplo.com`, CPF
 fictício, senha gerada), e acrescenta cada um a `contas-de-teste.local.txt`.
 A senha não aparece na saída; ela vai só para o arquivo.
 
+### Criar produtos de exemplo
+
+Para a loja ter o que vender:
+
+```bash
+python scripts/criar_produtos_de_exemplo.py
+```
+
+Entra com a primeira conta de equipe com senha do `contas-de-teste.local.txt`
+e cadastra 15 produtos, nas seis categorias, pelo mesmo cadastro da tela de
+Produtos. Rodar de novo não duplica: produto com o mesmo nome é pulado.
+
 ## Ciclo de desenvolvimento
 
 ```text
