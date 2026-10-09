@@ -139,6 +139,10 @@ class PetState(rx.State):
             # Este State só carrega no endereço principal, cujo visitante
             # sem sessão vê a página inicial (change `porta-de-entrada`, D3).
             raise SemSessao("/boas-vindas")
+        # Funcionário não usa a área de cliente (change `porta-de-entrada`,
+        # D5): volta para a gerência antes de qualquer requisição.
+        if xano.eh_equipe(auth.usuario_papel):
+            raise SemSessao("/equipe")
         return auth.token
 
     async def _encerrar(self, erro: Exception):

@@ -58,20 +58,6 @@ class AuthState(rx.State):
     # página — e ler query string exigiria uma API deprecada no Reflex 0.9.
     sessao_expirou: bool = False
 
-    # A aba escolhida na tela de entrada: "cliente" ou "colaborador".
-    #
-    # Ela existe **só** para a clínica poder dizer "entre pela aba
-    # Colaborador". Não participa da verificação e **nunca é enviada ao
-    # servidor** — nem no corpo, nem na query, nem em cabeçalho, nem no
-    # caminho. Não é "enviada e ignorada": enquanto o backend não souber qual
-    # aba foi usada, nenhuma mudança futura consegue fazer a resposta depender
-    # dela.
-    #
-    # Se as duas abas verificassem de jeitos diferentes, descobrir quem é
-    # colaborador seria tentar o mesmo e-mail nas duas e ver em qual passa.
-    # Por isso as duas usam este mesmo manipulador, e não dois.
-    aba: str = "cliente"
-
     login_email: str = ""
     login_senha: str = ""
 
@@ -108,8 +94,8 @@ class AuthState(rx.State):
     # A página só monta o ouvinte de teclado fora de produção, mas esconder
     # não é proteger: o evento pode chegar pelo WebSocket na mão. Por isso os
     # dois manipuladores conferem o modo de novo e não fazem nada em produção.
-    # Nenhum deles lê nem altera `aba` — uma lista diferente por aba seria a
-    # primeira diferença observável entre elas.
+    # Nenhum deles depende da página de entrada: uma lista diferente por
+    # página seria uma diferença observável entre elas.
 
     def tecla_na_entrada(self, tecla: str, modificadores: dict):
         """`Alt+1` abre a equipe, `Alt+2` os clientes; `Esc` fecha.
@@ -255,7 +241,6 @@ class AuthState(rx.State):
         # descobre quem usou o sistema antes dela.
         self.login_email = ""
         self.login_senha = ""
-        self.aba = "cliente"
         self.erro = ""
 
     # --- ações ------------------------------------------------------------
@@ -282,15 +267,13 @@ class AuthState(rx.State):
 
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
-        # O destino combina o papel que o servidor devolveu em `/auth/me` com
-        # a aba — e a aba só é lida AQUI, depois de a senha ser aceita
-        # (change `aba-define-a-area`, D1). A aba Cliente abre a área de
-        # cliente para qualquer conta; a equipe só se abre para papel de
-        # equipe pela aba Colaborador. Tutor pela aba Colaborador entra em
-        # silêncio na área de cliente: "esta conta não é da equipe" seria a
-        # única diferença observável entre as abas, e seria o oráculo de
-        # papel inteiro.
-        yield rx.redirect(xano.rota_do_papel(self.usuario_papel, self.aba))
+        # O destino vem só do papel que o servidor devolveu em `/auth/me`,
+        # nunca da página de entrada usada (change `porta-de-entrada`, D1 e
+        # D5): equipe vai para a gerência, o resto para a área de cliente.
+        # Quem não é da equipe e entrou pela entrada da equipe vai em silêncio
+        # para a área de cliente: "esta conta não é da equipe" seria uma
+        # diferença observável entre as entradas, o oráculo de papel inteiro.
+        yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
 
     async def cadastrar(self):
         self.erro = ""
@@ -423,14 +406,3 @@ class AuthState(rx.State):
             return rx.redirect(xano.rota_do_papel(self.usuario_papel))
         return None
 
-    def abrir_entrada_de_clientes(self):
-        """`on_load` de `/entrar`. A página faz o papel da aba (change
-        `porta-de-entrada`, D1): define a aba, e a aba só é lida no destino,
-        depois de a senha ser aceita."""
-        self.aba = "cliente"
-        return self.redirecionar_se_logado()
-
-    def abrir_entrada_da_equipe(self):
-        """`on_load` de `/entrar/equipe`."""
-        self.aba = "colaborador"
-        return self.redirecionar_se_logado()

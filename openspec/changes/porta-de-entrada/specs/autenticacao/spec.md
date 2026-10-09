@@ -60,10 +60,11 @@ de clientes oferece criar conta.
 
 ### Requirement: Destino depois da entrada
 
-Depois de a credencial ser aceita, a entrada de clientes SHALL levar à área de
-cliente, e a entrada da equipe SHALL levar à gerência quando a conta for de
-equipe e à área de cliente quando não for. Uma conta que não é de equipe MUST
-NOT ser levada à gerência por nenhuma das entradas.
+Depois de a credencial ser aceita, uma conta de equipe SHALL ser levada à
+gerência e qualquer outra conta à área de cliente, seja qual for a entrada
+usada. A área de cliente MUST NOT ser aberta por conta de equipe: quem é da
+equipe e abre um endereço da área de cliente SHALL ser levado à gerência, sem
+que nenhum dado de cliente seja carregado.
 
 #### Scenario: Cliente entra
 
@@ -79,7 +80,7 @@ NOT ser levada à gerência por nenhuma das entradas.
 #### Scenario: Funcionário pela entrada de clientes
 
 - **WHEN** uma conta de equipe entra pela entrada de clientes
-- **THEN** ela vai para a área de cliente
+- **THEN** ela vai para a gerência
 
 #### Scenario: Conta sem papel de equipe pela entrada da equipe
 
@@ -87,3 +88,9 @@ NOT ser levada à gerência por nenhuma das entradas.
 - **THEN** a sessão é iniciada normalmente
 - **AND** ela vai para a área de cliente, sem aviso de que a conta não é da
   equipe
+
+#### Scenario: Funcionário abre a área de cliente pelo endereço
+
+- **WHEN** uma conta de equipe abre `/` ou `/agenda`
+- **THEN** ela é levada à gerência
+- **AND** nenhuma requisição de dados de cliente é feita

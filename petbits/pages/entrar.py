@@ -286,10 +286,10 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
 
     Isso não é economia de código: é o que faz a verificação, o número de
     requisições e o tempo de resposta serem iguais nas duas **por
-    construção**. A página só define `AuthState.aba` no `on_load`, e a aba
-    nunca é enviada ao servidor — ela só escolhe o destino depois de a senha
-    ser aceita. Se as duas verificassem de jeitos diferentes, descobrir quem é
-    da equipe seria tentar o mesmo e-mail nas duas e ver em qual passa.
+    construção**. Nada sobre a página é enviado ao servidor, e o destino vem
+    só do papel da conta (change `porta-de-entrada`, D1). Se as duas
+    verificassem de jeitos diferentes, descobrir quem é da equipe seria tentar
+    o mesmo e-mail nas duas e ver em qual passa.
     """
     return _casca(
         _campo(

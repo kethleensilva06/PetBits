@@ -14,9 +14,12 @@ funcionários.
 - **Entrada de clientes** (`/entrar`): formulário de login com "Criar conta".
 - **Entrada da equipe** (`/entrar/equipe`): formulário de login próprio, sem
   "Criar conta" — contas de equipe são dadas pela clínica.
-- As abas Cliente/Colaborador **saem**. A página faz o papel da aba: depois da
-  senha aceita, a entrada de clientes leva à área de cliente; a da equipe, à
-  gerência quando a conta é de equipe.
+- As abas Cliente/Colaborador **saem**. Depois da senha aceita, **conta de
+  equipe vai sempre para a gerência**, por qualquer entrada, e qualquer outra
+  conta vai para a área de cliente.
+- **Funcionário não usa a área de cliente:** quem é da equipe e abre `/` ou
+  `/agenda` é levado à gerência, sem carregar dado de cliente. (Mudança de
+  rumo pedida pela clínica durante a aplicação — ver D5.)
 - **Não muda:** as duas páginas usam o mesmo formulário, o mesmo manipulador
   e o mesmo endpoint, a página nunca é enviada ao servidor, e a recusa é a
   mesma nas duas. Conta que não é de equipe nunca vai para a gerência.

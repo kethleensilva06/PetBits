@@ -176,6 +176,10 @@ class AgendaState(rx.State):
         auth = await self.get_state(AuthState)
         if not auth.token:
             raise SemSessao()
+        # Funcionário não usa a área de cliente (change `porta-de-entrada`,
+        # D5): volta para a gerência antes de qualquer requisição.
+        if xano.eh_equipe(auth.usuario_papel):
+            raise SemSessao("/equipe")
         return auth.token
 
     async def _encerrar(self, erro: Exception):

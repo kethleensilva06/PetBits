@@ -78,9 +78,8 @@ for rota, pagina, titulo, carregar in (
 # Portas de entrada. `redirecionar_se_logado` evita mostrar o formulário a
 # quem já entrou: voltar para cá por engano e ver campos vazios passa a
 # impressão de que a sessão caiu.
-# Página inicial pública e as duas entradas (change `porta-de-entrada`). O
-# `on_load` de cada entrada define a "aba" — é a página que diz se a pessoa
-# quer a área de cliente ou a gerência, e isso só vale depois da senha aceita.
+# Página inicial pública e as duas entradas (change `porta-de-entrada`). As
+# duas entradas são o mesmo formulário; o destino vem só do papel da conta.
 app.add_page(
     boas_vindas_page,
     route="/boas-vindas",
@@ -91,13 +90,13 @@ app.add_page(
     entrar_page,
     route="/entrar",
     title="PetBits | Entrar",
-    on_load=AuthState.abrir_entrada_de_clientes,
+    on_load=AuthState.redirecionar_se_logado,
 )
 app.add_page(
     entrar_equipe_page,
     route="/entrar/equipe",
     title="PetBits | Entrada da equipe",
-    on_load=AuthState.abrir_entrada_da_equipe,
+    on_load=AuthState.redirecionar_se_logado,
 )
 app.add_page(
     cadastro_page,

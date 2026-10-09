@@ -75,24 +75,17 @@ def papel_legivel(papel: str) -> str:
     return "Sem perfil"
 
 
-def rota_do_papel(papel: str, aba: str = "colaborador") -> str:
+def rota_do_papel(papel: str) -> str:
     """Para onde a pessoa vai **depois** de a credencial ser aceita.
 
-    A área da equipe exige as duas coisas: papel de equipe, vindo do
-    `/auth/me`, **e** a aba Colaborador (change `aba-define-a-area`, D2).
-    Qualquer outra combinação vai para a área de cliente — a aba Cliente
-    abre a área de cliente até para quem é da equipe, e nenhuma aba leva uma
-    conta de tutor para a equipe.
-
-    A aba só é lida aqui, depois da aceitação, e nunca é enviada ao servidor:
-    antes de a senha passar, as duas abas continuam indistinguíveis (D1).
-    Papel desconhecido vai para a área do tutor, onde um aviso explícito diz
-    o que aconteceu — e, como a conta não tem ficha, ela não alcança dado de
-    ninguém.
+    Só o papel decide, vindo do `/auth/me` (change `porta-de-entrada`, D1 e
+    D5): conta de equipe vai sempre para a gerência, por qualquer entrada, e o
+    resto para a área de cliente. A página de entrada usada nunca é enviada
+    ao servidor nem pesa aqui. Papel desconhecido vai para a área do tutor,
+    onde um aviso explícito diz o que aconteceu — e, como a conta não tem
+    ficha, ela não alcança dado de ninguém.
     """
-    if eh_equipe(papel) and aba == "colaborador":
-        return ROTA_EQUIPE
-    return ROTA_TUTOR
+    return ROTA_EQUIPE if eh_equipe(papel) else ROTA_TUTOR
 
 
 # --- erros --------------------------------------------------------------------
