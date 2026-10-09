@@ -161,7 +161,7 @@ conforme o sistema cresce.
 | 1 | `acesso-do-tutor` ✓ | Criar conta pelo site, entrar, sair; sessão que sobrevive ao recarregar |
 | 2 | `animais-do-tutor` ✓ | O tutor cadastra e mantém os próprios animais |
 | 3 | `operacao-da-clinica` ✓ | A equipe entra e declara quem atende e o que a clínica oferece |
-| 4 | `agendamento` | O tutor marca e cancela atendimento; a equipe vê a agenda |
+| 4 | `agendamento` *(em andamento)* | O tutor marca e cancela atendimento; a equipe vê a agenda |
 | 5 | `historico-clinico` | A equipe registra o atendimento; o tutor lê o dos seus animais |
 
 As cinco cobrem o núcleo clínico de ponta a ponta. A ordem não é arbitrária:
@@ -171,7 +171,8 @@ sem duração não há agenda calculável.
 
 **Fora do roteiro, por ora:** o petshop (produtos, pedidos e itens). Ele é o
 único ramo do domínio independente do agendamento, então adiá-lo não bloqueia
-nada. Entra como sexta change se houver fôlego.
+nada. Entra como sexta change se houver fôlego. **Pedido da clínica, ainda sem
+change:** uma vitrine de exemplo da loja na área do cliente, sem compra.
 
 **Changes de apoio, fora da contagem:** não entregam funcionalidade para a
 clínica, mas passam pelo mesmo fluxo.
@@ -180,6 +181,12 @@ clínica, mas passam pelo mesmo fluxo.
 |---|---|
 | `atalho-contas-de-teste` ✓ | Em desenvolvimento, `Alt+1` na entrada lista as contas de teste e preenche o formulário |
 | `entrada-sem-trava` ✓ | O botão Entrar nunca fica travado depois de uma tentativa interrompida |
+| `atalho-de-clientes` ✓ | `Alt+1` lista a equipe e `Alt+2` os clientes de teste |
+| `clientes-de-teste-por-script` ✓ | Um script cria clientes de teste e os põe no `Alt+2` |
+| `aba-define-a-area` ✓ | A aba da entrada escolhia a área depois da senha aceita — substituída pela `porta-de-entrada` |
+| `porta-de-entrada` *(em andamento)* | Página inicial pública; entradas separadas para clientes e equipe; funcionário sempre na gerência |
+| `papel-staff` *(em andamento)* | O papel `staff`, criado no Xano, conta como equipe |
+| `cadastro-de-cliente-pela-conta` *(em andamento)* | Conta sem ficha cria a própria ficha de cliente — motivo desfeito pela `porta-de-entrada`; decisão pendente |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
