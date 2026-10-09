@@ -171,8 +171,11 @@ sem duração não há agenda calculável.
 
 **Fora do roteiro, por ora:** o petshop (produtos, pedidos e itens). Ele é o
 único ramo do domínio independente do agendamento, então adiá-lo não bloqueia
-nada. Entra como sexta change se houver fôlego. **Pedido da clínica, ainda sem
-change:** uma vitrine de exemplo da loja na área do cliente, sem compra.
+nada. **A pedido da clínica, entrou em três changes:** `loja` *(em andamento)*
+— catálogo da equipe com estoque e compra pelo cliente, com retirada ou entrega
+e pagamento na loja ou online simulado —, `pedidos-da-equipe` e
+`venda-no-balcao` (planejadas). O pedido anterior, de uma vitrine sem compra,
+foi substituído pela loja de verdade.
 
 **Changes de apoio, fora da contagem:** não entregam funcionalidade para a
 clínica, mas passam pelo mesmo fluxo.
