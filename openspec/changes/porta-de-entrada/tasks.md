@@ -1,0 +1,12 @@
+## 1. Código
+
+- [ ] 1.1 Página inicial `/boas-vindas` com Sou cliente, Sou da equipe e Criar conta; quem tem sessão é levado à sua área (D4)
+- [ ] 1.2 `/entrar` (clientes) e `/entrar/equipe` (equipe) com o mesmo formulário e o mesmo `AuthState.entrar`; o `on_load` de cada uma define a aba (D1); sem as abas; "Criar conta" só na de clientes (D2); atalhos Alt+1/Alt+2 nas duas
+- [ ] 1.3 Visitante sem sessão em `/` vai para `/boas-vindas`; nas outras rotas privadas, para `/entrar`; sessão expirada continua em `/entrar` com aviso (D3)
+- [ ] 1.4 Verificar por leitura que as duas páginas chamam o mesmo manipulador e que a aba não entra em requisição
+
+## 2. Verificação
+
+- [ ] 2.1 No navegador, sem sessão: abrir `/` mostra a página inicial; os três botões levam às páginas certas; a entrada da equipe não tem "Criar conta"
+- [ ] 2.2 No navegador, feito por quem tem a senha: funcionário pela entrada da equipe vai para a gerência; cliente pela entrada de clientes vai para a área de cliente
+- [ ] 2.3 `openspec validate --strict` e `verificar_equipe.py` limpos
