@@ -104,6 +104,19 @@ Em produção (`reflex run --env prod`) o atalho não existe. **Não publique o
 app em modo de desenvolvimento** com esse arquivo presente: quem abrisse a
 tela de entrada veria as contas.
 
+### Criar clientes de teste
+
+Para ter clientes no **Alt+2** sem criá-los um por um pela tela:
+
+```bash
+python scripts/criar_clientes_de_teste.py 5
+```
+
+O script cria os clientes pelo cadastro público — **na base de verdade** —,
+com dados fictícios (e-mail `cliente.teste.<data>.<n>@exemplo.com`, CPF
+fictício, senha gerada), e acrescenta cada um a `contas-de-teste.local.txt`.
+A senha não aparece na saída; ela vai só para o arquivo.
+
 ## Ciclo de desenvolvimento
 
 ```text
