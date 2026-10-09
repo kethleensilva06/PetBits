@@ -27,6 +27,7 @@ import reflex as rx
 from petbits import agenda as regras_da_agenda
 from petbits import datas, xano
 from petbits.states.auth_state import AuthState
+from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
@@ -112,6 +113,19 @@ class EquipeState(rx.State):
     srv_duracao: str = ""
     srv_categoria: str = ""
 
+    # Catálogo da loja (change `loja`).
+    produtos: list[dict] = []
+    prd_dialogo: bool = False
+    prd_editando: Optional[int] = None
+    prd_erro: str = ""
+    prd_nome: str = ""
+    prd_descricao: str = ""
+    prd_categoria: str = "racao"
+    prd_marca: str = ""
+    prd_unidade: str = ""
+    prd_preco: str = ""
+    prd_estoque: str = ""
+
     # Agenda do dia (change `agendamento`, D8). Só leitura.
     agenda_dia_iso: str = ""
     agenda: list[dict] = []
@@ -154,6 +168,30 @@ class EquipeState(rx.State):
 
     def set_srv_categoria(self, v: str):
         self.srv_categoria = v
+
+    def set_prd_dialogo(self, v: bool):
+        self.prd_dialogo = v
+
+    def set_prd_nome(self, v: str):
+        self.prd_nome = v
+
+    def set_prd_descricao(self, v: str):
+        self.prd_descricao = v
+
+    def set_prd_categoria(self, v: str):
+        self.prd_categoria = v
+
+    def set_prd_marca(self, v: str):
+        self.prd_marca = v
+
+    def set_prd_unidade(self, v: str):
+        self.prd_unidade = v
+
+    def set_prd_preco(self, v: str):
+        self.prd_preco = v
+
+    def set_prd_estoque(self, v: str):
+        self.prd_estoque = v
 
     # --- vars de tela ---
 
@@ -225,6 +263,10 @@ class EquipeState(rx.State):
         self.animais = []
         self.agenda = []
         self.agenda_dia_iso = ""
+        self.produtos = []
+        self.prd_dialogo = False
+        self.prd_editando = None
+        self.prd_erro = ""
         self.carregando = False
         self.erro = ""
         self.ja_carregou = False
@@ -515,6 +557,135 @@ class EquipeState(rx.State):
         resultado = await self.carregar_servicos()
         if resultado is not None:
             yield resultado
+
+    # --- catálogo da loja (change `loja`) -----------------------------------
+
+    @rx.var
+    def tem_produtos(self) -> bool:
+        return len(self.produtos) > 0
+
+    @rx.var
+    def titulo_prd(self) -> str:
+        return "Editar produto" if self.prd_editando is not None else "Novo produto"
+
+    async def carregar_produtos(self):
+        self._comecar()
+        self.produtos = []
+        try:
+            token = await self._token_de_equipe()
+            registros = await xano.listar_produtos(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+        self.produtos = [
+            {
+                "id": p.get("id"),
+                "nome": p.get("nome") or "-",
+                "descricao": p.get("descricao") or "",
+                "categoria": CATEGORIAS_PRODUTO.get(p.get("categoria") or "", "-"),
+                "marca": p.get("marca") or "",
+                "unidade": p.get("unidade") or "",
+                "preco": _dinheiro(p.get("preco")),
+                "estoque": f"{int(p.get('estoque') or 0)} em estoque",
+                "ativo": bool(p.get("ativo")),
+                "_categoria": p.get("categoria") or "racao",
+                "_preco": datas.numero_para_campo(p.get("preco")),
+                "_estoque": str(int(p.get("estoque") or 0)),
+            }
+            for p in registros
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    def novo_produto(self):
+        self.prd_editando = None
+        self.prd_erro = ""
+        self.prd_nome = ""
+        self.prd_descricao = ""
+        self.prd_categoria = "racao"
+        self.prd_marca = ""
+        self.prd_unidade = ""
+        self.prd_preco = ""
+        self.prd_estoque = ""
+        self.prd_dialogo = True
+
+    def editar_produto(self, registro: dict):
+        self.prd_editando = registro["id"]
+        self.prd_erro = ""
+        self.prd_nome = registro["nome"]
+        self.prd_descricao = registro["descricao"]
+        self.prd_categoria = registro["_categoria"]
+        self.prd_marca = registro["marca"]
+        self.prd_unidade = registro["unidade"]
+        self.prd_preco = registro["_preco"]
+        self.prd_estoque = registro["_estoque"]
+        self.prd_dialogo = True
+
+    async def salvar_produto(self):
+        if not self.prd_nome.strip():
+            self.prd_erro = "Informe o nome do produto."
+            return
+        try:
+            preco = float((self.prd_preco or "").replace(",", "."))
+        except ValueError:
+            self.prd_erro = "O preço precisa ser um número."
+            return
+        if preco <= 0:
+            self.prd_erro = "O preço tem de ser maior que zero."
+            return
+        try:
+            estoque = int(self.prd_estoque)
+        except (TypeError, ValueError):
+            self.prd_erro = "Informe o estoque em unidades."
+            return
+        if estoque < 0:
+            self.prd_erro = "O estoque não pode ser negativo."
+            return
+        dados = {
+            "nome": self.prd_nome.strip(),
+            "descricao": self.prd_descricao.strip(),
+            "categoria": self.prd_categoria,
+            "marca": self.prd_marca.strip(),
+            "unidade": self.prd_unidade.strip(),
+            "preco": preco,
+            "estoque": estoque,
+        }
+        self.salvando = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            if self.prd_editando is None:
+                await xano.criar_produto(dados, token=token)
+            else:
+                await xano.atualizar_produto(self.prd_editando, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            yield await self._encerrar(erro)
+            return
+        except (NaoEncontrado, XanoError) as erro:
+            self.prd_erro = str(erro)
+            return
+        finally:
+            self.salvando = False
+        self.prd_dialogo = False
+        resultado = await self.carregar_produtos()
+        if resultado is not None:
+            yield resultado
+
+    async def alternar_ativo(self, registro: dict):
+        """Ativar ou desativar manda SÓ `ativo`: o padrão `pick` do backend
+        deixa os outros campos como estão."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.atualizar_produto(registro["id"], {"ativo": not registro["ativo"]},
+                                         token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_produtos()
 
     # --- agenda do dia (change `agendamento`, D8) ---------------------------
 

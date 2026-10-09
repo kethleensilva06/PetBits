@@ -15,6 +15,7 @@ from petbits.pages.entrar import (
     entrar_page,
 )
 from petbits.pages.equipe import (
+    produtos_page,
     agenda_equipe_page,
     animais_page,
     colaboradores_page,
@@ -23,9 +24,11 @@ from petbits.pages.equipe import (
     tutores_page,
 )
 from petbits.pages.inicio import inicio_page
+from petbits.pages.loja import loja_page, pedidos_page
 from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import EquipeState
+from petbits.states.loja_state import LojaState
 from petbits.states.pet_state import PetState
 
 app = rx.App()
@@ -40,6 +43,13 @@ app.add_page(
     title="PetBits",
     on_load=[AuthState.carregar_sessao_da_casa, PetState.carregar],
 )
+
+# Loja do cliente (change `loja`). Mesma guarda da área de cliente: sem sessão,
+# ou com conta de equipe, `LojaState._token` levanta antes de qualquer requisição.
+app.add_page(loja_page, route="/loja", title="PetBits | Loja",
+             on_load=[AuthState.carregar_sessao, LojaState.carregar_loja])
+app.add_page(pedidos_page, route="/pedidos", title="PetBits | Meus pedidos",
+             on_load=[AuthState.carregar_sessao, LojaState.carregar_pedidos])
 
 # Agenda do tutor (change `agendamento`). Mesma guarda da casa: sem sessão,
 # `AgendaState._token` levanta antes de qualquer requisição.
@@ -65,6 +75,7 @@ for rota, pagina, titulo, carregar in (
     ("/equipe/colaboradores", colaboradores_page, "Colaboradores",
      EquipeState.carregar_colaboradores),
     ("/equipe/servicos", servicos_page, "Serviços", EquipeState.carregar_servicos),
+    ("/equipe/produtos", produtos_page, "Produtos", EquipeState.carregar_produtos),
     ("/equipe/tutores", tutores_page, "Tutores", EquipeState.carregar_tutores),
     ("/equipe/animais", animais_page, "Animais", EquipeState.carregar_animais),
 ):

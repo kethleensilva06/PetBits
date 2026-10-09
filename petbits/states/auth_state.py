@@ -335,6 +335,7 @@ class AuthState(rx.State):
         """
         from petbits.states.agenda_state import AgendaState
         from petbits.states.equipe_state import EquipeState
+        from petbits.states.loja_state import LojaState
         from petbits.states.pet_state import PetState
 
         pet = await self.get_state(PetState)
@@ -345,6 +346,9 @@ class AuthState(rx.State):
 
         agenda = await self.get_state(AgendaState)
         agenda.limpar_dados()
+
+        loja = await self.get_state(LojaState)
+        loja.limpar_dados()
 
         self._limpar()
         return rx.redirect("/entrar")

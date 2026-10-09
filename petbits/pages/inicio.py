@@ -211,6 +211,14 @@ def inicio_page() -> rx.Component:
                     rx.button(rx.icon("calendar", size=16), "Agendar", variant="soft"),
                     href="/agenda",
                 ),
+                rx.link(
+                    rx.button(rx.icon("shopping-bag", size=16), "Loja", variant="soft"),
+                    href="/loja",
+                ),
+                rx.link(
+                    rx.button(rx.icon("receipt", size=16), "Meus pedidos", variant="soft"),
+                    href="/pedidos",
+                ),
                 rx.cond(
                     PetState.tem_animais,
                     rx.button(rx.icon("plus", size=16), "Novo animal",

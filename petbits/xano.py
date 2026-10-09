@@ -579,3 +579,59 @@ async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
         "GET", "/equipe/agenda", token=token, params={"dia": dia_ms}
     )
     return dados if isinstance(dados, list) else []
+
+
+# --- loja (change `loja`) -------------------------------------------------------
+#
+# Do cliente sai só produto e quantidade: preço, linha e total são calculados
+# no servidor, que também baixa o estoque numa transação com trava (D2).
+
+
+async def produtos_da_loja(*, token: str) -> list[dict]:
+    """Produtos ativos com estoque, para o cliente."""
+    dados = await _requisitar("GET", "/loja/produtos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def fazer_pedido(
+    itens: list[dict], entrega: str, forma_pagamento: str, *, token: str
+) -> dict:
+    """`itens` é uma lista de `{produto_id, quantidade}`, e nada mais."""
+    criado = await _requisitar(
+        "POST",
+        "/pedidos",
+        token=token,
+        json={"itens": itens, "entrega": entrega, "forma_pagamento": forma_pagamento},
+    )
+    if criado is None:
+        raise XanoError("O Xano não confirmou o pedido.")
+    return criado
+
+
+async def meus_pedidos(*, token: str) -> dict:
+    """`{pedidos, itens}` do cliente; os itens são agrupados pela tela."""
+    dados = await _requisitar("GET", "/pedidos", token=token)
+    return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
+
+
+async def listar_produtos(*, token: str) -> list[dict]:
+    """O catálogo inteiro, ativos e inativos, para a equipe."""
+    dados = await _requisitar("GET", "/equipe/produtos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def criar_produto(dados: dict, *, token: str) -> dict:
+    criado = await _requisitar("POST", "/equipe/produtos", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou a criação do produto.")
+    return criado
+
+
+async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
+    """Altera só os campos informados; os ausentes permanecem."""
+    atualizado = await _requisitar(
+        "PATCH", f"/equipe/produtos/{produto_id}", token=token, json=dados
+    )
+    if atualizado is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return atualizado

@@ -19,11 +19,11 @@
 
 ## 5. Reflex
 
-- [ ] 5.1 Cliente HTTP em `petbits/xano.py`
-- [ ] 5.2 `/equipe/produtos`: lista, criar, editar, ativar/desativar; item no menu da equipe
-- [ ] 5.3 `/loja`: grade de produtos, carrinho, finalização com entrega e pagamento (aviso de pagamento simulado); bloqueio de funcionário (D6)
-- [ ] 5.4 `/pedidos`: meus pedidos com itens; links na casa do cliente
-- [ ] 5.5 O `sair` limpa os estados novos
+- [x] 5.1 Cliente HTTP em `petbits/xano.py`
+- [ ] 5.2 `/equipe/produtos`: lista, criar, editar, ativar/desativar; item no menu da equipe — **Situação:** construída e compila; sem sessão a rota leva à entrada. Falta ver com sessão de equipe (6.1)
+- [ ] 5.3 `/loja`: grade de produtos, carrinho, finalização com entrega e pagamento (aviso de pagamento simulado); bloqueio de funcionário (D6) — **Situação:** construída e compila; carrinho testado sozinho (limite do estoque, tirar, total e formato); sem sessão leva à entrada. Falta ver com sessão de cliente (6.2)
+- [ ] 5.4 `/pedidos`: meus pedidos com itens; links na casa do cliente — **Situação:** construída e compila; links na casa do cliente. Falta ver com sessão de cliente (6.2)
+- [x] 5.5 O `sair` limpa os estados novos
 
 ## 6. Verificação
 
