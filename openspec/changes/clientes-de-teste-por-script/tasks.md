@@ -6,5 +6,5 @@
 
 ## 2. Verificação
 
-- [ ] 2.1 Rodar de verdade, feito por quem desenvolve, e conferir os novos clientes no `Alt+2`
+- [x] 2.1 Rodar de verdade, feito por quem desenvolve, e conferir os novos clientes no `Alt+2`
 - [x] 2.2 `openspec validate --strict` e `verificar_equipe.py` limpos
