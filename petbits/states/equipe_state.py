@@ -27,7 +27,9 @@ import reflex as rx
 from petbits import agenda as regras_da_agenda
 from petbits import datas, xano
 from petbits.states.auth_state import AuthState
+from petbits.pedidos import ROTULOS_ACAO, proximas
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
+from petbits.states.loja_state import ENTREGAS, PAGAMENTOS, SITUACOES, reais
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
@@ -125,6 +127,10 @@ class EquipeState(rx.State):
     prd_unidade: str = ""
     prd_preco: str = ""
     prd_estoque: str = ""
+
+    # Pedidos da loja (change `pedidos-da-equipe`).
+    pedidos_clinica: list[dict] = []
+    filtro_pedidos: str = "todos"
 
     # Agenda do dia (change `agendamento`, D8). Só leitura.
     agenda_dia_iso: str = ""
@@ -264,6 +270,8 @@ class EquipeState(rx.State):
         self.agenda = []
         self.agenda_dia_iso = ""
         self.produtos = []
+        self.pedidos_clinica = []
+        self.filtro_pedidos = "todos"
         self.prd_dialogo = False
         self.prd_editando = None
         self.prd_erro = ""
@@ -686,6 +694,66 @@ class EquipeState(rx.State):
             self.erro = str(erro)
             return
         return await self.carregar_produtos()
+
+    # --- pedidos da loja (change `pedidos-da-equipe`) ------------------------
+
+    @rx.var
+    def tem_pedidos_clinica(self) -> bool:
+        return len(self.pedidos_clinica) > 0
+
+    async def set_filtro_pedidos(self, valor: str):
+        self.filtro_pedidos = valor
+        return await self.carregar_pedidos_clinica()
+
+    async def carregar_pedidos_clinica(self):
+        self._comecar()
+        self.pedidos_clinica = []
+        filtro = "" if self.filtro_pedidos == "todos" else self.filtro_pedidos
+        try:
+            token = await self._token_de_equipe()
+            dados = await xano.pedidos_da_clinica(filtro, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+        itens: dict = {}
+        for i in dados.get("itens") or []:
+            itens.setdefault(i.get("id_pedido"), []).append({
+                "texto": f"{int(i.get('quantidade') or 0)} × {i.get('produto_nome') or '-'}",
+                "linha": reais(i.get("valor_linha")),
+            })
+        self.pedidos_clinica = [
+            {
+                "id": p.get("id"),
+                "quando": regras_da_agenda.data_curta(p.get("created_at")),
+                "cliente": " · ".join(filter(None, [p.get("cliente_nome") or "-",
+                                                    p.get("cliente_telefone") or ""])),
+                "situacao": SITUACOES.get(p.get("situacao") or "", "-"),
+                "entrega": ENTREGAS.get(p.get("entrega") or "", "-"),
+                "endereco": p.get("endereco_entrega") or "",
+                "pagamento": PAGAMENTOS.get(p.get("forma_pagamento") or "", "-"),
+                "pago": bool(p.get("pago_em")),
+                "total": reais(p.get("total")),
+                "itens": itens.get(p.get("id"), []),
+                "acoes": [{"situacao": s, "rotulo": ROTULOS_ACAO[s]}
+                          for s in proximas(p.get("situacao") or "", p.get("entrega") or "")],
+            }
+            for p in dados.get("pedidos") or []
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    async def avancar_pedido(self, pedido_id: int, situacao: str):
+        try:
+            token = await self._token_de_equipe()
+            await xano.mudar_situacao_do_pedido(pedido_id, situacao, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_pedidos_clinica()
 
     # --- agenda do dia (change `agendamento`, D8) ---------------------------
 

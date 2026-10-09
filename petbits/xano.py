@@ -635,3 +635,24 @@ async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict
     if atualizado is None:
         raise NaoEncontrado("Este produto não está mais disponível.", status=404)
     return atualizado
+
+
+# --- pedidos da equipe (change `pedidos-da-equipe`) ----------------------------
+
+
+async def pedidos_da_clinica(situacao: str = "", *, token: str) -> dict:
+    """`{pedidos, itens}` de todos os clientes; `situacao` vazia traz todos."""
+    params = {"situacao": situacao} if situacao else None
+    dados = await _requisitar("GET", "/equipe/pedidos", token=token, params=params)
+    return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
+
+
+async def mudar_situacao_do_pedido(pedido_id: int, situacao: str, *, token: str) -> dict:
+    """O backend confere o caminho (D2); um caminho inválido volta como recusa."""
+    feito = await _requisitar(
+        "POST", f"/equipe/pedidos/{pedido_id}/situacao", token=token,
+        json={"situacao": situacao},
+    )
+    if feito is None:
+        raise NaoEncontrado("Este pedido não está mais disponível.", status=404)
+    return feito

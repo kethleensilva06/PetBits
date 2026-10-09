@@ -15,6 +15,7 @@ from petbits.pages.entrar import (
     entrar_page,
 )
 from petbits.pages.equipe import (
+    pedidos_equipe_page,
     produtos_page,
     agenda_equipe_page,
     animais_page,
@@ -76,6 +77,7 @@ for rota, pagina, titulo, carregar in (
      EquipeState.carregar_colaboradores),
     ("/equipe/servicos", servicos_page, "Serviços", EquipeState.carregar_servicos),
     ("/equipe/produtos", produtos_page, "Produtos", EquipeState.carregar_produtos),
+    ("/equipe/pedidos", pedidos_equipe_page, "Pedidos", EquipeState.carregar_pedidos_clinica),
     ("/equipe/tutores", tutores_page, "Tutores", EquipeState.carregar_tutores),
     ("/equipe/animais", animais_page, "Animais", EquipeState.carregar_animais),
 ):

@@ -34,6 +34,17 @@ Ao cancelar, para cada item: lê o produto com trava e soma a quantidade ao
 estoque. Tudo dentro da transação da mudança de situação: o rollback (medido
 na change `acesso-do-tutor`) desfaz tudo se algo falhar.
 
+## Registro da publicação (2026-10-09)
+
+Pelo Xano CLI, procedimento da change `agendamento`: os dois endpoints
+nomeados um a um, `--dry-run` antes (2 criados, nada mais). Sem token, os dois
+respondem 401. A guarda `verificar_equipe.py` confere 17 endpoints.
+
+A tabela de caminhos existe duas vezes — no endpoint, que decide, e em
+`petbits/pedidos.py`, que só escolhe os botões. As duas foram comparadas nas
+72 combinações de situação atual, entrega e situação pedida: nenhuma
+divergência.
+
 ## Risks / Trade-offs
 
 - [Pedido online já pago cancelado] → O pagamento é simulado; não há estorno

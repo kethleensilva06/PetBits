@@ -23,6 +23,7 @@ AREAS = [
     ("/equipe/colaboradores", "Colaboradores", "users"),
     ("/equipe/servicos", "Serviços", "scissors"),
     ("/equipe/produtos", "Produtos", "package"),
+    ("/equipe/pedidos", "Pedidos", "receipt"),
     ("/equipe/tutores", "Tutores", "contact"),
     ("/equipe/animais", "Animais", "paw-print"),
 ]
@@ -599,6 +600,78 @@ def produtos_page() -> rx.Component:
                      rx.button(rx.icon("plus", size=16), "Novo produto",
                                on_click=EquipeState.novo_produto),
                      rx.fragment()),
+    )
+
+
+# --- pedidos da loja (change `pedidos-da-equipe`) ---------------------------------
+
+
+def _acao_pedido(pedido_id, a: dict) -> rx.Component:
+    return rx.button(
+        a["rotulo"],
+        on_click=EquipeState.avancar_pedido(pedido_id, a["situacao"]),
+        size="1",
+        variant=rx.cond(a["situacao"] == "cancelado", "soft", "solid"),
+        color_scheme=rx.cond(a["situacao"] == "cancelado", "red", "teal"),
+    )
+
+
+def _cartao_pedido(p: dict) -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text("Pedido nº ", p["id"], weight="bold"),
+                rx.badge(p["situacao"], radius="full"),
+                rx.cond(p["pago"], rx.badge("Pagamento registrado", color_scheme="green",
+                                            variant="soft", radius="full")),
+                rx.spacer(),
+                rx.text(p["total"], weight="bold"),
+                width="100%", align="center", wrap="wrap",
+            ),
+            rx.text(p["cliente"], size="2"),
+            rx.text(p["quando"], " · ", p["entrega"], " · ", p["pagamento"], size="1",
+                    color=rx.color("gray", 10)),
+            rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
+                                           color=rx.color("gray", 10))),
+            rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(
+                rx.text(i["texto"], size="2"), rx.spacer(), rx.text(i["linha"], size="2"),
+                width="100%")),
+            rx.hstack(
+                rx.foreach(p["acoes"].to(list[dict]), lambda a: _acao_pedido(p["id"], a)),
+                spacing="2", wrap="wrap", padding_top="0.25rem",
+            ),
+            spacing="1", width="100%", align_items="start",
+        ),
+        width="100%",
+    )
+
+
+def pedidos_equipe_page() -> rx.Component:
+    return _casca(
+        rx.select.root(
+            rx.select.trigger(),
+            rx.select.content(
+                rx.select.item("Todos", value="todos"),
+                rx.select.item("Aguardando pagamento", value="pendente"),
+                rx.select.item("Pagos", value="pago"),
+                rx.select.item("Prontos para retirada", value="pronto_retirada"),
+                rx.select.item("Enviados", value="enviado"),
+                rx.select.item("Entregues", value="entregue"),
+                rx.select.item("Cancelados", value="cancelado"),
+            ),
+            value=EquipeState.filtro_pedidos,
+            on_change=EquipeState.set_filtro_pedidos,
+        ),
+        _lista(
+            EquipeState.tem_pedidos_clinica,
+            EquipeState.pedidos_clinica,
+            _cartao_pedido,
+            _vazio("Nenhum pedido", "Os pedidos feitos na loja aparecem aqui."),
+            "os pedidos",
+        ),
+        rota="/equipe/pedidos",
+        titulo="Pedidos",
+        subtitulo="Os pedidos da loja. Cancelar devolve os itens ao estoque.",
     )
 
 
