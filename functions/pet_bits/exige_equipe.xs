@@ -96,7 +96,11 @@ function "PetBits/exige_equipe" {
     //
     // `==`, e nao `===`: o parser aceita os dois, o motor devolve ERROR_FATAL
     // no segundo (fato medido 2).
-    precondition ($conta.role == "admin") {
+    //
+    // Dois papeis de equipe desde a change `papel-staff` (D1): `admin` e
+    // `staff`, cada um por IGUALDADE. Conta sem papel, ou com qualquer outro
+    // valor, falha as duas comparacoes e recebe a mesma recusa de sempre.
+    precondition (($conta.role == "admin") || ($conta.role == "staff")) {
       error_type = "accessdenied"
       error = "Sem permissao para esta area."
     }

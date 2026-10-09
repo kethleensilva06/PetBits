@@ -35,7 +35,9 @@ GRUPO_AUTH = "auth"
 # nenhuma outra parte do código compara com as strings cruas.
 
 PAPEL_TUTOR = "member"
-PAPEL_EQUIPE = "admin"
+# Dois papéis de equipe, com o mesmo acesso (change `papel-staff`, D1). O
+# `staff` nasceu no painel do Xano.
+PAPEIS_EQUIPE = ("admin", "staff")
 
 ROTA_EQUIPE = "/equipe"
 ROTA_TUTOR = "/"
@@ -46,7 +48,8 @@ def eh_tutor(papel: str) -> bool:
 
 
 def eh_equipe(papel: str) -> bool:
-    return papel == PAPEL_EQUIPE
+    """Por igualdade a um papel de equipe, nunca por exclusão de `member`."""
+    return papel in PAPEIS_EQUIPE
 
 
 def papel_conhecido(papel: str) -> bool:
@@ -56,7 +59,7 @@ def papel_conhecido(papel: str) -> bool:
     operação mais provável do projeto — é assim que o primeiro admin da
     clínica vai ser criado.
     """
-    return papel in (PAPEL_TUTOR, PAPEL_EQUIPE)
+    return papel == PAPEL_TUTOR or papel in PAPEIS_EQUIPE
 
 
 def papel_legivel(papel: str) -> str:

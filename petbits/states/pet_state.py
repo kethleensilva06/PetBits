@@ -138,7 +138,10 @@ class PetState(rx.State):
         if not auth.token:
             # Este State só carrega no endereço principal, cujo visitante
             # sem sessão vê a página inicial (change `porta-de-entrada`, D3).
-            raise SemSessao("/boas-vindas")
+            # Mas se a sessão acabou de EXPIRAR, `carregar_sessao_da_casa` já
+            # mandou para a entrada com o aviso — e este redirecionamento, que
+            # roda depois, não pode passar por cima dele.
+            raise SemSessao("/entrar" if auth.sessao_expirou else "/boas-vindas")
         # Funcionário não usa a área de cliente (change `porta-de-entrada`,
         # D5): volta para a gerência antes de qualquer requisição.
         if xano.eh_equipe(auth.usuario_papel):
