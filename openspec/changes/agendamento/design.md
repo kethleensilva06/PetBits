@@ -114,6 +114,37 @@ a change de histórico clínico não precisar alterar a tabela.
 a equipe já vê em `equipe/tutores`). Segue o padrão `equipe_*` e entra na
 guarda.
 
+## Registro da publicação (2026-10-08)
+
+Feita pelo Xano CLI 1.3.3, perfil no workspace 169225, sempre com
+`--dry-run` antes e incluindo **só** os arquivos desta change.
+
+**Formato de pastas do CLI** (tarefa 1.1), diferente do repositório: o CLI usa
+`table/`, `function/<grupo>/` e `api/<grupo>/<caminho>_<VERBO>.xs` (por
+exemplo, `api/pet_bits/agendamentos/agendamento_id/cancelar_POST.xs`), e o
+repositório usa `tables/`, `functions/` e `apis/pet_bits/<nome>.xs`. A
+publicação é montada numa pasta temporária fora do projeto: o `workspace
+pull` mais os arquivos desta change, com os nomes do CLI. Nunca se publica a
+raiz do repositório.
+
+**Antes de publicar**, o que estava no Xano foi comparado com o repositório
+nos arquivos de serviço: as diferenças eram só de exportação (`description`
+omitido, ordem de `return`, `== true` simplificado). Ninguém tinha mexido no
+Xano por fora deles.
+
+1. Tabelas: `CREATE agendamento`, `ADD_FIELD servico.categoria`. Nada mais.
+   Conferido por um novo `pull`: colunas, enum e índices como declarados.
+2. Endpoints: 6 criados e 4 atualizados (os de serviço da equipe). O primeiro
+   `--dry-run`, com padrão largo, incluía um `UPDATE entrar POST` que esta
+   change não tocou — o arquivo exportado pelo Xano é ligeiramente diferente
+   do original — e foi refeito com os 10 arquivos nomeados um a um, para não
+   republicar a entrada. Os avisos "table servico does not exist" são da
+   checagem estática do CLI, que não vê tabelas fora do lote.
+
+O `pull` mostrou também que os cinco endpoints de autenticação despublicados
+na change `operacao-da-clinica` não estão mais no Xano, embora os `.xs` deles
+continuem no repositório.
+
 ## Risks / Trade-offs
 
 - [Requisições simultâneas] → D4: transação com trava nas linhas dos profissionais;
