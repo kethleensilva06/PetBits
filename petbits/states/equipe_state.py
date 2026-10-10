@@ -29,7 +29,7 @@ from petbits import datas, xano
 from petbits.states.auth_state import AuthState
 from petbits.pedidos import ROTULOS_ACAO, proximas
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
-from petbits.states.loja_state import ENTREGAS, PAGAMENTOS, SITUACOES, reais
+from petbits.states.loja_state import ENTREGAS, ORIGENS, PAGAMENTOS, SITUACOES, reais
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
@@ -131,6 +131,12 @@ class EquipeState(rx.State):
     # Pedidos da loja (change `pedidos-da-equipe`).
     pedidos_clinica: list[dict] = []
     filtro_pedidos: str = "todos"
+
+    # Venda no balcão (change `venda-no-balcao`).
+    balcao_cliente: str = ""
+    balcao_carrinho: dict[str, int] = {}
+    balcao_aviso: str = ""
+    balcao_erro: str = ""
 
     # Agenda do dia (change `agendamento`, D8). Só leitura.
     agenda_dia_iso: str = ""
@@ -272,6 +278,10 @@ class EquipeState(rx.State):
         self.produtos = []
         self.pedidos_clinica = []
         self.filtro_pedidos = "todos"
+        self.balcao_cliente = ""
+        self.balcao_carrinho = {}
+        self.balcao_aviso = ""
+        self.balcao_erro = ""
         self.prd_dialogo = False
         self.prd_editando = None
         self.prd_erro = ""
@@ -733,6 +743,7 @@ class EquipeState(rx.State):
                 "entrega": ENTREGAS.get(p.get("entrega") or "", "-"),
                 "endereco": p.get("endereco_entrega") or "",
                 "pagamento": PAGAMENTOS.get(p.get("forma_pagamento") or "", "-"),
+                "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "pago": bool(p.get("pago_em")),
                 "total": reais(p.get("total")),
                 "itens": itens.get(p.get("id"), []),
@@ -754,6 +765,92 @@ class EquipeState(rx.State):
             self.erro = str(erro)
             return
         return await self.carregar_pedidos_clinica()
+
+    # --- venda no balcão (change `venda-no-balcao`) -------------------------
+
+    def set_balcao_cliente(self, valor: str):
+        self.balcao_cliente = valor
+
+    @rx.var
+    def produtos_a_venda(self) -> list[dict]:
+        return [p for p in self.produtos if p["ativo"] and int(p["_estoque"] or 0) > 0]
+
+    @rx.var
+    def itens_balcao(self) -> list[dict]:
+        por_id = {str(p["id"]): p for p in self.produtos}
+        itens = []
+        for pid, qtd in self.balcao_carrinho.items():
+            p = por_id.get(pid)
+            if p:
+                preco = float(p["_preco"] or 0)
+                itens.append({"id": pid, "nome": p["nome"], "quantidade": qtd,
+                              "linha": reais(preco * qtd),
+                              "pode_mais": qtd < int(p["_estoque"] or 0)})
+        return itens
+
+    @rx.var
+    def total_balcao(self) -> str:
+        por_id = {str(p["id"]): p for p in self.produtos}
+        return reais(sum(float(por_id[pid]["_preco"] or 0) * q
+                         for pid, q in self.balcao_carrinho.items() if pid in por_id))
+
+    async def carregar_balcao(self):
+        """Clientes e catálogo: duas requisições, as listas que a área da
+        equipe já tem."""
+        self.balcao_aviso = ""
+        self.balcao_erro = ""
+        resultado = await self.carregar_tutores()
+        if resultado is not None:
+            return resultado
+        return await self.carregar_produtos()
+
+    def balcao_adicionar(self, produto_id: int):
+        pid = str(produto_id)
+        estoque = next((int(p["_estoque"] or 0) for p in self.produtos
+                        if str(p["id"]) == pid), 0)
+        atual = self.balcao_carrinho.get(pid, 0)
+        if atual < estoque:
+            self.balcao_carrinho = {**self.balcao_carrinho, pid: atual + 1}
+        self.balcao_aviso = ""
+
+    def balcao_tirar(self, produto_id: str):
+        atual = self.balcao_carrinho.get(produto_id, 0)
+        resto = {k: v for k, v in self.balcao_carrinho.items() if k != produto_id}
+        if atual > 1:
+            resto[produto_id] = atual - 1
+        self.balcao_carrinho = resto
+
+    async def confirmar_venda(self):
+        if not self.balcao_cliente:
+            self.balcao_erro = "Escolha o cliente."
+            return
+        if not self.balcao_carrinho:
+            self.balcao_erro = "Adicione ao menos um produto."
+            return
+        self.balcao_erro = ""
+        self.salvando = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            itens = [{"produto_id": int(pid), "quantidade": q}
+                     for pid, q in self.balcao_carrinho.items()]
+            venda = await xano.vender_no_balcao(int(self.balcao_cliente), itens, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            yield await self._encerrar(erro)
+            return
+        except XanoError as erro:
+            self.balcao_erro = str(erro)
+            return
+        finally:
+            self.salvando = False
+        cliente = next((t["nome"] for t in self.tutores
+                        if str(t["id"]) == self.balcao_cliente), "")
+        self.balcao_aviso = (f"Venda nº {venda.get('id')} registrada para {cliente}: "
+                             f"{reais(venda.get('total'))}.")
+        self.balcao_carrinho = {}
+        resultado = await self.carregar_produtos()
+        if resultado is not None:
+            yield resultado
 
     # --- agenda do dia (change `agendamento`, D8) ---------------------------
 

@@ -656,3 +656,17 @@ async def mudar_situacao_do_pedido(pedido_id: int, situacao: str, *, token: str)
     if feito is None:
         raise NaoEncontrado("Este pedido não está mais disponível.", status=404)
     return feito
+
+
+# --- venda no balcão (change `venda-no-balcao`) ---------------------------------
+
+
+async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> dict:
+    """Venda presencial na conta de um cliente. `itens`: `{produto_id, quantidade}`."""
+    feita = await _requisitar(
+        "POST", "/equipe/vendas", token=token,
+        json={"tutor_id": tutor_id, "itens": itens},
+    )
+    if feita is None:
+        raise XanoError("O Xano não confirmou a venda.")
+    return feita

@@ -24,6 +24,7 @@ AREAS = [
     ("/equipe/servicos", "Serviços", "scissors"),
     ("/equipe/produtos", "Produtos", "package"),
     ("/equipe/pedidos", "Pedidos", "receipt"),
+    ("/equipe/balcao", "Balcão", "store"),
     ("/equipe/tutores", "Tutores", "contact"),
     ("/equipe/animais", "Animais", "paw-print"),
 ]
@@ -629,8 +630,8 @@ def _cartao_pedido(p: dict) -> rx.Component:
                 width="100%", align="center", wrap="wrap",
             ),
             rx.text(p["cliente"], size="2"),
-            rx.text(p["quando"], " · ", p["entrega"], " · ", p["pagamento"], size="1",
-                    color=rx.color("gray", 10)),
+            rx.text(p["quando"], " · ", p["origem"], " · ", p["entrega"], " · ",
+                    p["pagamento"], size="1", color=rx.color("gray", 10)),
             rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
                                            color=rx.color("gray", 10))),
             rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(
@@ -672,6 +673,96 @@ def pedidos_equipe_page() -> rx.Component:
         rota="/equipe/pedidos",
         titulo="Pedidos",
         subtitulo="Os pedidos da loja. Cancelar devolve os itens ao estoque.",
+    )
+
+
+# --- venda no balcão (change `venda-no-balcao`) -----------------------------------
+
+
+def _produto_balcao(p: dict) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.vstack(
+                rx.text(p["nome"], weight="medium", size="2"),
+                rx.text(p["preco"], " · ", p["estoque"], size="1", color=rx.color("gray", 10)),
+                spacing="0", align_items="start",
+            ),
+            rx.spacer(),
+            rx.icon_button(rx.icon("plus", size=14), size="1",
+                           on_click=EquipeState.balcao_adicionar(p["id"]),
+                           aria_label="Adicionar à venda"),
+            width="100%", align="center",
+        ),
+        width="100%",
+    )
+
+
+def _item_balcao(i: dict) -> rx.Component:
+    return rx.hstack(
+        rx.text(i["nome"], size="2", flex="1"),
+        rx.icon_button(rx.icon("minus", size=14), size="1", variant="soft",
+                       on_click=EquipeState.balcao_tirar(i["id"]), aria_label="Tirar um"),
+        rx.text(i["quantidade"], size="2", min_width="1.5rem", text_align="center"),
+        rx.icon_button(rx.icon("plus", size=14), size="1", variant="soft",
+                       on_click=EquipeState.balcao_adicionar(i["id"].to(int)),
+                       disabled=~i["pode_mais"].to(bool), aria_label="Mais um"),
+        rx.text(i["linha"], size="2", min_width="6rem", text_align="right"),
+        width="100%", align="center", spacing="2",
+    )
+
+
+def balcao_page() -> rx.Component:
+    return _casca(
+        rx.cond(EquipeState.balcao_aviso,
+                rx.callout(EquipeState.balcao_aviso, icon="circle_check",
+                           color_scheme="green", size="1", width="100%")),
+        rx.grid(
+            rx.vstack(
+                rx.text("Produtos à venda", weight="bold"),
+                rx.cond(
+                    EquipeState.produtos_a_venda.length() > 0,
+                    rx.grid(rx.foreach(EquipeState.produtos_a_venda, _produto_balcao),
+                            columns=rx.breakpoints(initial="1", sm="2"), spacing="2",
+                            width="100%"),
+                    rx.text("Nenhum produto ativo com estoque.", size="2",
+                            color=rx.color("gray", 10)),
+                ),
+                spacing="2", width="100%", align_items="start",
+            ),
+            rx.card(
+                rx.vstack(
+                    rx.text("Venda", weight="bold"),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Escolha o cliente", width="100%"),
+                        rx.select.content(rx.foreach(
+                            EquipeState.tutores,
+                            lambda t: rx.select.item(t["nome"], " · ", t["documento"],
+                                                     value=t["id"].to_string()))),
+                        value=EquipeState.balcao_cliente,
+                        on_change=EquipeState.set_balcao_cliente,
+                        width="100%",
+                    ),
+                    rx.foreach(EquipeState.itens_balcao, _item_balcao),
+                    rx.divider(),
+                    rx.hstack(rx.text("Total"), rx.spacer(),
+                              rx.text(EquipeState.total_balcao, weight="bold"), width="100%"),
+                    rx.text("A venda é registrada como entregue e paga na loja, na conta do "
+                            "cliente.", size="1", color=rx.color("gray", 10)),
+                    rx.cond(EquipeState.balcao_erro,
+                            rx.callout(EquipeState.balcao_erro, icon="triangle_alert",
+                                       color_scheme="red", size="1", width="100%")),
+                    rx.button("Confirmar venda", on_click=EquipeState.confirmar_venda,
+                              disabled=EquipeState.salvando, size="3", width="100%"),
+                    spacing="2", width="100%",
+                ),
+                width="100%",
+            ),
+            columns=rx.breakpoints(initial="1", md="3fr 2fr"),
+            spacing="4", width="100%", align_items="start",
+        ),
+        rota="/equipe/balcao",
+        titulo="Venda no balcão",
+        subtitulo="Venda presencial, registrada na conta do cliente.",
     )
 
 

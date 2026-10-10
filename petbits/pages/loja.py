@@ -224,8 +224,8 @@ def _pedido(p: rx.Var) -> rx.Component:
                 align="center",
                 wrap="wrap",
             ),
-            rx.text(p["quando"], " · ", p["entrega"], " · ", p["pagamento"], size="1",
-                    color=rx.color("gray", 10)),
+            rx.text(p["quando"], " · ", p["origem"], " · ", p["entrega"], " · ",
+                    p["pagamento"], size="1", color=rx.color("gray", 10)),
             rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
                                            color=rx.color("gray", 10))),
             rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(

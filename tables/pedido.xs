@@ -35,6 +35,12 @@ table pedido {
     decimal total
 
     timestamp pago_em?
+
+    // `site` ou `balcao` (change `venda-no-balcao`, D4). Pedidos antigos e os
+    // do site ficam `site`.
+    enum origem?=site {
+      values = ["site", "balcao"]
+    }
     timestamp created_at?=now
   }
 

@@ -38,6 +38,19 @@ banco antes de gravar: id inexistente é recusado.
 Coluna nova `enum origem?=site`. Os pedidos já existentes ficam `site`; o
 `POST pedidos` passa `site` explicitamente.
 
+## Registro da publicação (2026-10-09)
+
+Pelo Xano CLI, procedimento da change `agendamento`, com os seis arquivos
+nomeados um a um e `--dry-run` antes. O preview mostrou exatamente o
+planejado: `UPDATE` e `ADD_FIELD` em `pedido` (a coluna `origem`), `CREATE`
+da função `PetBits/registrar_pedido`, `CREATE` de `equipe/vendas POST` e
+`UPDATE` de `pedidos GET`, `pedidos POST` e `equipe/pedidos GET` — nada mais.
+
+Depois, a verificação de entrada sem token do `POST pedidos` republicado deu o
+mesmo resultado da change `loja`: itens válidos → 401, item sem `produto_id`
+→ 400. `equipe/vendas`, `pedidos` e `equipe/pedidos` sem token → 401. A
+guarda confere 18 endpoints.
+
 ## Risks / Trade-offs
 
 - [Republicar o `POST pedidos`] → A mudança é de forma (chamar a função), não

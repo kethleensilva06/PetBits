@@ -33,6 +33,7 @@ SITUACOES = {
 }
 ENTREGAS = {"retirada": "Retirada na clínica", "endereco": "Entrega no endereço"}
 PAGAMENTOS = {"na_loja": "Pagamento na loja", "online": "Pago online (simulado)"}
+ORIGENS = {"site": "Pela loja do site", "balcao": "Venda no balcão"}
 
 
 def reais(valor) -> str:
@@ -253,6 +254,7 @@ class LojaState(rx.State):
                 "entrega": ENTREGAS.get(p.get("entrega") or "", "-"),
                 "endereco": p.get("endereco_entrega") or "",
                 "pagamento": PAGAMENTOS.get(p.get("forma_pagamento") or "", "-"),
+                "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "total": reais(p.get("total")),
                 "itens": itens_por_pedido.get(p.get("id"), []),
             }

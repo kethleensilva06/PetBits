@@ -46,7 +46,7 @@ query "equipe/pedidos" verb=GET {
 
           eval = {cliente_nome: $db.tutor.nome, cliente_telefone: $db.tutor.telefone}
           sort = {created_at: "desc"}
-          output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "cliente_nome", "cliente_telefone"]
+          output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "origem", "cliente_nome", "cliente_telefone"]
           return = {type: "list"}
         } as $todos
 
@@ -73,7 +73,7 @@ query "equipe/pedidos" verb=GET {
           where = $db.pedido.situacao == $input.situacao
           eval = {cliente_nome: $db.tutor.nome, cliente_telefone: $db.tutor.telefone}
           sort = {created_at: "desc"}
-          output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "cliente_nome", "cliente_telefone"]
+          output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "origem", "cliente_nome", "cliente_telefone"]
           return = {type: "list"}
         } as $filtrados
 

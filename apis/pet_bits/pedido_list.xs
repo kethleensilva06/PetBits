@@ -25,7 +25,7 @@ query pedidos verb=GET {
 
       where = $db.tutor.id_user == $auth.id
       sort = {created_at: "desc"}
-      output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em"]
+      output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "origem"]
       return = {type: "list"}
     } as $pedidos
 
