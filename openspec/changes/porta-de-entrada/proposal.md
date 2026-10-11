@@ -14,9 +14,10 @@ funcionários.
 - **Entrada de clientes** (`/entrar`): formulário de login com "Criar conta".
 - **Entrada da equipe** (`/entrar/equipe`): formulário de login próprio, sem
   "Criar conta" — contas de equipe são dadas pela clínica.
-- As abas Cliente/Colaborador **saem**. Depois da senha aceita, **conta de
-  equipe vai sempre para a gerência**, por qualquer entrada, e qualquer outra
-  conta vai para a área de cliente.
+- As abas Cliente/Colaborador viram **páginas**. Depois da senha aceita,
+  vale a regra da change `papeis-e-abas`: cada conta entra só pela sua
+  entrada — equipe pela da equipe, cliente pela de clientes —, e quem usa a
+  outra é recusado com a orientação certa (ver D6).
 - **Funcionário não usa a área de cliente:** quem é da equipe e abre `/` ou
   `/agenda` é levado à gerência, sem carregar dado de cliente. (Mudança de
   rumo pedida pela clínica durante a aplicação — ver D5.)

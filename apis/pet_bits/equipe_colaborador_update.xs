@@ -46,7 +46,13 @@ query "equipe/colaboradores/{colaborador_id}" verb=PATCH {
       error = "Sessao invalida."
     }
 
-    function.run "PetBits/exige_equipe" {
+    // GERENCIA, nao equipe: manter o quadro de pessoal e da gerencia desde
+    // a change `papeis-e-abas`. Ler colaborador continua sendo de toda a
+    // equipe, e os arquivos de leitura seguem chamando `exige_equipe` -- se
+    // esta linha voltar a ser a irma, uma conta `staff` passa a editar o
+    // cadastro de um veterinario, e nada acusa isso sozinho. Por isso a
+    // guarda de repositorio confere nos dois sentidos.
+    function.run "PetBits/exige_gerencia" {
       input = {user_id: $auth.id}
     } as $id_conta
 

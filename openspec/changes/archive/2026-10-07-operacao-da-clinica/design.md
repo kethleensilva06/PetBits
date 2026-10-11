@@ -519,7 +519,7 @@ lado do tutor.
 As specs pedem recusas que nenhuma declaração de coluna garante. Pelo padrão
 do D8 da change anterior, elas moram na pilha, antes da gravação:
 
-- **Função fora do conjunto** (veterinário, tosador, atendente): a coluna é
+- **Função fora do conjunto** (o conjunto cresceu depois: ver D12): a coluna é
   `enum`, mas a recusa precisa ser explícita e com mensagem, não um 500 cru.
 - **Duração > 0** e **preço >= 0**, na criação **e** na alteração. A spec
   tem cenário próprio para "duração não pode ser zerada na alteração" — e é o

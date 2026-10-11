@@ -54,6 +54,24 @@ cliente. Duas consequências:
 Fica em aberto o que fazer com a change `cadastro-de-cliente-pela-conta`, cujo
 motivo era justamente o funcionário usar a área de cliente.
 
+### D6 — Segunda mudança de rumo: a regra da `papeis-e-abas`
+
+Ao juntar a `main`, apareceu a change `papeis-e-abas` (da Kethleen, aplicada e
+publicada no Xano): `staff` é a equipe comum, `admin` é a gerência, e **a aba
+vale depois da senha** — equipe pela aba Cliente é recusada, cliente pela aba
+Colaborador também, e conta sem papel é recusada. A clínica decidiu seguir
+essa regra. Nesta change ela continua valendo, com as páginas no lugar das
+abas:
+
+- o `on_load` de cada página define `AuthState.aba` (`abrir_entrada_de_clientes`,
+  `abrir_entrada_da_equipe`), e a comparação com o papel é a dela, depois do
+  `/auth/me`;
+- a mensagem de recusa fala em "entrada da equipe" e "entrada de clientes";
+- o bloqueio do D5 (funcionário fora da área de cliente) continua, coerente
+  com ela.
+
+O D1 e o D5 ficam como registro do caminho; o comportamento é o deste D6.
+
 ## Risks / Trade-offs
 
 - [Funcionário que também tem animais] → Não usa a área de cliente com a

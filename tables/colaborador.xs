@@ -76,7 +76,7 @@ table colaborador {
   // A lista ordenada por nome e a unica leitura que esta tabela tem; o indice
   // existe para ela, e so.
   //
-  // Sem indice sobre `funcao` ou `ativo`: tres e dois valores distintos, numa
+  // Sem indice sobre `funcao` ou `ativo`: cinco e dois valores distintos, numa
   // tabela de dezenas de linhas, nao pagam o indice.
   //
   // Sem indice UNICO, e isso e decisao: a spec nao pede nome unico, dois

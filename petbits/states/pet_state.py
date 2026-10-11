@@ -49,26 +49,6 @@ class PetState(rx.State):
     f_peso: str = ""
     f_observacoes: str = ""
 
-    # Conta de equipe sem ficha de tutor (change
-    # `cadastro-de-cliente-pela-conta`). Só conta que NÃO é de tutor pergunta
-    # (D4) — equipe, ou conta sem papel: conta de tutor nasce com ficha no
-    # cadastro público.
-    sem_ficha: bool = False
-    ficha_documento: str = ""
-    ficha_telefone: str = ""
-    ficha_endereco: str = ""
-    ficha_erro: str = ""
-    ficha_enviando: bool = False
-
-    def set_ficha_documento(self, value: str):
-        self.ficha_documento = value
-
-    def set_ficha_telefone(self, value: str):
-        self.ficha_telefone = value
-
-    def set_ficha_endereco(self, value: str):
-        self.ficha_endereco = value
-
     def set_show_dialog(self, value: bool):
         self.show_dialog = value
 
@@ -104,6 +84,22 @@ class PetState(rx.State):
         """
         return self.ja_carregou and not self.carregando and not self.load_error and not self.animais
 
+    @rx.var
+    def mostrar_carregando(self) -> bool:
+        """Carregando é um estado, não o resto do mundo.
+
+        Sem esta var, "carregando" era o caso padrão de tudo que não fosse
+        "tem animais" nem "vazio" — e uma carga que falhou ficava mostrando o
+        erro **e** o spinner, lado a lado, para sempre, sem nada reagendar a
+        tentativa.
+
+        A área da equipe corrigiu isso quando apareceu; esta tela ficou para
+        trás, e a revisão adversarial a encontrou. É o mesmo defeito da outra
+        ponta, que esta tela já tinha corrigido: dizer "nenhum animal
+        cadastrado" enquanto a lista ainda vinha.
+        """
+        return self.carregando or (not self.ja_carregou and not self.load_error)
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado ao sair."""
         self.animais = []
@@ -119,12 +115,6 @@ class PetState(rx.State):
         self.f_nascimento = ""
         self.f_peso = ""
         self.f_observacoes = ""
-        self.sem_ficha = False
-        self.ficha_documento = ""
-        self.ficha_telefone = ""
-        self.ficha_endereco = ""
-        self.ficha_erro = ""
-        self.ficha_enviando = False
 
     @rx.var
     def titulo_dialogo(self) -> str:
@@ -165,12 +155,7 @@ class PetState(rx.State):
         self.animais = []
         try:
             token = await self._token()
-            auth = await self.get_state(AuthState)
-            if not xano.eh_tutor(auth.usuario_papel):
-                self.sem_ficha = await xano.minha_ficha(token) is None
-            else:
-                self.sem_ficha = False
-            registros = [] if self.sem_ficha else await xano.listar_animais(token=token)
+            registros = await xano.listar_animais(token=token)
         except (SemSessao, SessaoExpirada) as erro:
             self.carregando = False
             return await self._encerrar(erro)
@@ -201,39 +186,6 @@ class PetState(rx.State):
         self.ja_carregou = True
 
     # --- formulário -------------------------------------------------------
-
-    async def completar_cadastro(self):
-        """Cria a ficha de tutor da própria conta. O backend confere o CPF e
-        recusa genericamente se ele já existir (D3); aqui só a forma."""
-        digitos = "".join(c for c in self.ficha_documento if c.isdigit())
-        if len(digitos) != 11:
-            self.ficha_erro = "O CPF precisa ter 11 dígitos."
-            return
-        self.ficha_erro = ""
-        self.ficha_enviando = True
-        yield
-        try:
-            token = await self._token()
-            dados = {"documento": digitos}
-            if self.ficha_telefone.strip():
-                dados["telefone"] = self.ficha_telefone.strip()
-            if self.ficha_endereco.strip():
-                dados["endereco"] = self.ficha_endereco.strip()
-            await xano.criar_minha_ficha(dados, token=token)
-        except (SemSessao, SessaoExpirada) as erro:
-            yield await self._encerrar(erro)
-            return
-        except XanoError as erro:
-            self.ficha_erro = str(erro)
-            return
-        finally:
-            self.ficha_enviando = False
-        self.ficha_documento = ""
-        self.ficha_telefone = ""
-        self.ficha_endereco = ""
-        resultado = await self.carregar()
-        if resultado is not None:
-            yield resultado
 
     def novo(self):
         self.editando_id = None

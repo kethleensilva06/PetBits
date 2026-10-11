@@ -60,15 +60,15 @@ de clientes oferece criar conta.
 
 ### Requirement: Destino depois da entrada
 
-Depois de a credencial ser aceita, uma conta de equipe SHALL ser levada à
-gerência e qualquer outra conta à área de cliente, seja qual for a entrada
-usada. A área de cliente MUST NOT ser aberta por conta de equipe: quem é da
-equipe e abre um endereço da área de cliente SHALL ser levado à gerência, sem
-que nenhum dado de cliente seja carregado.
+Depois de a credencial ser confirmada, a entrada da equipe SHALL levar uma
+conta de equipe à gerência e a entrada de clientes SHALL levar uma conta de
+cliente à área de cliente. Quem usa a entrada que não é a sua, ou não tem
+papel conhecido, MUST ser recusado sem guardar a sessão.
 
 #### Scenario: Cliente entra
 
-- **WHEN** uma pessoa informa e-mail e senha corretos na entrada de clientes
+- **WHEN** uma conta de cliente informa e-mail e senha corretos na entrada de
+  clientes
 - **THEN** a sessão é iniciada e ela vai para a área de cliente
 
 #### Scenario: Funcionário entra na gerência
@@ -79,18 +79,28 @@ que nenhum dado de cliente seja carregado.
 
 #### Scenario: Funcionário pela entrada de clientes
 
-- **WHEN** uma conta de equipe entra pela entrada de clientes
-- **THEN** ela vai para a gerência
+- **WHEN** uma conta de equipe acerta a senha na entrada de clientes
+- **THEN** a sessão não é iniciada e a mensagem orienta a usar a entrada da
+  equipe
 
 #### Scenario: Conta sem papel de equipe pela entrada da equipe
 
-- **WHEN** uma conta que não é de equipe entra pela entrada da equipe
-- **THEN** a sessão é iniciada normalmente
-- **AND** ela vai para a área de cliente, sem aviso de que a conta não é da
-  equipe
+- **WHEN** uma conta de cliente acerta a senha na entrada da equipe
+- **THEN** a sessão não é iniciada e a mensagem orienta a usar a entrada de
+  clientes
+
+#### Scenario: Conta sem papel definido
+
+- **WHEN** uma conta sem papel conhecido acerta a senha em qualquer entrada
+- **THEN** a sessão não é iniciada e a mensagem orienta a procurar a clínica
+
+### Requirement: Funcionário não usa a área de cliente
+
+Uma conta de equipe que abre um endereço da área de cliente SHALL ser levada
+à gerência, sem que nenhum dado de cliente seja carregado.
 
 #### Scenario: Funcionário abre a área de cliente pelo endereço
 
-- **WHEN** uma conta de equipe abre `/` ou `/agenda`
+- **WHEN** uma conta de equipe com sessão abre `/` ou `/agenda`
 - **THEN** ela é levada à gerência
 - **AND** nenhuma requisição de dados de cliente é feita

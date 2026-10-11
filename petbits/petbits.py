@@ -94,7 +94,8 @@ for rota, pagina, titulo, carregar in (
 # quem já entrou: voltar para cá por engano e ver campos vazios passa a
 # impressão de que a sessão caiu.
 # Página inicial pública e as duas entradas (change `porta-de-entrada`). As
-# duas entradas são o mesmo formulário; o destino vem só do papel da conta.
+# duas entradas são o mesmo formulário; o `on_load` de cada uma define a aba,
+# que só vale depois da senha confirmada (change `papeis-e-abas`).
 app.add_page(
     boas_vindas_page,
     route="/boas-vindas",
@@ -105,13 +106,13 @@ app.add_page(
     entrar_page,
     route="/entrar",
     title="PetBits | Entrar",
-    on_load=AuthState.redirecionar_se_logado,
+    on_load=AuthState.abrir_entrada_de_clientes,
 )
 app.add_page(
     entrar_equipe_page,
     route="/entrar/equipe",
     title="PetBits | Entrada da equipe",
-    on_load=AuthState.redirecionar_se_logado,
+    on_load=AuthState.abrir_entrada_da_equipe,
 )
 app.add_page(
     cadastro_page,

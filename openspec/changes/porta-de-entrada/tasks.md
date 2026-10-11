@@ -4,6 +4,7 @@
 - [x] 1.2 `/entrar` (clientes) e `/entrar/equipe` (equipe) com o mesmo formulário e o mesmo `AuthState.entrar`; o `on_load` de cada uma define a aba (D1); sem as abas; "Criar conta" só na de clientes (D2); atalhos Alt+1/Alt+2 nas duas
 - [x] 1.3 Visitante sem sessão em `/` vai para `/boas-vindas`; nas outras rotas privadas, para `/entrar`; sessão expirada continua em `/entrar` com aviso (D3)
 - [x] 1.5 D5: `rota_do_papel` só pelo papel, sem aba; `AuthState.aba` sai; `PetState` e `AgendaState` mandam conta de equipe para a gerência antes de qualquer requisição; verificar chamando os carregadores com papel de equipe e contando as requisições (`PETBITS_MEDIR`)
+- [x] 1.6 D6: depois do merge com a `main`, as páginas definem a aba e a regra de recusa da `papeis-e-abas` vale nelas; verificado em `tests/test_entrada.py` (cliente e equipe pela entrada certa entram; pela errada, e conta sem papel, são recusados sem sessão; senha errada tem a mesma recusa nas duas)
 - [x] 1.4 Verificar por leitura que as duas páginas chamam o mesmo manipulador e que a aba não entra em requisição
 
 ## 2. Verificação

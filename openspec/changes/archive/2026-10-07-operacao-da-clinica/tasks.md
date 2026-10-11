@@ -27,7 +27,7 @@ não mede nada.**
 
 ## 2. Tabelas novas
 
-- [x] 2.1 Criar `tables/colaborador.xs` com `nome` (text), `funcao` (enum: veterinario, tosador, atendente), `telefone?`, `email?`, `data_entrada?` (timestamp — **nunca** `date`, pelo fato medido 7) e `ativo` (bool, default true); verificar pelo schema publicado que `funcao` saiu como enum com exatamente os três valores
+- [x] 2.1 Criar `tables/colaborador.xs` com `nome` (text), `funcao` (enum: veterinario, tosador, atendente — ampliado depois, ver D12), `telefone?`, `email?`, `data_entrada?` (timestamp — **nunca** `date`, pelo fato medido 7) e `ativo` (bool, default true); verificar pelo schema publicado que `funcao` saiu como enum com os valores previstos (eram três quando esta tarefa foi cumprida; o conjunto cresceu depois, e re-executar este critério ao pé da letra reprovaria um schema correto)
 - [x] 2.2 Criar `tables/servico.xs` com `nome` (text), `descricao?`, `preco` (decimal) e `duracao_minutos` (int); verificar pelo schema publicado que nenhuma das duas últimas é opcional
 - [x] 2.3 Confirmar que **nenhuma** das duas tabelas tem coluna apontando para `user` ou `tutor`; verificar lendo os dois arquivos — é o que a proposta decidiu e o que o D2 pressupõe ao dizer que não há `where` de dono para esquecer
 
