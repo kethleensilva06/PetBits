@@ -8,7 +8,7 @@
 
 ## 3. Endpoints da equipe
 
-- [ ] 3.1 `equipe_produto_list.xs`, `equipe_produto_create.xs`, `equipe_produto_update.xs` com a abertura de equipe; recusas de nome vazio, preço ≤ 0 e estoque negativo, na criação e na alteração; `pick` na alteração; verificar que a guarda passa com eles — **Situação:** publicados; o preço zero foi recusado com sessão de equipe (ponta a ponta). Falta o estoque negativo e as recusas na alteração
+- [x] 3.1 `equipe_produto_list.xs`, `equipe_produto_create.xs`, `equipe_produto_update.xs` com a abertura de equipe; recusas de nome vazio, preço ≤ 0 e estoque negativo, na criação e na alteração; `pick` na alteração; verificar que a guarda passa com eles — **Situação:** publicados; a ponta a ponta provou preço zero recusado; a rodada da ponta a ponta ampliada em 2026-10-11 provou estoque negativo recusado na criação e na alteração, categoria inválida recusada e que alterar só o preço mantém o resto
 
 ## 4. Endpoints do cliente
 
@@ -27,7 +27,7 @@
 
 ## 6. Verificação
 
-- [ ] 6.1 Equipe no navegador: cadastrar um produto, alterar só o preço, desativar e reativar — **Situação:** o cadastro e a desativação passaram na ponta a ponta; falta a alteração de só o preço e ver na tela
-- [ ] 6.2 Cliente no navegador (feito por quem tem a senha, ou com a sessão aberta): comprar com retirada e pagamento na loja, e com entrega e pagamento online; ver em "Meus pedidos"; conferir que o estoque baixou — **Situação:** compra com retirada e pagamento na loja, pagamento online simulado, Meus pedidos e baixa de estoque passaram na ponta a ponta; falta a entrega no endereço e ver na tela
+- [ ] 6.1 Equipe no navegador: cadastrar um produto, alterar só o preço, desativar e reativar — **Situação:** cadastro, desativação e alteração de só o preço passaram na ponta a ponta (rodada da ponta a ponta ampliada em 2026-10-11); falta ver na tela
+- [ ] 6.2 Cliente no navegador (feito por quem tem a senha, ou com a sessão aberta): comprar com retirada e pagamento na loja, e com entrega e pagamento online; ver em "Meus pedidos"; conferir que o estoque baixou — **Situação:** compra com retirada, pagamento online simulado, entrega no endereço, Meus pedidos e baixa de estoque passaram na ponta a ponta (rodada da ponta a ponta ampliada em 2026-10-11); falta ver na tela
 - [x] 6.3 Recusas: estoque insuficiente sem mudar estoque nenhum; produto inativo; pedido vazio — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [ ] 6.4 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`

@@ -9,5 +9,5 @@
 
 ## 3. Verificação
 
-- [ ] 3.1 Rodar de verdade, feito por quem desenvolve
-- [ ] 3.2 `openspec validate --strict` (lendo o Totals)
+- [x] 3.1 Rodar de verdade, feito por quem desenvolve
+- [x] 3.2 `openspec validate --strict` (lendo o Totals)

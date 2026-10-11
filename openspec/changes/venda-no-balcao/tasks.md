@@ -15,5 +15,5 @@
 ## 3. Verificação
 
 - [x] 3.1 Com sessão de equipe: vender no balcão para um cliente e ver o pedido entregue e pago na conta dele, com o estoque baixado — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
-- [ ] 3.2 Compra pelo site continua funcionando, com origem `site` — **Situação:** a compra pelo site passou na ponta a ponta; a origem `site` não foi conferida por ela
+- [x] 3.2 Compra pelo site continua funcionando, com origem `site` — **Situação:** a rodada da ponta a ponta ampliada em 2026-10-11 conferiu que o pedido feito pelo site tem origem `site`
 - [ ] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
