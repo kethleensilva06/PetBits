@@ -30,6 +30,13 @@ Três conferências:
    prova. A conferência 2 não pode confundir o arquivo da função com um
    endpoint que a chama.
 
+4. **Nenhum endpoint público sem motivo escrito** (change
+   `ferramentas-de-verificacao`). Todo `.xs` em `apis/` sem `auth = "user"`
+   precisa estar em `PUBLICOS`, com o motivo ao lado. É a regra que a change
+   `operacao-da-clinica` escreveu depois de achar três endpoints públicos que
+   ninguém tinha olhado: "liste todo endpoint sem `auth = user`, e para cada
+   um diga que pergunta ele responde a quem não tem credencial".
+
 O que esta guarda **não** alcança, e precisa estar escrito: endpoint criado
 pela interface do Xano não passa pelo repositório, e portanto não passa por
 aqui. Para esse caso só existe o teste de duas contas — token de tutor dá 403,
@@ -49,6 +56,19 @@ PROJETO = Path(__file__).resolve().parent.parent
 
 PASTA_ENDPOINTS = PROJETO / "apis" / "pet_bits"
 GLOB_EQUIPE = "equipe_*.xs"
+
+PASTA_APIS = PROJETO / "apis"
+
+# Endpoints que respondem sem credencial, e por quê. Acrescentar um aqui é
+# responder, por escrito, que pergunta ele responde a quem não tem conta.
+PUBLICOS = {
+    "apis/pet_bits/entrar.xs":
+        "a entrada: recebe e-mail e senha antes de existir sessão; recusa em "
+        "tempo constante e com a mesma mensagem (change operacao-da-clinica, D6)",
+    "apis/pet_bits/tutor_cadastro.xs":
+        "o cadastro público de cliente; recusas de e-mail e CPF iguais, para "
+        "não confirmar quem é cliente (change animais-do-tutor, D9)",
+}
 
 PROVA = "PetBits/exige_equipe"
 ARQUIVO_DA_FUNCAO = PROJETO / "functions" / "pet_bits" / "exige_equipe.xs"
@@ -366,6 +386,28 @@ def conferencia_3(chamadores: int) -> int:
     return falhas
 
 
+def conferencia_4() -> int:
+    """Todo endpoint sem `auth = "user"` precisa estar em `PUBLICOS`."""
+    print("4. Nenhum endpoint público sem motivo escrito\n")
+    falhas = 0
+    for caminho in sorted(PASTA_APIS.glob("*/*.xs")):
+        codigo = sem_comentarios(ler(caminho))
+        if not re.search(r"^query\b", codigo, re.MULTILINE):
+            continue  # api_group.xs e afins: não são endpoints
+        auth = RE_AUTH.search(codigo)
+        if auth and auth.group(1) == "user":
+            continue
+        nome = relativo(caminho)
+        if nome in PUBLICOS:
+            print(f"   ok     {nome} — público: {PUBLICOS[nome]}")
+            continue
+        valor = f'auth = "{auth.group(1)}"' if auth else "sem auth"
+        print(f"   ACUSA  {nome}: {valor}, e não está na lista de públicos")
+        falhas += 1
+    print()
+    return falhas
+
+
 def main() -> int:
     print("Guarda dos endpoints de equipe\n")
 
@@ -373,8 +415,9 @@ def main() -> int:
     falhas_2 = conferencia_2(endpoints)
     chamadores = sum(1 for c in endpoints if RE_CHAMADA.search(ler(c)))
     falhas_3 = conferencia_3(chamadores)
+    falhas_4 = conferencia_4()
 
-    total = falhas_1 + falhas_2 + falhas_3
+    total = falhas_1 + falhas_2 + falhas_3 + falhas_4
     if total == 0:
         print(f"{len(endpoints)} endpoint(s) de equipe conferido(s), nenhuma acusação")
         return 0

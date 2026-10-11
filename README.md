@@ -135,6 +135,26 @@ Entra com a primeira conta de equipe com senha do `contas-de-teste.local.txt`
 e cadastra 15 produtos, nas seis categorias, pelo mesmo cadastro da tela de
 Produtos. Rodar de novo não duplica: produto com o mesmo nome é pulado.
 
+## Verificação
+
+Três conferências, do mais rápido ao mais completo:
+
+```bash
+python -m unittest discover -s tests
+python scripts/verificar_equipe.py
+python scripts/verificar_ponta_a_ponta.py
+```
+
+1. **Testes locais** (segundos, sem rede): horários livres, prazo de
+   cancelamento, caminhos de pedido, carrinhos, contas de teste e papéis.
+2. **Guarda dos endpoints**: a prova de equipe em todo `equipe_*`, e nenhum
+   endpoint público sem motivo escrito em `PUBLICOS`.
+3. **Ponta a ponta** (uns 2 minutos, no Xano de verdade): entra com a
+   primeira conta de equipe e a primeira de cliente do
+   `contas-de-teste.local.txt` e confere os cenários da separação entre
+   equipe e cliente, da loja, dos pedidos, do balcão e da agenda. Deixa dados
+   de teste reconhecíveis ("Produto de verificação …", desativado no fim).
+
 ## Ciclo de desenvolvimento
 
 ```text
