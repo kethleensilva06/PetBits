@@ -41,26 +41,18 @@ query "agenda/ocupacao" verb=GET {
       error = "Este servico nao esta disponivel para agendamento."
     }
 
-    // Mesma regra de funcao do POST (D5). Duplicada de proposito em vez de
-    // extraida: sao duas linhas, e o POST e o unico que precisa acertar.
+    // A regra de funcao por categoria (D5) mora em
+    // `PetBits/funcoes_da_categoria`, a mesma do POST (change `acabamentos`).
+    function.run "PetBits/funcoes_da_categoria" {
+      input = {categoria: $servico.categoria}
+    } as $funcoes
+
     var $funcao_a {
-      value = "tosador"
+      value = $funcoes.a
     }
 
     var $funcao_b {
-      value = "tosador"
-    }
-
-    conditional {
-      if ($servico.categoria == "clinica") {
-        var.update $funcao_a {
-          value = "veterinario"
-        }
-
-        var.update $funcao_b {
-          value = "clinico_geral"
-        }
-      }
+      value = $funcoes.b
     }
 
     db.query colaborador {

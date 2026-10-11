@@ -30,3 +30,41 @@ class SemSessao(Exception):
     def __init__(self, destino: str = "/entrar"):
         super().__init__(destino)
         self.destino = destino
+
+
+async def token_de_cliente(state, sem_sessao: str = "/entrar") -> str:
+    """O token de quem está na área de cliente — a guarda que `PetState`,
+    `AgendaState` e `LojaState` repetiam (change `acabamentos`, D1).
+
+    Levanta `SemSessao` **antes** de qualquer requisição:
+
+    - sem sessão: para `sem_sessao` — mas, se a sessão acabou de EXPIRAR, para
+      `/entrar`, onde está o aviso; quem roda depois de `carregar_sessao` não
+      pode passar por cima dele;
+    - conta de equipe: para `/equipe` — funcionário não usa a área de cliente
+      (change `porta-de-entrada`).
+    """
+    from petbits import xano
+    from petbits.states.auth_state import AuthState
+
+    auth = await state.get_state(AuthState)
+    if not auth.token:
+        raise SemSessao("/entrar" if auth.sessao_expirou else sem_sessao)
+    if xano.eh_equipe(auth.usuario_papel):
+        raise SemSessao("/equipe")
+    return auth.token
+
+
+async def encerrar(state, erro: Exception):
+    """Redireciona depois de uma recusa de sessão. Só a credencial vencida
+    (`SessaoExpirada`) limpa a sessão — e marca o aviso; `SemSessao` só leva
+    ao destino dela."""
+    import reflex as rx
+
+    from petbits.states.auth_state import AuthState
+    from petbits.xano import SessaoExpirada
+
+    if isinstance(erro, SessaoExpirada):
+        auth = await state.get_state(AuthState)
+        auth._limpar(expirou=True)
+    return rx.redirect(getattr(erro, "destino", "/entrar"))

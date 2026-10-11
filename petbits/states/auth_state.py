@@ -25,6 +25,9 @@ from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 # mensagem em português, em vez do erro cru do backend.
 SENHA_MINIMA = 8
 
+# Títulos que não são nome: a saudação pula para o primeiro nome de verdade.
+TITULOS = {"dr", "dra", "sr", "sra"}
+
 
 def _senha_fraca(senha: str) -> Optional[str]:
     """O motivo de a senha não servir, ou None se estiver boa."""
@@ -217,7 +220,12 @@ class AuthState(rx.State):
 
     @rx.var
     def primeiro_nome(self) -> str:
-        return self.usuario_nome.split(" ")[0] if self.usuario_nome else ""
+        """O primeiro nome que não é título: "Dr. Otavio Lins" → "Otavio"
+        (change `acabamentos`)."""
+        partes = (self.usuario_nome or "").split()
+        while len(partes) > 1 and partes[0].lower().rstrip(".") in TITULOS:
+            partes = partes[1:]
+        return partes[0] if partes else ""
 
     @rx.var
     def papel_exibido(self) -> str:

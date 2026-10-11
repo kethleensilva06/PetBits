@@ -133,24 +133,16 @@ query agendamentos verb=POST {
     }
 
     // D5: a funcao vem da categoria, decidida aqui e nunca pelo cliente.
+    function.run "PetBits/funcoes_da_categoria" {
+      input = {categoria: $servico.categoria}
+    } as $funcoes
+
     var $funcao_a {
-      value = "tosador"
+      value = $funcoes.a
     }
 
     var $funcao_b {
-      value = "tosador"
-    }
-
-    conditional {
-      if ($servico.categoria == "clinica") {
-        var.update $funcao_a {
-          value = "veterinario"
-        }
-
-        var.update $funcao_b {
-          value = "clinico_geral"
-        }
-      }
+      value = $funcoes.b
     }
 
     // D4: a escolha e a gravacao acontecem dentro de uma transacao que TRAVA

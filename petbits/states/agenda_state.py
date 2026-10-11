@@ -18,14 +18,15 @@ from typing import Any
 
 import reflex as rx
 
-from petbits import agenda, xano
+from petbits import agenda, rotulos, xano
 from petbits.states.auth_state import AuthState
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import SessaoExpirada, XanoError
 
 CATEGORIAS = agenda.CATEGORIAS
 SITUACOES = agenda.SITUACOES
-FUNCOES = {"veterinario": "Veterinário", "clinico_geral": "Clínico geral", "tosador": "Tosador"}
+FUNCOES = rotulos.FUNCAO_LEGIVEL
 
 
 def _preco(valor) -> str:
@@ -173,20 +174,10 @@ class AgendaState(rx.State):
     # --- sessão -----------------------------------------------------------
 
     async def _token(self) -> str:
-        auth = await self.get_state(AuthState)
-        if not auth.token:
-            raise SemSessao()
-        # Funcionário não usa a área de cliente (change `porta-de-entrada`,
-        # D5): volta para a gerência antes de qualquer requisição.
-        if xano.eh_equipe(auth.usuario_papel):
-            raise SemSessao("/equipe")
-        return auth.token
+        return await sessao.token_de_cliente(self)
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     # --- carregar ---------------------------------------------------------
 

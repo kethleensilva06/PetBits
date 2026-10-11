@@ -18,6 +18,7 @@ import reflex as rx
 
 from petbits import datas, xano
 from petbits.states.auth_state import AuthState
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
@@ -123,26 +124,12 @@ class PetState(rx.State):
     # --- sessão -----------------------------------------------------------
 
     async def _token(self) -> str:
-        """Token de quem está logado. Levanta `SemSessao` se não houver."""
-        auth = await self.get_state(AuthState)
-        if not auth.token:
-            # Este State só carrega no endereço principal, cujo visitante
-            # sem sessão vê a página inicial (change `porta-de-entrada`, D3).
-            # Mas se a sessão acabou de EXPIRAR, `carregar_sessao_da_casa` já
-            # mandou para a entrada com o aviso — e este redirecionamento, que
-            # roda depois, não pode passar por cima dele.
-            raise SemSessao("/entrar" if auth.sessao_expirou else "/boas-vindas")
-        # Funcionário não usa a área de cliente (change `porta-de-entrada`,
-        # D5): volta para a gerência antes de qualquer requisição.
-        if xano.eh_equipe(auth.usuario_papel):
-            raise SemSessao("/equipe")
-        return auth.token
+        """Este State só carrega no endereço principal, cujo visitante sem
+        sessão vê a página inicial (change `porta-de-entrada`, D3)."""
+        return await sessao.token_de_cliente(self, sem_sessao="/boas-vindas")
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     # --- carregar ---------------------------------------------------------
 

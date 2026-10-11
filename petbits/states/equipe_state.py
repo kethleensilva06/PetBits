@@ -25,11 +25,12 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, xano
+from petbits import datas, rotulos, xano
 from petbits.states.auth_state import AuthState
 from petbits.pedidos import ROTULOS_ACAO, proximas
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
 from petbits.states.loja_state import ENTREGAS, ORIGENS, PAGAMENTOS, SITUACOES, reais
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
@@ -39,15 +40,9 @@ from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 # seria o caminho mais curto para alguém ganhar acesso ao se autointitular.
 CATEGORIAS = regras_da_agenda.CATEGORIAS
 
-FUNCOES = ["gerente", "veterinario", "clinico_geral", "tosador", "atendente"]
+FUNCOES = rotulos.FUNCOES
 
-FUNCAO_LEGIVEL = {
-    "gerente": "Gerente",
-    "veterinario": "Veterinário",
-    "clinico_geral": "Clínico geral",
-    "tosador": "Tosador",
-    "atendente": "Atendente",
-}
+FUNCAO_LEGIVEL = rotulos.FUNCAO_LEGIVEL
 
 
 def _funcao_legivel(valor: str) -> str:
@@ -317,10 +312,7 @@ class EquipeState(rx.State):
         return auth.token
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     def _comecar(self):
         self.erro = ""

@@ -15,6 +15,8 @@ sugerir errado e o Xano recusa.
 import calendar
 from datetime import date, datetime, time, timedelta, timezone
 
+from petbits import rotulos
+
 FUSO = timezone(timedelta(hours=-3))
 
 PASSO_MINUTOS = 30
@@ -32,13 +34,8 @@ EXPEDIENTE: dict[int, tuple[int, int]] = {
     5: (8 * 60, 12 * 60),
 }
 
-CATEGORIAS = {"clinica": "Clínica", "banho_tosa": "Banho e tosa"}
-SITUACOES = {
-    "marcado": "Marcado",
-    "em_andamento": "Em andamento",
-    "concluido": "Concluído",
-    "cancelado": "Cancelado",
-}
+CATEGORIAS = rotulos.CATEGORIAS_SERVICO
+SITUACOES = rotulos.SITUACOES_AGENDAMENTO
 
 DIAS_DA_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 MESES = [

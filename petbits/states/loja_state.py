@@ -10,30 +10,17 @@ requisição sai (change `porta-de-entrada`, D5).
 
 import reflex as rx
 
-from petbits import agenda, xano
+from petbits import agenda, rotulos, xano
 from petbits.states.auth_state import AuthState
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import SessaoExpirada, XanoError
 
-CATEGORIAS = {
-    "racao": "Ração",
-    "petisco": "Petisco",
-    "brinquedo": "Brinquedo",
-    "higiene": "Higiene",
-    "acessorio": "Acessório",
-    "medicamento": "Medicamento",
-}
-SITUACOES = {
-    "pendente": "Aguardando pagamento",
-    "pago": "Pago",
-    "pronto_retirada": "Pronto para retirada",
-    "enviado": "Enviado",
-    "entregue": "Entregue",
-    "cancelado": "Cancelado",
-}
-ENTREGAS = {"retirada": "Retirada na clínica", "endereco": "Entrega no endereço"}
-PAGAMENTOS = {"na_loja": "Pagamento na loja", "online": "Pago online (simulado)"}
-ORIGENS = {"site": "Pela loja do site", "balcao": "Venda no balcão"}
+CATEGORIAS = rotulos.CATEGORIAS_PRODUTO
+SITUACOES = rotulos.SITUACOES_PEDIDO
+ENTREGAS = rotulos.ENTREGAS
+PAGAMENTOS = rotulos.PAGAMENTOS
+ORIGENS = rotulos.ORIGENS
 
 
 def reais(valor) -> str:
@@ -116,18 +103,10 @@ class LojaState(rx.State):
     # --- sessão -----------------------------------------------------------
 
     async def _token(self) -> str:
-        auth = await self.get_state(AuthState)
-        if not auth.token:
-            raise SemSessao()
-        if xano.eh_equipe(auth.usuario_papel):
-            raise SemSessao("/equipe")
-        return auth.token
+        return await sessao.token_de_cliente(self)
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     # --- loja ---------------------------------------------------------------
 
