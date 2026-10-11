@@ -11,14 +11,14 @@
 ## 3. Endpoints do tutor
 
 - [ ] 3.1 `servico_list_tutor.xs` (`GET servicos`): `auth = "user"`, só serviços com categoria, `output` explícito; verificar com um serviço sem categoria que ele não aparece — **Situação:** publicado em 2026-10-08; sem token responde 401. Falta a verificação com conta de tutor
-- [ ] 3.2 `agenda_ocupacao.xs` (`GET agenda/ocupacao`): profissionais compatíveis e intervalos ocupados não cancelados do dia (D2); verificar que a resposta não tem nome nem contato — **Situação:** publicado em 2026-10-08; sem token responde 401. Falta a verificação com conta de tutor
-- [ ] 3.3 `agendamento_create.xs` (`POST agendamentos`): posse do animal, categoria, grade, futuro, expediente (D3), escolha do profissional dentro de transação com trava (D4); verificar cada recusa da spec com uma requisição — **Situação:** publicado em 2026-10-08; sem token responde 400 (os campos obrigatórios são conferidos antes do login) e, com os campos, 401. Falta a verificação de cada recusa com conta de tutor, e a das duas marcações simultâneas
-- [ ] 3.4 `agendamento_list.xs` (`GET agendamentos`): só dos animais do tutor, com nomes de animal, serviço e profissional; verificar com duas contas — **Situação:** publicado em 2026-10-08; sem token responde 401. Falta a verificação com duas contas
-- [ ] 3.5 `agendamento_cancelar.xs` (`POST agendamentos/{id}/cancelar`): D6; verificar prazo de 24 h, já cancelado, e agendamento alheio respondendo como inexistente — **Situação:** publicado em 2026-10-08; sem token responde 401. Falta a verificação com conta de tutor
+- [ ] 3.2 `agenda_ocupacao.xs` (`GET agenda/ocupacao`): profissionais compatíveis e intervalos ocupados não cancelados do dia (D2); verificar que a resposta não tem nome nem contato — **Situação:** publicado; usado pela ponta a ponta para achar horário livre (ok). Falta conferir que a resposta não traz nome nem contato
+- [ ] 3.3 `agendamento_create.xs` (`POST agendamentos`): posse do animal, categoria, grade, futuro, expediente (D3), escolha do profissional dentro de transação com trava (D4); verificar cada recusa da spec com uma requisição — **Situação:** publicado; a ponta a ponta provou: grade de 30 minutos recusada, horário livre aceito, e o mesmo horário com o único profissional ocupado recusado. Falta: expediente, passado, animal alheio e marcações simultâneas
+- [ ] 3.4 `agendamento_list.xs` (`GET agendamentos`): só dos animais do tutor, com nomes de animal, serviço e profissional; verificar com duas contas — **Situação:** publicado; o agendamento aparece na lista do cliente (ponta a ponta). Falta a verificação com duas contas
+- [ ] 3.5 `agendamento_cancelar.xs` (`POST agendamentos/{id}/cancelar`): D6; verificar prazo de 24 h, já cancelado, e agendamento alheio respondendo como inexistente — **Situação:** publicado; a ponta a ponta provou: cancelar com mais de 24 h e cancelar de novo recusado. Falta o prazo de menos de 24 h e o agendamento alheio
 
 ## 4. Endpoints da equipe
 
-- [ ] 4.1 `equipe_agenda.xs` (`GET equipe/agenda`): D8; verificar que a guarda `verificar_equipe.py` passa com ele, e com token de tutor que recusa — **Situação:** publicado em 2026-10-08; a guarda passa com 12 endpoints; com sessão de equipe a agenda do dia abriu, vazia e sem erro. Falta a recusa com token de tutor
+- [ ] 4.1 `equipe_agenda.xs` (`GET equipe/agenda`): D8; verificar que a guarda `verificar_equipe.py` passa com ele, e com token de tutor que recusa — **Situação:** publicado; a guarda passa; cliente pedindo a agenda da clínica foi recusado (ponta a ponta)
 - [ ] 4.2 `equipe_servico_create.xs` e `equipe_servico_update.xs` aceitam `categoria`, recusando valor fora do conjunto; verificar com "hospedagem" — **Situação:** publicado em 2026-10-08; na tela da equipe, o serviço "Banho e tosa" foi salvo com a categoria e voltou classificado. Falta a recusa de "hospedagem"
 
 ## 5. Reflex

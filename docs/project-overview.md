@@ -188,10 +188,10 @@ clínica, mas passam pelo mesmo fluxo.
 | `clientes-de-teste-por-script` ✓ | Um script cria clientes de teste e os põe no `Alt+2` |
 | `aba-define-a-area` ✓ | A aba da entrada escolhia a área depois da senha aceita — substituída pela `porta-de-entrada` |
 | `porta-de-entrada` *(em andamento)* | Página inicial pública; entradas separadas para clientes e equipe; funcionário sempre na gerência |
-| `papeis-e-abas` *(em andamento, da Kethleen)* | `staff` é a equipe comum e `admin` a gerência; cada conta entra só pela sua entrada; olho da senha |
-| `ferramentas-de-verificacao` *(em andamento)* | Testes locais, guarda de endpoints públicos e verificação de ponta a ponta |
-| `publicacao-por-script` *(em andamento)* | `scripts/publicar.py` publica só os arquivos pedidos, com prévia, e confere o repositório contra o Xano |
-| `acabamentos` *(em andamento)* | Sem as duplicações de guarda, rótulos e regra da categoria; saudação sem título |
+| `papeis-e-abas` ✓ | `staff` é a equipe comum e `admin` a gerência; cada conta entra só pela sua entrada; olho da senha |
+| `ferramentas-de-verificacao` ✓ | Testes locais, guarda de endpoints públicos e verificação de ponta a ponta |
+| `publicacao-por-script` ✓ | `scripts/publicar.py` publica só os arquivos pedidos, com prévia, e confere o repositório contra o Xano |
+| `acabamentos` ✓ | Sem as duplicações de guarda, rótulos e regra da categoria; saudação sem título |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

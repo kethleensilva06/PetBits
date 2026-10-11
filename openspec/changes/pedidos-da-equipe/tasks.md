@@ -7,10 +7,10 @@
 ## 2. Reflex
 
 - [x] 2.1 Regra das transições também em Python, para a tela só oferecer os botões válidos; testada com todas as combinações de situação e entrega
-- [ ] 2.2 `/equipe/pedidos` com filtro por situação, itens, e botões de ação; item no menu da equipe — **Situação:** construída e compila; falta ver com sessão de equipe (3.1)
+- [ ] 2.2 `/equipe/pedidos` com filtro por situação, itens, e botões de ação; item no menu da equipe — **Situação:** construída e compila; as transições passaram na ponta a ponta; falta ver a tela no navegador
 
 ## 3. Verificação
 
-- [ ] 3.1 Com sessão de equipe: marcar pronto, entregar com pagamento na retirada, cancelar e ver o estoque voltar
-- [ ] 3.2 Caminho inválido por requisição direta é recusado
+- [x] 3.1 Com sessão de equipe: marcar pronto, entregar com pagamento na retirada, cancelar e ver o estoque voltar — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
+- [x] 3.2 Caminho inválido por requisição direta é recusado — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [ ] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`

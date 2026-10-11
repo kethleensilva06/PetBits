@@ -9,11 +9,11 @@
 
 ## 2. Reflex
 
-- [ ] 2.1 `/equipe/balcao`: escolher cliente, adicionar produtos à venda, confirmar; item no menu da equipe — **Situação:** construída e compila; carrinho testado sozinho (só ativos com estoque, para no estoque, total). Falta ver com sessão de equipe (3.1)
+- [ ] 2.1 `/equipe/balcao`: escolher cliente, adicionar produtos à venda, confirmar; item no menu da equipe — **Situação:** construída e compila; a venda passou na ponta a ponta; falta ver a tela no navegador
 - [x] 2.2 Origem visível em "Meus pedidos" e nos pedidos da equipe
 
 ## 3. Verificação
 
-- [ ] 3.1 Com sessão de equipe: vender no balcão para um cliente e ver o pedido entregue e pago na conta dele, com o estoque baixado
-- [ ] 3.2 Compra pelo site continua funcionando, com origem `site`
+- [x] 3.1 Com sessão de equipe: vender no balcão para um cliente e ver o pedido entregue e pago na conta dele, com o estoque baixado — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
+- [ ] 3.2 Compra pelo site continua funcionando, com origem `site` — **Situação:** a compra pelo site passou na ponta a ponta; a origem `site` não foi conferida por ela
 - [ ] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`

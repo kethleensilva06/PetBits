@@ -13,4 +13,4 @@
 ## 3. Verificação
 
 - [x] 3.1 Testes locais, guarda e compilação de todas as páginas
-- [ ] 3.2 `openspec validate --strict` (lendo o Totals) — a change valida; o total falha só na spec `autenticacao` (herdado)
+- [x] 3.2 `openspec validate --strict` (lendo o Totals) — 16 passaram, 0 falharam, depois do archive da `papeis-e-abas`

@@ -11,9 +11,9 @@
 ## 3. Ponta a ponta
 
 - [x] 3.1 `scripts/verificar_ponta_a_ponta.py` (D3); verificar com o Xano simulado: contas ausentes param sem requisição, um cenário que falha dá código 1, saída sem senha nem token
-- [ ] 3.2 Rodar de verdade, feito por quem desenvolve
+- [x] 3.2 Rodar de verdade, feito por quem desenvolve — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 
 ## 4. Fechamento
 
 - [x] 4.1 README
-- [ ] 4.2 `openspec validate --strict` (lendo o Totals) — a change valida; o total falha só na spec `autenticacao` (herdado)
+- [x] 4.2 `openspec validate --strict` (lendo o Totals) — 16 passaram, 0 falharam, depois do archive da `papeis-e-abas`

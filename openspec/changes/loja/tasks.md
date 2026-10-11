@@ -8,26 +8,26 @@
 
 ## 3. Endpoints da equipe
 
-- [ ] 3.1 `equipe_produto_list.xs`, `equipe_produto_create.xs`, `equipe_produto_update.xs` com a abertura de equipe; recusas de nome vazio, preço ≤ 0 e estoque negativo, na criação e na alteração; `pick` na alteração; verificar que a guarda passa com eles — **Situação:** publicados em 2026-10-09; a guarda passa com 15 endpoints; sem token recusam. Falta exercitar as recusas com sessão de equipe (6.1)
+- [ ] 3.1 `equipe_produto_list.xs`, `equipe_produto_create.xs`, `equipe_produto_update.xs` com a abertura de equipe; recusas de nome vazio, preço ≤ 0 e estoque negativo, na criação e na alteração; `pick` na alteração; verificar que a guarda passa com eles — **Situação:** publicados; o preço zero foi recusado com sessão de equipe (ponta a ponta). Falta o estoque negativo e as recusas na alteração
 
 ## 4. Endpoints do cliente
 
-- [ ] 4.1 `loja_produtos.xs` (`GET loja/produtos`): ativos com estoque > 0, `output` explícito — **Situação:** publicado em 2026-10-09; sem token recusa. Falta ver a lista com sessão de cliente (6.2)
-- [ ] 4.2 `pedido_create.xs` (`POST pedidos`): D2, D3, D4; dono pelo token — **Situação:** publicado em 2026-10-09; a entrada `object[]` foi medida (1.1). Falta exercitar compra, estoque e recusas com sessão de cliente (6.2, 6.3)
-- [ ] 4.3 `pedido_list.xs` (`GET pedidos`): D5, só do cliente do token — **Situação:** publicado em 2026-10-09; sem token recusa. Falta ver com sessão de cliente (6.2)
+- [x] 4.1 `loja_produtos.xs` (`GET loja/produtos`): ativos com estoque > 0, `output` explícito — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
+- [x] 4.2 `pedido_create.xs` (`POST pedidos`): D2, D3, D4; dono pelo token — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
+- [x] 4.3 `pedido_list.xs` (`GET pedidos`): D5, só do cliente do token — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [x] 4.4 Publicar os endpoints nomeados um a um, com `--dry-run`; sem token, todos recusam
 
 ## 5. Reflex
 
 - [x] 5.1 Cliente HTTP em `petbits/xano.py`
-- [ ] 5.2 `/equipe/produtos`: lista, criar, editar, ativar/desativar; item no menu da equipe — **Situação:** construída e compila; sem sessão a rota leva à entrada. Falta ver com sessão de equipe (6.1)
-- [ ] 5.3 `/loja`: grade de produtos, carrinho, finalização com entrega e pagamento (aviso de pagamento simulado); bloqueio de funcionário (D6) — **Situação:** construída e compila; carrinho testado sozinho (limite do estoque, tirar, total e formato); sem sessão leva à entrada. Falta ver com sessão de cliente (6.2)
-- [ ] 5.4 `/pedidos`: meus pedidos com itens; links na casa do cliente — **Situação:** construída e compila; links na casa do cliente. Falta ver com sessão de cliente (6.2)
+- [ ] 5.2 `/equipe/produtos`: lista, criar, editar, ativar/desativar; item no menu da equipe — **Situação:** construída e compila; falta ver no navegador com sessão de equipe
+- [ ] 5.3 `/loja`: grade de produtos, carrinho, finalização com entrega e pagamento (aviso de pagamento simulado); bloqueio de funcionário (D6) — **Situação:** construída e compila; o backend da compra passou na ponta a ponta; falta ver a tela no navegador
+- [ ] 5.4 `/pedidos`: meus pedidos com itens; links na casa do cliente — **Situação:** construída e compila; falta ver no navegador
 - [x] 5.5 O `sair` limpa os estados novos
 
 ## 6. Verificação
 
-- [ ] 6.1 Equipe no navegador: cadastrar um produto, alterar só o preço, desativar e reativar
-- [ ] 6.2 Cliente no navegador (feito por quem tem a senha, ou com a sessão aberta): comprar com retirada e pagamento na loja, e com entrega e pagamento online; ver em "Meus pedidos"; conferir que o estoque baixou
-- [ ] 6.3 Recusas: estoque insuficiente sem mudar estoque nenhum; produto inativo; pedido vazio
+- [ ] 6.1 Equipe no navegador: cadastrar um produto, alterar só o preço, desativar e reativar — **Situação:** o cadastro e a desativação passaram na ponta a ponta; falta a alteração de só o preço e ver na tela
+- [ ] 6.2 Cliente no navegador (feito por quem tem a senha, ou com a sessão aberta): comprar com retirada e pagamento na loja, e com entrega e pagamento online; ver em "Meus pedidos"; conferir que o estoque baixou — **Situação:** compra com retirada e pagamento na loja, pagamento online simulado, Meus pedidos e baixa de estoque passaram na ponta a ponta; falta a entrega no endereço e ver na tela
+- [x] 6.3 Recusas: estoque insuficiente sem mudar estoque nenhum; produto inativo; pedido vazio — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [ ] 6.4 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
