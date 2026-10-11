@@ -32,6 +32,21 @@ Sem `--publicar`, o script para depois do `--dry-run`. Com `--publicar`, roda
 o `--dry-run` de novo, mostra, e só então publica com `--force` (o CLI pede
 confirmação interativa que o terminal não responde).
 
+### D4 — Arquivo igual ao do Xano fica fora (comparação conservadora)
+
+Medido: a prévia do CLI marca `UPDATE` até para arquivo que não mudou, porque
+compara texto cru, e a exportação do Xano reescreve o código — tira
+comentários e `== true`, quebra listas em várias linhas, move `output` para
+depois de `sort`, e acrescenta `guid`. Foi o efeito que quase republicou o
+`entrar POST`.
+
+O script compara o código **normalizado** (sem comentários, `guid`,
+`description` e linhas em branco) e deixa fora o arquivo igual ao do Xano.
+A normalização não desfaz as reescritas de forma, então a comparação é
+**conservadora**: pode mostrar como diferente um arquivo que não mudou — e
+aí a prévia aparece e quem publica decide —, mas nunca deixa de fora um
+arquivo com código diferente.
+
 ## Risks / Trade-offs
 
 - [O CLI mudar o formato de pastas] → A `--conferir` acusa na hora: os
