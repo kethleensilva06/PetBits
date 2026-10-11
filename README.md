@@ -155,6 +155,20 @@ python scripts/verificar_ponta_a_ponta.py
    equipe e cliente, da loja, dos pedidos, do balcão e da agenda. Deixa dados
    de teste reconhecíveis ("Produto de verificação …", desativado no fim).
 
+## Publicar no Xano
+
+Publique só os arquivos da change, nunca o repositório inteiro:
+
+```bash
+python scripts/publicar.py tables/pedido.xs apis/pet_bits/pedido_create.xs
+python scripts/publicar.py --publicar tables/pedido.xs apis/pet_bits/pedido_create.xs
+python scripts/publicar.py --conferir
+```
+
+O primeiro mostra a prévia; o segundo publica. O caminho de cada arquivo no
+Xano CLI é deduzido do conteúdo, e arquivo cujo código é igual ao do Xano
+fica fora. `--conferir` lista o que está só no repositório ou só no Xano.
+
 ## Ciclo de desenvolvimento
 
 ```text

@@ -116,6 +116,9 @@ guarda.
 
 ## Registro da publicação (2026-10-08)
 
+> Desde a change `publicacao-por-script`, este procedimento é o
+> `scripts/publicar.py`.
+
 Feita pelo Xano CLI 1.3.3, perfil no workspace 169225, sempre com
 `--dry-run` antes e incluindo **só** os arquivos desta change.
 

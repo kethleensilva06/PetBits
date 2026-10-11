@@ -7,5 +7,5 @@
 ## 2. Verificação
 
 - [x] 2.1 Prévia de arquivos já publicados e sem mudança mostra que nada mudaria — **A premissa era falsa:** o CLI marca `UPDATE` para arquivo sem mudança (D4). O script passou a deixar fora o que é igual depois de normalizar; a comparação é conservadora
-- [ ] 2.2 README; o registro da change `agendamento` aponta para o script
+- [x] 2.2 README; o registro da change `agendamento` aponta para o script
 - [ ] 2.3 `openspec validate --strict` (lendo o Totals)
