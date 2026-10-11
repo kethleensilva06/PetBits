@@ -11,4 +11,4 @@
 
 - [x] 2.1 No navegador, sem sessão: abrir `/` mostra a página inicial; os três botões levam às páginas certas; a entrada da equipe não tem "Criar conta"
 - [ ] 2.2 No navegador, feito por quem tem a senha: funcionário pela entrada da equipe vai para a gerência; cliente pela entrada de clientes vai para a área de cliente
-- [ ] 2.3 `openspec validate --strict` e `verificar_equipe.py` limpos — a spec principal `autenticacao` falha no strict desde o archive da `aba-define-a-area` (requisito "Entrada com e-mail e senha" com mais de 500 caracteres); esta change remove esse requisito, então a conferência vale depois do archive
+- [x] 2.3 `openspec validate --strict` e `verificar_equipe.py` limpos — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação

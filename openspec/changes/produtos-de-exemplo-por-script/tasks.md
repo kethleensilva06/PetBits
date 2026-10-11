@@ -7,4 +7,4 @@
 ## 2. Verificação
 
 - [x] 2.1 Rodar de verdade, feito por quem desenvolve, e ver os 15 produtos na tela de Produtos da equipe — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
-- [ ] 2.2 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
+- [x] 2.2 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py` — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação

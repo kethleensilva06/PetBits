@@ -16,4 +16,4 @@
 
 - [x] 3.1 Com sessão de equipe: vender no balcão para um cliente e ver o pedido entregue e pago na conta dele, com o estoque baixado — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [x] 3.2 Compra pelo site continua funcionando, com origem `site` — **Situação:** a rodada da ponta a ponta ampliada em 2026-10-11 conferiu que o pedido feito pelo site tem origem `site`
-- [ ] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
+- [x] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py` — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação

@@ -35,4 +35,4 @@
 - [ ] 6.1 Percurso do tutor no navegador: marcar, ver na lista, cancelar com mais de 24 h; e o horário cancelado voltar a aparecer como livre
 - [ ] 6.2 Percurso da equipe: definir categoria de um serviço, ver o agendamento na agenda do dia
 - [ ] 6.3 Medir o custo em requisições de abrir a agenda e de escolher um dia (`PETBITS_MEDIR`)
-- [ ] 6.4 `openspec validate --strict` e `verificar_equipe.py` limpos
+- [x] 6.4 `openspec validate --strict` e `verificar_equipe.py` limpos — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação

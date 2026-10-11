@@ -30,4 +30,4 @@
 - [ ] 6.1 Equipe no navegador: cadastrar um produto, alterar só o preço, desativar e reativar — **Situação:** cadastro, desativação e alteração de só o preço passaram na ponta a ponta (rodada da ponta a ponta ampliada em 2026-10-11); falta ver na tela
 - [ ] 6.2 Cliente no navegador (feito por quem tem a senha, ou com a sessão aberta): comprar com retirada e pagamento na loja, e com entrega e pagamento online; ver em "Meus pedidos"; conferir que o estoque baixou — **Situação:** compra com retirada, pagamento online simulado, entrega no endereço, Meus pedidos e baixa de estoque passaram na ponta a ponta (rodada da ponta a ponta ampliada em 2026-10-11); falta ver na tela
 - [x] 6.3 Recusas: estoque insuficiente sem mudar estoque nenhum; produto inativo; pedido vazio — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
-- [ ] 6.4 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
+- [x] 6.4 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py` — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação

@@ -13,4 +13,4 @@
 
 - [x] 3.1 Com sessão de equipe: marcar pronto, entregar com pagamento na retirada, cancelar e ver o estoque voltar — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
 - [x] 3.2 Caminho inválido por requisição direta é recusado — verificado pela ponta a ponta de 2026-10-11 (25/25 no Xano de verdade)
-- [ ] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
+- [x] 3.3 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py` — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação
