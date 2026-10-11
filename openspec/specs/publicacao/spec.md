@@ -45,3 +45,14 @@ do Xano e listar o que existe só num dos lados.
 - **WHEN** um endpoint foi despublicado no Xano mas o `.xs` continua no
   repositório
 - **THEN** a conferência o lista como "no repositório, não no Xano"
+
+### Requirement: O repositório só guarda endpoints que estão no ar
+
+Um `.xs` de endpoint que não está publicado no Xano MUST NOT ficar no
+repositório: quando um endpoint sai do ar, o arquivo sai na mesma change.
+
+#### Scenario: Endpoint despublicado
+
+- **WHEN** um endpoint é despublicado no Xano
+- **THEN** o `.xs` dele é removido do repositório na mesma change, e a
+  guarda `verificar_equipe.py` não o acusa mais
