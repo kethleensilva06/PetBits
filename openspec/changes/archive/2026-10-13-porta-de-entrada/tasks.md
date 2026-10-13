@@ -10,5 +10,6 @@
 ## 2. Verificação
 
 - [x] 2.1 No navegador, sem sessão: abrir `/` mostra a página inicial; os três botões levam às páginas certas; a entrada da equipe não tem "Criar conta"
-- [ ] 2.2 No navegador, feito por quem tem a senha: funcionário pela entrada da equipe vai para a gerência; cliente pela entrada de clientes vai para a área de cliente
+- [x] 2.2 No navegador, feito por quem tem a senha: funcionário pela entrada da equipe vai para a gerência; cliente pela entrada de clientes vai para a área de cliente — **Verificado em 13/10, no navegador, com as contas de teste do projeto:** cliente por `/entrar` cai em `/` com os animais dela e o menu de cliente (Agendar, Loja, Meus pedidos); gerência por `/entrar/equipe` cai em `/equipe` com o selo **Gerência** e o menu da clínica.
+      De passagem, o D4 também se confirmou: com a sessão da gerência viva, abrir `/entrar` levou direto a `/equipe` — quem já entrou não vê a porta
 - [x] 2.3 `openspec validate --strict` e `verificar_equipe.py` limpos — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação
