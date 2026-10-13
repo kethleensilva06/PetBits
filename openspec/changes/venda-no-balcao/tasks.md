@@ -9,7 +9,7 @@
 
 ## 2. Reflex
 
-- [ ] 2.1 `/equipe/balcao`: escolher cliente, adicionar produtos à venda, confirmar; item no menu da equipe — **Situação:** construída e compila; a venda passou na ponta a ponta; falta ver a tela no navegador
+- [x] 2.1 `/equipe/balcao`: escolher cliente, adicionar produtos à venda, confirmar; item no menu da equipe — **Verificada em 13/10, no navegador:** os 15 produtos com preço e estoque, o seletor de cliente, o total e o botão de confirmar; item **Balcão** no menu da equipe
 - [x] 2.2 Origem visível em "Meus pedidos" e nos pedidos da equipe
 
 ## 3. Verificação

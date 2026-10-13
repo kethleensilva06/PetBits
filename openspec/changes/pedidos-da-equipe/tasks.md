@@ -7,7 +7,8 @@
 ## 2. Reflex
 
 - [x] 2.1 Regra das transições também em Python, para a tela só oferecer os botões válidos; testada com todas as combinações de situação e entrega
-- [ ] 2.2 `/equipe/pedidos` com filtro por situação, itens, e botões de ação; item no menu da equipe — **Situação:** construída e compila; as transições passaram na ponta a ponta; falta ver a tela no navegador
+- [x] 2.2 `/equipe/pedidos` com filtro por situação, itens, e botões de ação; item no menu da equipe — **Verificada em 13/10, no navegador:** filtro por situação, pedidos com situação, itens, totais e forma de entrega, e os três botões de ação (Marcar como pago, Pronto para retirada, Cancelar); item **Pedidos** no menu.
+      Os botões só apareceram depois de existir um pedido **pendente** — todos os da base estavam em estado terminal, e tela sem o que acionar não prova que o controle existe. Criei o pedido nº 12 pelo lado do cliente para a verificação ser real
 
 ## 3. Verificação
 
