@@ -1,7 +1,14 @@
 # produtos Specification
 
 ## Purpose
-TBD - created by archiving change produtos-de-exemplo-por-script. Update Purpose after archive.
+
+Define o Produto — o que a loja vende: nome, preço, estoque e categoria.
+
+É o catálogo do qual saem tanto a loja do cliente quanto a venda no balcão, e
+é por isso que `ativo` e estoque importam aqui e não lá: produto inativo ou
+sem estoque não chega a aparecer para quem compra. O que esta capability
+governa é o cadastro em si; o que acontece quando alguém compra pertence a
+`pedidos`.
 
 ## Requirements
 
