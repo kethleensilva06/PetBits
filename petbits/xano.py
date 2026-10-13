@@ -542,3 +542,34 @@ async def listar_animais_da_clinica(*, token: str) -> list[dict]:
     """
     dados = await _requisitar("GET", "/equipe/animais", token=token)
     return dados if isinstance(dados, list) else []
+
+
+# --- cadastro de balcão -------------------------------------------------------
+#
+# As duas únicas escritas do sistema em que o cliente diz de quem é o dado. No
+# caminho do tutor isso é proibido — o dono vem da credencial; aqui a clínica
+# cadastra para outra pessoa, e o backend **confere** o tutor informado contra
+# o banco antes de gravar.
+
+
+async def criar_tutor_de_balcao(dados: dict, *, token: str) -> dict:
+    """Cadastra quem chegou no balcão, **sem** conta de acesso.
+
+    A pessoa fica com o documento ocupado e sem credencial: se tentar se
+    cadastrar depois pelo aplicativo, o cadastro público recusa — documento já
+    existe — com a mensagem genérica que de propósito não explica. Ligar a
+    conta nova à ficha existente é change própria; por ora a tela avisa na
+    hora de criar.
+    """
+    criado = await _requisitar("POST", "/equipe/tutores", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou o cadastro do tutor.")
+    return criado
+
+
+async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
+    """Cadastra um animal para um tutor existente. `dados` leva `id_tutor`."""
+    criado = await _requisitar("POST", "/equipe/animais", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou o cadastro do animal.")
+    return criado

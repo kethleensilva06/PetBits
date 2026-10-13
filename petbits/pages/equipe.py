@@ -510,6 +510,67 @@ def _cartao_tutor(t: dict) -> rx.Component:
     )
 
 
+def _dialogo_tutor() -> rx.Component:
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title("Novo tutor"),
+            rx.vstack(
+                _campo("Nome", rx.input(placeholder="Nome completo",
+                                        value=EquipeState.tut_nome,
+                                        on_change=EquipeState.set_tut_nome,
+                                        width="100%")),
+                rx.hstack(
+                    _campo("Documento (CPF)", rx.input(placeholder="000.000.000-00",
+                                                       value=EquipeState.tut_documento,
+                                                       on_change=EquipeState.set_tut_documento,
+                                                       width="100%")),
+                    _campo("Telefone", rx.input(placeholder="Opcional",
+                                                value=EquipeState.tut_telefone,
+                                                on_change=EquipeState.set_tut_telefone,
+                                                width="100%")),
+                    spacing="3", width="100%", align="start",
+                ),
+                _campo("E-mail", rx.input(placeholder="Opcional", type="email",
+                                          value=EquipeState.tut_email,
+                                          on_change=EquipeState.set_tut_email,
+                                          width="100%")),
+                _campo("Endereco", rx.input(placeholder="Opcional",
+                                            value=EquipeState.tut_endereco,
+                                            on_change=EquipeState.set_tut_endereco,
+                                            width="100%")),
+                # O aviso aparece ANTES de salvar, e nao depois. Quem cadastra
+                # precisa saber na hora que esta ocupando o documento daquela
+                # pessoa sem lhe dar acesso -- descobrir isso depois, quando ela
+                # tentar se cadastrar e for recusada sem explicacao, e o que
+                # este texto existe para evitar.
+                rx.callout(
+                    "Este tutor nao tera acesso ao aplicativo. O documento fica "
+                    "reservado para ele, entao, se a pessoa tentar se cadastrar "
+                    "sozinha depois, o cadastro sera recusado ate a clinica ligar "
+                    "uma conta a ficha.",
+                    icon="info", size="1", width="100%",
+                ),
+                rx.cond(
+                    EquipeState.tut_erro,
+                    rx.callout(EquipeState.tut_erro, icon="triangle_alert",
+                               color_scheme="red", size="1", width="100%"),
+                ),
+                rx.hstack(
+                    rx.button("Cancelar", on_click=EquipeState.fechar_tutor,
+                              variant="soft", color_scheme="gray"),
+                    rx.button("Salvar", on_click=EquipeState.salvar_tutor,
+                              disabled=EquipeState.salvando),
+                    justify="end", spacing="3", width="100%", padding_top="0.5rem",
+                ),
+                spacing="3", width="100%",
+            ),
+            max_width="34rem",
+        ),
+        open=EquipeState.tut_dialogo,
+        on_open_change=EquipeState.set_tut_dialogo,
+    )
+
+
 def tutores_page() -> rx.Component:
     return _casca(
         _lista(
@@ -517,12 +578,22 @@ def tutores_page() -> rx.Component:
             EquipeState.tutores,
             _cartao_tutor,
             _vazio("Nenhum tutor cadastrado",
-                   "Os tutores aparecem aqui assim que criarem conta no aplicativo."),
+                   "Cadastre quem chega no balcao, ou espere os tutores criarem "
+                   "conta no aplicativo.",
+                   rx.button("Cadastrar tutor", on_click=EquipeState.novo_tutor,
+                             size="3")),
             "os tutores",
         ),
+        _dialogo_tutor(),
         rota="/equipe/tutores",
         titulo="Tutores",
         subtitulo="Todos os clientes da clínica, inclusive os que não têm conta de acesso.",
+        acao=rx.cond(
+            EquipeState.tem_tutores,
+            rx.button(rx.icon("plus", size=16), "Novo tutor",
+                      on_click=EquipeState.novo_tutor),
+            rx.fragment(),
+        ),
     )
 
 
@@ -558,6 +629,73 @@ def _cartao_animal(a: dict) -> rx.Component:
     )
 
 
+def _dialogo_animal() -> rx.Component:
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title("Novo animal"),
+            rx.vstack(
+                # De quem e o animal vem PRIMEIRO: e o campo que o caminho do
+                # tutor nao tem, e o unico cuja ausencia cria um registro
+                # invisivel para o dono.
+                _campo("Tutor responsavel", rx.select(
+                    EquipeState.opcoes_de_tutor,
+                    placeholder="Escolha o tutor",
+                    value=EquipeState.ani_tutor,
+                    on_change=EquipeState.set_ani_tutor,
+                    width="100%",
+                )),
+                _campo("Nome", rx.input(placeholder="Nome do animal",
+                                        value=EquipeState.ani_nome,
+                                        on_change=EquipeState.set_ani_nome,
+                                        width="100%")),
+                rx.hstack(
+                    _campo("Especie", rx.input(placeholder="Cao, gato...",
+                                               value=EquipeState.ani_especie,
+                                               on_change=EquipeState.set_ani_especie,
+                                               width="100%")),
+                    _campo("Raca", rx.input(placeholder="Opcional",
+                                            value=EquipeState.ani_raca,
+                                            on_change=EquipeState.set_ani_raca,
+                                            width="100%")),
+                    spacing="3", width="100%", align="start",
+                ),
+                rx.hstack(
+                    _campo("Nascimento", rx.input(type="date",
+                                                  value=EquipeState.ani_nascimento,
+                                                  on_change=EquipeState.set_ani_nascimento,
+                                                  width="100%")),
+                    _campo("Peso (kg)", rx.input(placeholder="Opcional",
+                                                 value=EquipeState.ani_peso,
+                                                 on_change=EquipeState.set_ani_peso,
+                                                 width="100%")),
+                    spacing="3", width="100%", align="start",
+                ),
+                _campo("Observacoes", rx.text_area(
+                    placeholder="Alergias, cuidados especiais...",
+                    value=EquipeState.ani_observacoes,
+                    on_change=EquipeState.set_ani_observacoes,
+                    width="100%")),
+                rx.cond(
+                    EquipeState.ani_erro,
+                    rx.callout(EquipeState.ani_erro, icon="triangle_alert",
+                               color_scheme="red", size="1", width="100%"),
+                ),
+                rx.hstack(
+                    rx.button("Cancelar", on_click=EquipeState.fechar_animal,
+                              variant="soft", color_scheme="gray"),
+                    rx.button("Salvar", on_click=EquipeState.salvar_animal,
+                              disabled=EquipeState.salvando),
+                    justify="end", spacing="3", width="100%", padding_top="0.5rem",
+                ),
+                spacing="3", width="100%",
+            ),
+            max_width="34rem",
+        ),
+        open=EquipeState.ani_dialogo,
+        on_open_change=EquipeState.set_ani_dialogo,
+    )
+
+
 def animais_page() -> rx.Component:
     return _casca(
         _lista(
@@ -565,10 +703,20 @@ def animais_page() -> rx.Component:
             EquipeState.animais,
             _cartao_animal,
             _vazio("Nenhum animal cadastrado",
-                   "Os animais aparecem aqui conforme os tutores os cadastram."),
+                   "Cadastre o animal de quem chega, ou espere os tutores "
+                   "cadastrarem pelo aplicativo.",
+                   rx.button("Cadastrar animal", on_click=EquipeState.novo_animal,
+                             size="3")),
             "os animais",
         ),
+        _dialogo_animal(),
         rota="/equipe/animais",
         titulo="Animais",
         subtitulo="Todos os animais atendidos, com o tutor responsável por cada um.",
+        acao=rx.cond(
+            EquipeState.tem_animais,
+            rx.button(rx.icon("plus", size=16), "Novo animal",
+                      on_click=EquipeState.novo_animal),
+            rx.fragment(),
+        ),
     )

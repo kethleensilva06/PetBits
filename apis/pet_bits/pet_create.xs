@@ -8,6 +8,23 @@
 //
 // O dono vem da funcao, que falha alto se a conta nao tiver exatamente uma
 // ficha de tutor (design.md, D4).
+// ================= LEIA ANTES DE COPIAR ESTE ARQUIVO =================
+//
+// Este endpoint esta do lado da regra em que o DONO VEM DO SERVIDOR. Nao ha
+// `id_tutor` na declaracao de entrada, e isso e a defesa inteira: o que nao e
+// entrada nao pode ser forjado. O dono sai de `tutor_do_token`, a partir da
+// credencial.
+//
+// O OUTRO lado e o `equipe_animal_create.xs`, onde a clinica cadastra o animal
+// de outra pessoa e o dono VEM da requisicao, conferido contra o banco. Se
+// alguem trouxer de la o `int id_tutor` para ca, este arquivo continua
+// compilando e passa a aceitar que um tutor cadastre animal no nome de outro.
+//
+// Nenhuma guarda do repositorio pega isso -- a diferenca e a ausencia de uma
+// linha, e ausencia nao aparece num diff. Este comentario e a defesa, e ela e
+// fraca.
+//
+// =====================================================================
 query pet verb=POST {
   api_group = "PetBits"
   auth = "user"

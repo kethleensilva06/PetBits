@@ -107,7 +107,69 @@ class EquipeState(rx.State):
     srv_preco: str = ""
     srv_duracao: str = ""
 
+    # --- formulário de tutor de balcão ---
+    tut_dialogo: bool = False
+    tut_erro: str = ""
+    tut_nome: str = ""
+    tut_documento: str = ""
+    tut_telefone: str = ""
+    tut_email: str = ""
+    tut_endereco: str = ""
+
+    # --- formulário de animal da clínica ---
+    ani_dialogo: bool = False
+    ani_erro: str = ""
+    ani_tutor: str = ""
+    ani_nome: str = ""
+    ani_especie: str = ""
+    ani_raca: str = ""
+    ani_nascimento: str = ""
+    ani_peso: str = ""
+    ani_observacoes: str = ""
+
     salvando: bool = False
+
+    def set_tut_dialogo(self, v: bool):
+        self.tut_dialogo = v
+
+    def set_tut_nome(self, v: str):
+        self.tut_nome = v
+
+    def set_tut_documento(self, v: str):
+        self.tut_documento = v
+
+    def set_tut_telefone(self, v: str):
+        self.tut_telefone = v
+
+    def set_tut_email(self, v: str):
+        self.tut_email = v
+
+    def set_tut_endereco(self, v: str):
+        self.tut_endereco = v
+
+    def set_ani_dialogo(self, v: bool):
+        self.ani_dialogo = v
+
+    def set_ani_tutor(self, v: str):
+        self.ani_tutor = v
+
+    def set_ani_nome(self, v: str):
+        self.ani_nome = v
+
+    def set_ani_especie(self, v: str):
+        self.ani_especie = v
+
+    def set_ani_raca(self, v: str):
+        self.ani_raca = v
+
+    def set_ani_nascimento(self, v: str):
+        self.ani_nascimento = v
+
+    def set_ani_peso(self, v: str):
+        self.ani_peso = v
+
+    def set_ani_observacoes(self, v: str):
+        self.ani_observacoes = v
 
     # Reflex 0.9 não gera mais setters automáticos.
     def set_col_dialogo(self, v: bool):
@@ -221,8 +283,14 @@ class EquipeState(rx.State):
         self.srv_editando = None
         self.srv_erro = ""
         self.salvando = False
+        self.tut_dialogo = False
+        self.tut_erro = ""
+        self.ani_dialogo = False
+        self.ani_erro = ""
         self._limpar_form_col()
         self._limpar_form_srv()
+        self._limpar_form_tut()
+        self._limpar_form_ani()
 
     # --- sessão -----------------------------------------------------------
 
@@ -251,6 +319,16 @@ class EquipeState(rx.State):
     def _comecar(self):
         self.erro = ""
         self.carregando = True
+        # `ja_carregou` é UM só para as cinco cargas da área. Sem zerá-lo
+        # aqui, ele continua `True` da tela anterior, e na janela entre a
+        # navegação e o início desta carga a tela afirma "nenhum tutor
+        # cadastrado" com a base cheia.
+        #
+        # É uma tela dizendo algo falso — o mesmo defeito que esta área já
+        # corrigiu duas vezes por outros caminhos (o spinner junto do erro, e
+        # o "vazio" durante o carregamento). Este só apareceu ao navegar entre
+        # as áreas depois do painel, e foi visto acontecendo.
+        self.ja_carregou = False
 
     def _falhou(self, erro: Exception):
         self.erro = str(erro)
@@ -492,6 +570,168 @@ class EquipeState(rx.State):
         self.srv_dialogo = False
         self.srv_erro = ""
         resultado = await self.carregar_servicos()
+        if resultado is not None:
+            yield resultado
+
+    # --- cadastro de balcão -----------------------------------------------
+
+    @rx.var
+    def opcoes_de_tutor(self) -> list[str]:
+        """Os tutores já carregados, como `"id — nome"`.
+
+        Reaproveita a carga que a tela de animais já fez, em vez de pedir a
+        lista de novo: o orçamento é de 10 requisições a cada 20 segundos,
+        compartilhado por todo mundo.
+        """
+        return [f"{t['id']} — {t['nome']}" for t in self.tutores]
+
+    def _limpar_form_tut(self):
+        self.tut_nome = ""
+        self.tut_documento = ""
+        self.tut_telefone = ""
+        self.tut_email = ""
+        self.tut_endereco = ""
+
+    def novo_tutor(self):
+        self.tut_erro = ""
+        self._limpar_form_tut()
+        self.tut_dialogo = True
+
+    def fechar_tutor(self):
+        self.tut_dialogo = False
+        self.tut_erro = ""
+
+    async def salvar_tutor(self):
+        if not self.tut_nome.strip():
+            self.tut_erro = "Informe o nome do tutor."
+            return
+        documento = "".join(c for c in self.tut_documento if c.isdigit())
+        if len(documento) != 11:
+            self.tut_erro = "O documento precisa ter 11 dígitos."
+            return
+
+        dados = {
+            "nome": self.tut_nome.strip(),
+            "documento": documento,
+            "telefone": self.tut_telefone.strip(),
+            "endereco": self.tut_endereco.strip(),
+        }
+        if self.tut_email.strip():
+            dados["email"] = self.tut_email.strip().lower()
+
+        self.salvando = True
+        yield
+
+        try:
+            token = await self._token_de_equipe()
+            await xano.criar_tutor_de_balcao(dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.salvando = False
+            yield await self._encerrar(erro)
+            return
+        except XanoError as erro:
+            self.salvando = False
+            self.tut_erro = str(erro)
+            return
+
+        self.salvando = False
+        self.tut_dialogo = False
+        self.tut_erro = ""
+        resultado = await self.carregar_tutores()
+        if resultado is not None:
+            yield resultado
+
+    def _limpar_form_ani(self):
+        self.ani_tutor = ""
+        self.ani_nome = ""
+        self.ani_especie = ""
+        self.ani_raca = ""
+        self.ani_nascimento = ""
+        self.ani_peso = ""
+        self.ani_observacoes = ""
+
+    async def novo_animal(self):
+        """Carrega os tutores se a tela ainda não os tiver.
+
+        A tela de animais não lista tutores — ela só mostra o nome que já vem
+        em cada animal —, então o seletor precisaria deles. Pedir aqui, no
+        clique, e não no carregamento da tela, é o mesmo princípio do painel:
+        uma requisição quando a pessoa de fato quer aquilo.
+        """
+        self.ani_erro = ""
+        self._limpar_form_ani()
+        self.ani_dialogo = True
+        if self.tutores:
+            return
+        try:
+            token = await self._token_de_equipe()
+            registros = await xano.listar_tutores_da_clinica(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            self.ani_erro = str(erro)
+            return
+        self.tutores = [
+            {"id": t.get("id"), "nome": t.get("nome") or "-",
+             "documento": t.get("documento") or "-", "telefone": t.get("telefone") or "-",
+             "email": t.get("email") or "-", "endereco": t.get("endereco") or "-"}
+            for t in registros
+        ]
+
+    def fechar_animal(self):
+        self.ani_dialogo = False
+        self.ani_erro = ""
+
+    async def salvar_animal(self):
+        # O id sai do rótulo `"12 — Fulano"`. Mandar o NOME seria pedir ao
+        # backend que adivinhasse de quem é o animal, e dois tutores homônimos
+        # são plausíveis — o documento é que distingue pessoas, não o nome.
+        id_tutor = self.ani_tutor.split("—")[0].strip()
+        if not id_tutor.isdigit() or int(id_tutor) <= 0:
+            self.ani_erro = "Escolha de quem é o animal."
+            return
+        if not self.ani_nome.strip():
+            self.ani_erro = "Informe o nome do animal."
+            return
+        if not self.ani_especie.strip():
+            self.ani_erro = "Informe a espécie."
+            return
+
+        dados = {
+            "id_tutor": int(id_tutor),
+            "nome": self.ani_nome.strip(),
+            "especie": self.ani_especie.strip(),
+            "raca": self.ani_raca.strip(),
+            "observacoes": self.ani_observacoes.strip(),
+        }
+        if self.ani_peso.strip():
+            try:
+                dados["peso"] = float(self.ani_peso.replace(",", "."))
+            except ValueError:
+                self.ani_erro = "O peso precisa ser um número."
+                return
+        if self.ani_nascimento.strip():
+            dados["data_nascimento"] = self.ani_nascimento.strip()
+
+        self.salvando = True
+        yield
+
+        try:
+            token = await self._token_de_equipe()
+            await xano.criar_animal_da_clinica(dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.salvando = False
+            yield await self._encerrar(erro)
+            return
+        except XanoError as erro:
+            self.salvando = False
+            self.ani_erro = str(erro)
+            return
+
+        self.salvando = False
+        self.ani_dialogo = False
+        self.ani_erro = ""
+        resultado = await self.carregar_animais()
         if resultado is not None:
             yield resultado
 
