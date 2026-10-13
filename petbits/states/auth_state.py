@@ -25,6 +25,9 @@ from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 # mensagem em português, em vez do erro cru do backend.
 SENHA_MINIMA = 8
 
+# Títulos que não são nome: a saudação pula para o primeiro nome de verdade.
+TITULOS = {"dr", "dra", "sr", "sra"}
+
 
 def _senha_fraca(senha: str) -> Optional[str]:
     """O motivo de a senha não servir, ou None se estiver boa."""
@@ -58,20 +61,6 @@ class AuthState(rx.State):
     # página — e ler query string exigiria uma API deprecada no Reflex 0.9.
     sessao_expirou: bool = False
 
-    # A aba escolhida na tela de entrada: "cliente" ou "colaborador".
-    #
-    # Ela existe **só** para a clínica poder dizer "entre pela aba
-    # Colaborador". Não participa da verificação e **nunca é enviada ao
-    # servidor** — nem no corpo, nem na query, nem em cabeçalho, nem no
-    # caminho. Não é "enviada e ignorada": enquanto o backend não souber qual
-    # aba foi usada, nenhuma mudança futura consegue fazer a resposta depender
-    # dela.
-    #
-    # Se as duas abas verificassem de jeitos diferentes, descobrir quem é
-    # colaborador seria tentar o mesmo e-mail nas duas e ver em qual passa.
-    # Por isso as duas usam este mesmo manipulador, e não dois.
-    aba: str = "cliente"
-
     login_email: str = ""
     login_senha: str = ""
 
@@ -91,6 +80,13 @@ class AuthState(rx.State):
     # que abrir o navegador — e este sistema roda num computador de recepção.
     # Sair da tela e voltar recomeça oculto, porque o estado se perde junto
     # com a navegação.
+    # Qual entrada a pessoa usou: "cliente" ou "colaborador". Desde a change
+    # `porta-de-entrada` são duas PÁGINAS, e quem define é o `on_load` de cada
+    # uma (`abrir_entrada_de_clientes`, `abrir_entrada_da_equipe`). Vale só
+    # DEPOIS de a credencial ser confirmada (change `papeis-e-abas`), e nunca
+    # é enviada ao servidor.
+    aba: str = "cliente"
+
     senha_visivel: bool = False
     cad_senha_visivel: bool = False
 
@@ -100,16 +96,10 @@ class AuthState(rx.State):
     # como se tivesse sido digitada.
     painel_teste_aberto: bool = False
     contas_teste: list[dict[str, str]] = []
-
-    def set_aba(self, value: str | list[str]):
-        """O `segmented_control` do Radix entrega `str | list[str]` — ele
-        serve também para seleção múltipla, e o Reflex cobra a anotação
-        correspondente. Aqui a seleção é única, então a lista é reduzida ao
-        primeiro item, e vazio volta para "cliente" em vez de virar uma aba
-        sem nome."""
-        if isinstance(value, list):
-            value = value[0] if value else "cliente"
-        self.aba = value or "cliente"
+    # Qual lista está aberta: `equipe` (Alt+1) ou `clientes` (Alt+2). Fica no
+    # servidor e é ela que filtra a escolha — o clique manda só o índice
+    # (change `atalho-de-clientes`, D2).
+    painel_teste_grupo: str = contas_de_teste.EQUIPE
 
     def alternar_senha(self):
         self.senha_visivel = not self.senha_visivel
@@ -144,22 +134,44 @@ class AuthState(rx.State):
     # A página só monta o ouvinte de teclado fora de produção, mas esconder
     # não é proteger: o evento pode chegar pelo WebSocket na mão. Por isso os
     # dois manipuladores conferem o modo de novo e não fazem nada em produção.
-    # Nenhum deles lê nem altera `aba` — uma lista diferente por aba seria a
-    # primeira diferença observável entre elas.
+    # Nenhum deles depende da página de entrada: uma lista diferente por
+    # página seria uma diferença observável entre elas.
 
     def tecla_na_entrada(self, tecla: str, modificadores: dict):
-        """`Alt+1` alterna a lista; `Esc` fecha. O "¡" é o `Alt+1` do macOS."""
+        """`Alt+1` abre a equipe, `Alt+2` os clientes; `Esc` fecha.
+
+        O atalho da lista aberta fecha; o da outra troca de lista sem fechar
+        (change `atalho-de-clientes`). "¡" e "™" são `Alt+1` e `Alt+2` no
+        teclado do macOS.
+        """
         if is_prod_mode():
             return
         if tecla == "Escape":
             self.painel_teste_aberto = False
-        elif modificadores.get("alt_key") and tecla in ("1", "¡"):
-            if not self.painel_teste_aberto:
-                self.contas_teste = [
-                    {"rotulo": c["rotulo"], "email": c["email"]}
-                    for c in contas_de_teste.ler()
-                ]
-            self.painel_teste_aberto = not self.painel_teste_aberto
+            return
+        if not modificadores.get("alt_key"):
+            return
+        if tecla in ("1", "¡"):
+            grupo = contas_de_teste.EQUIPE
+        elif tecla in ("2", "™"):
+            grupo = contas_de_teste.CLIENTES
+        else:
+            return
+        if self.painel_teste_aberto and self.painel_teste_grupo == grupo:
+            self.painel_teste_aberto = False
+            return
+        self.painel_teste_grupo = grupo
+        self.contas_teste = [
+            {"rotulo": c["rotulo"], "email": c["email"]}
+            for c in contas_de_teste.do_grupo(grupo)
+        ]
+        self.painel_teste_aberto = True
+
+    @rx.var
+    def titulo_painel_teste(self) -> str:
+        if self.painel_teste_grupo == contas_de_teste.CLIENTES:
+            return "Clientes de teste (Alt+2)"
+        return "Equipe de teste (Alt+1)"
 
     def fechar_painel_teste(self):
         self.painel_teste_aberto = False
@@ -172,7 +184,8 @@ class AuthState(rx.State):
         abertura — guardadas, elas iriam ao navegador junto com a lista."""
         if is_prod_mode():
             return
-        contas = contas_de_teste.ler()
+        # O índice vale dentro do grupo aberto, que fica no servidor (D2).
+        contas = contas_de_teste.do_grupo(self.painel_teste_grupo)
         if not 0 <= indice < len(contas):
             return
         self.login_email = contas[indice]["email"]
@@ -207,7 +220,12 @@ class AuthState(rx.State):
 
     @rx.var
     def primeiro_nome(self) -> str:
-        return self.usuario_nome.split(" ")[0] if self.usuario_nome else ""
+        """O primeiro nome que não é título: "Dr. Otavio Lins" → "Otavio"
+        (change `acabamentos`)."""
+        partes = (self.usuario_nome or "").split()
+        while len(partes) > 1 and partes[0].lower().rstrip(".") in TITULOS:
+            partes = partes[1:]
+        return partes[0] if partes else ""
 
     @rx.var
     def papel_exibido(self) -> str:
@@ -333,9 +351,9 @@ class AuthState(rx.State):
             # usada, que é exatamente o que não pode acontecer.
             self.login_senha = ""
             self.erro = (
-                "Esta conta entra pela aba Colaborador."
+                "Esta conta entra pela entrada da equipe."
                 if xano.eh_equipe(papel)
-                else "Esta conta entra pela aba Cliente."
+                else "Esta conta entra pela entrada de clientes."
             )
             return
 
@@ -403,7 +421,9 @@ class AuthState(rx.State):
         que **todo State novo que guardar dado de alguém precisa entrar aqui**
         — é uma lista que cresce, e esquecer de atualizá-la é silencioso.
         """
+        from petbits.states.agenda_state import AgendaState
         from petbits.states.equipe_state import EquipeState
+        from petbits.states.loja_state import LojaState
         from petbits.states.pet_state import PetState
 
         pet = await self.get_state(PetState)
@@ -411,6 +431,12 @@ class AuthState(rx.State):
 
         equipe = await self.get_state(EquipeState)
         equipe.limpar_dados()
+
+        agenda = await self.get_state(AgendaState)
+        agenda.limpar_dados()
+
+        loja = await self.get_state(LojaState)
+        loja.limpar_dados()
 
         self._limpar()
         return rx.redirect("/entrar")
@@ -429,9 +455,19 @@ class AuthState(rx.State):
         deste navegador. Uma falha de rede aqui **não** desloga: só o 401
         desloga.
         """
+        return await self._validar_sessao("/entrar")
+
+    async def carregar_sessao_da_casa(self):
+        """O mesmo, para o endereço principal: quem chega sem sessão vê a
+        página inicial pública, e não um formulário (change
+        `porta-de-entrada`, D3). Sessão expirada continua indo para a
+        entrada, com o aviso."""
+        return await self._validar_sessao("/boas-vindas")
+
+    async def _validar_sessao(self, destino_sem_sessao: str):
         if not self.token:
             self.sessao_validada = False
-            return rx.redirect("/entrar")
+            return rx.redirect(destino_sem_sessao)
         if self.sessao_validada:
             return None
         try:
@@ -448,6 +484,17 @@ class AuthState(rx.State):
             return None
         self._guardar(self.token, perfil)
         return None
+
+    def abrir_entrada_de_clientes(self):
+        """`on_load` de `/entrar`: a página faz o papel da aba Cliente."""
+        self.aba = "cliente"
+        return self.redirecionar_se_logado()
+
+    def abrir_entrada_da_equipe(self):
+        """`on_load` de `/entrar/equipe`: a página faz o papel da aba
+        Colaborador."""
+        self.aba = "colaborador"
+        return self.redirecionar_se_logado()
 
     def redirecionar_se_logado(self):
         """`on_load` da entrada e do cadastro: quem já entrou não vê a porta.
@@ -467,3 +514,4 @@ class AuthState(rx.State):
             # para trás e só apareceu quando a gerência foi testada.
             return rx.redirect(xano.rota_do_papel(self.usuario_papel))
         return None
+

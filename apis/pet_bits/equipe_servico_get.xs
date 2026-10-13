@@ -43,7 +43,7 @@ query "equipe/servicos/{servico_id}" verb=GET {
     // So AQUI, com o direito ja estabelecido, o banco e tocado.
     db.query servico {
       where = $db.servico.id == $input.servico_id
-      output = ["id", "nome", "descricao", "preco", "duracao_minutos"]
+      output = ["id", "nome", "descricao", "preco", "duracao_minutos", "categoria"]
       return = {type: "single"}
     } as $servico
 

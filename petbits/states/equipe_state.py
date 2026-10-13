@@ -19,12 +19,18 @@ segundos, compartilhadas por todo mundo) numa única abertura de tela — e um
 F5 derrubaria o painel e a tela dos tutores junto.
 """
 
+from datetime import date, timedelta
 from typing import Optional
 
 import reflex as rx
 
-from petbits import datas, xano
+from petbits import agenda as regras_da_agenda
+from petbits import datas, rotulos, xano
 from petbits.states.auth_state import AuthState
+from petbits.pedidos import ROTULOS_ACAO, proximas
+from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
+from petbits.states.loja_state import ENTREGAS, ORIGENS, PAGAMENTOS, SITUACOES, reais
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 
@@ -32,15 +38,11 @@ from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
 # administra a clínica no dia a dia; quem administra o SISTEMA é definido pelo
 # papel da conta, que é outra coisa e mora na tabela `user`. Confundir os dois
 # seria o caminho mais curto para alguém ganhar acesso ao se autointitular.
-FUNCOES = ["gerente", "veterinario", "clinico_geral", "tosador", "atendente"]
+CATEGORIAS = regras_da_agenda.CATEGORIAS
 
-FUNCAO_LEGIVEL = {
-    "gerente": "Gerente",
-    "veterinario": "Veterinário",
-    "clinico_geral": "Clínico geral",
-    "tosador": "Tosador",
-    "atendente": "Atendente",
-}
+FUNCOES = rotulos.FUNCOES
+
+FUNCAO_LEGIVEL = rotulos.FUNCAO_LEGIVEL
 
 
 def _funcao_legivel(valor: str) -> str:
@@ -106,6 +108,34 @@ class EquipeState(rx.State):
     srv_descricao: str = ""
     srv_preco: str = ""
     srv_duracao: str = ""
+    srv_categoria: str = ""
+
+    # Catálogo da loja (change `loja`).
+    produtos: list[dict] = []
+    prd_dialogo: bool = False
+    prd_editando: Optional[int] = None
+    prd_erro: str = ""
+    prd_nome: str = ""
+    prd_descricao: str = ""
+    prd_categoria: str = "racao"
+    prd_marca: str = ""
+    prd_unidade: str = ""
+    prd_preco: str = ""
+    prd_estoque: str = ""
+
+    # Pedidos da loja (change `pedidos-da-equipe`).
+    pedidos_clinica: list[dict] = []
+    filtro_pedidos: str = "todos"
+
+    # Venda no balcão (change `venda-no-balcao`).
+    balcao_cliente: str = ""
+    balcao_carrinho: dict[str, int] = {}
+    balcao_aviso: str = ""
+    balcao_erro: str = ""
+
+    # Agenda do dia (change `agendamento`, D8). Só leitura.
+    agenda_dia_iso: str = ""
+    agenda: list[dict] = []
 
     # --- formulário de tutor de balcão ---
     tut_dialogo: bool = False
@@ -205,6 +235,33 @@ class EquipeState(rx.State):
     def set_srv_duracao(self, v: str):
         self.srv_duracao = v
 
+    def set_srv_categoria(self, v: str):
+        self.srv_categoria = v
+
+    def set_prd_dialogo(self, v: bool):
+        self.prd_dialogo = v
+
+    def set_prd_nome(self, v: str):
+        self.prd_nome = v
+
+    def set_prd_descricao(self, v: str):
+        self.prd_descricao = v
+
+    def set_prd_categoria(self, v: str):
+        self.prd_categoria = v
+
+    def set_prd_marca(self, v: str):
+        self.prd_marca = v
+
+    def set_prd_unidade(self, v: str):
+        self.prd_unidade = v
+
+    def set_prd_preco(self, v: str):
+        self.prd_preco = v
+
+    def set_prd_estoque(self, v: str):
+        self.prd_estoque = v
+
     # --- vars de tela ---
 
     @rx.var
@@ -273,6 +330,18 @@ class EquipeState(rx.State):
         self.servicos = []
         self.tutores = []
         self.animais = []
+        self.agenda = []
+        self.agenda_dia_iso = ""
+        self.produtos = []
+        self.pedidos_clinica = []
+        self.filtro_pedidos = "todos"
+        self.balcao_cliente = ""
+        self.balcao_carrinho = {}
+        self.balcao_aviso = ""
+        self.balcao_erro = ""
+        self.prd_dialogo = False
+        self.prd_editando = None
+        self.prd_erro = ""
         self.carregando = False
         self.erro = ""
         self.ja_carregou = False
@@ -311,10 +380,7 @@ class EquipeState(rx.State):
         return auth.token
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     def _comecar(self):
         self.erro = ""
@@ -486,6 +552,8 @@ class EquipeState(rx.State):
                 "duracao": _duracao(s.get("duracao_minutos")),
                 "_preco": datas.numero_para_campo(s.get("preco")) or "0",
                 "_duracao": str(s.get("duracao_minutos") or ""),
+                "categoria": CATEGORIAS.get(s.get("categoria") or "", "Sem categoria"),
+                "_categoria": s.get("categoria") or "",
             }
             for s in registros
         ]
@@ -497,6 +565,7 @@ class EquipeState(rx.State):
         self.srv_descricao = ""
         self.srv_preco = ""
         self.srv_duracao = ""
+        self.srv_categoria = ""
 
     def novo_servico(self):
         self.srv_editando = None
@@ -511,6 +580,7 @@ class EquipeState(rx.State):
         self.srv_descricao = registro["descricao"]
         self.srv_preco = registro["_preco"]
         self.srv_duracao = registro["_duracao"]
+        self.srv_categoria = registro["_categoria"]
         self.srv_dialogo = True
 
     def fechar_servico(self):
@@ -547,6 +617,9 @@ class EquipeState(rx.State):
             "preco": preco,
             "duracao_minutos": duracao,
         }
+        # Só vai quando escolhida: na alteração, não mandar é não mexer.
+        if self.srv_categoria:
+            dados["categoria"] = self.srv_categoria
 
         self.salvando = True
         yield
@@ -735,6 +808,340 @@ class EquipeState(rx.State):
         if resultado is not None:
             yield resultado
 
+
+    # --- catálogo da loja (change `loja`) -----------------------------------
+
+    @rx.var
+    def tem_produtos(self) -> bool:
+        return len(self.produtos) > 0
+
+    @rx.var
+    def titulo_prd(self) -> str:
+        return "Editar produto" if self.prd_editando is not None else "Novo produto"
+
+    async def carregar_produtos(self):
+        self._comecar()
+        self.produtos = []
+        try:
+            token = await self._token_de_equipe()
+            registros = await xano.listar_produtos(token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+        self.produtos = [
+            {
+                "id": p.get("id"),
+                "nome": p.get("nome") or "-",
+                "descricao": p.get("descricao") or "",
+                "categoria": CATEGORIAS_PRODUTO.get(p.get("categoria") or "", "-"),
+                "marca": p.get("marca") or "",
+                "unidade": p.get("unidade") or "",
+                "preco": _dinheiro(p.get("preco")),
+                "estoque": f"{int(p.get('estoque') or 0)} em estoque",
+                "ativo": bool(p.get("ativo")),
+                "_categoria": p.get("categoria") or "racao",
+                "_preco": datas.numero_para_campo(p.get("preco")),
+                "_estoque": str(int(p.get("estoque") or 0)),
+            }
+            for p in registros
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    def novo_produto(self):
+        self.prd_editando = None
+        self.prd_erro = ""
+        self.prd_nome = ""
+        self.prd_descricao = ""
+        self.prd_categoria = "racao"
+        self.prd_marca = ""
+        self.prd_unidade = ""
+        self.prd_preco = ""
+        self.prd_estoque = ""
+        self.prd_dialogo = True
+
+    def editar_produto(self, registro: dict):
+        self.prd_editando = registro["id"]
+        self.prd_erro = ""
+        self.prd_nome = registro["nome"]
+        self.prd_descricao = registro["descricao"]
+        self.prd_categoria = registro["_categoria"]
+        self.prd_marca = registro["marca"]
+        self.prd_unidade = registro["unidade"]
+        self.prd_preco = registro["_preco"]
+        self.prd_estoque = registro["_estoque"]
+        self.prd_dialogo = True
+
+    async def salvar_produto(self):
+        if not self.prd_nome.strip():
+            self.prd_erro = "Informe o nome do produto."
+            return
+        try:
+            preco = float((self.prd_preco or "").replace(",", "."))
+        except ValueError:
+            self.prd_erro = "O preço precisa ser um número."
+            return
+        if preco <= 0:
+            self.prd_erro = "O preço tem de ser maior que zero."
+            return
+        try:
+            estoque = int(self.prd_estoque)
+        except (TypeError, ValueError):
+            self.prd_erro = "Informe o estoque em unidades."
+            return
+        if estoque < 0:
+            self.prd_erro = "O estoque não pode ser negativo."
+            return
+        dados = {
+            "nome": self.prd_nome.strip(),
+            "descricao": self.prd_descricao.strip(),
+            "categoria": self.prd_categoria,
+            "marca": self.prd_marca.strip(),
+            "unidade": self.prd_unidade.strip(),
+            "preco": preco,
+            "estoque": estoque,
+        }
+        self.salvando = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            if self.prd_editando is None:
+                await xano.criar_produto(dados, token=token)
+            else:
+                await xano.atualizar_produto(self.prd_editando, dados, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            yield await self._encerrar(erro)
+            return
+        except (NaoEncontrado, XanoError) as erro:
+            self.prd_erro = str(erro)
+            return
+        finally:
+            self.salvando = False
+        self.prd_dialogo = False
+        resultado = await self.carregar_produtos()
+        if resultado is not None:
+            yield resultado
+
+    async def alternar_ativo(self, registro: dict):
+        """Ativar ou desativar manda SÓ `ativo`: o padrão `pick` do backend
+        deixa os outros campos como estão."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.atualizar_produto(registro["id"], {"ativo": not registro["ativo"]},
+                                         token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_produtos()
+
+    # --- pedidos da loja (change `pedidos-da-equipe`) ------------------------
+
+    @rx.var
+    def tem_pedidos_clinica(self) -> bool:
+        return len(self.pedidos_clinica) > 0
+
+    async def set_filtro_pedidos(self, valor: str):
+        self.filtro_pedidos = valor
+        return await self.carregar_pedidos_clinica()
+
+    async def carregar_pedidos_clinica(self):
+        self._comecar()
+        self.pedidos_clinica = []
+        filtro = "" if self.filtro_pedidos == "todos" else self.filtro_pedidos
+        try:
+            token = await self._token_de_equipe()
+            dados = await xano.pedidos_da_clinica(filtro, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+        itens: dict = {}
+        for i in dados.get("itens") or []:
+            itens.setdefault(i.get("id_pedido"), []).append({
+                "texto": f"{int(i.get('quantidade') or 0)} × {i.get('produto_nome') or '-'}",
+                "linha": reais(i.get("valor_linha")),
+            })
+        self.pedidos_clinica = [
+            {
+                "id": p.get("id"),
+                "quando": regras_da_agenda.data_curta(p.get("created_at")),
+                "cliente": " · ".join(filter(None, [p.get("cliente_nome") or "-",
+                                                    p.get("cliente_telefone") or ""])),
+                "situacao": SITUACOES.get(p.get("situacao") or "", "-"),
+                "entrega": ENTREGAS.get(p.get("entrega") or "", "-"),
+                "endereco": p.get("endereco_entrega") or "",
+                "pagamento": PAGAMENTOS.get(p.get("forma_pagamento") or "", "-"),
+                "origem": ORIGENS.get(p.get("origem") or "site", ""),
+                "pago": bool(p.get("pago_em")),
+                "total": reais(p.get("total")),
+                "itens": itens.get(p.get("id"), []),
+                "acoes": [{"situacao": s, "rotulo": ROTULOS_ACAO[s]}
+                          for s in proximas(p.get("situacao") or "", p.get("entrega") or "")],
+            }
+            for p in dados.get("pedidos") or []
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    async def avancar_pedido(self, pedido_id: int, situacao: str):
+        try:
+            token = await self._token_de_equipe()
+            await xano.mudar_situacao_do_pedido(pedido_id, situacao, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_pedidos_clinica()
+
+    # --- venda no balcão (change `venda-no-balcao`) -------------------------
+
+    def set_balcao_cliente(self, valor: str):
+        self.balcao_cliente = valor
+
+    @rx.var
+    def produtos_a_venda(self) -> list[dict]:
+        return [p for p in self.produtos if p["ativo"] and int(p["_estoque"] or 0) > 0]
+
+    @rx.var
+    def itens_balcao(self) -> list[dict]:
+        por_id = {str(p["id"]): p for p in self.produtos}
+        itens = []
+        for pid, qtd in self.balcao_carrinho.items():
+            p = por_id.get(pid)
+            if p:
+                preco = float(p["_preco"] or 0)
+                itens.append({"id": pid, "nome": p["nome"], "quantidade": qtd,
+                              "linha": reais(preco * qtd),
+                              "pode_mais": qtd < int(p["_estoque"] or 0)})
+        return itens
+
+    @rx.var
+    def total_balcao(self) -> str:
+        por_id = {str(p["id"]): p for p in self.produtos}
+        return reais(sum(float(por_id[pid]["_preco"] or 0) * q
+                         for pid, q in self.balcao_carrinho.items() if pid in por_id))
+
+    async def carregar_balcao(self):
+        """Clientes e catálogo: duas requisições, as listas que a área da
+        equipe já tem."""
+        self.balcao_aviso = ""
+        self.balcao_erro = ""
+        resultado = await self.carregar_tutores()
+        if resultado is not None:
+            return resultado
+        return await self.carregar_produtos()
+
+    def balcao_adicionar(self, produto_id: int):
+        pid = str(produto_id)
+        estoque = next((int(p["_estoque"] or 0) for p in self.produtos
+                        if str(p["id"]) == pid), 0)
+        atual = self.balcao_carrinho.get(pid, 0)
+        if atual < estoque:
+            self.balcao_carrinho = {**self.balcao_carrinho, pid: atual + 1}
+        self.balcao_aviso = ""
+
+    def balcao_tirar(self, produto_id: str):
+        atual = self.balcao_carrinho.get(produto_id, 0)
+        resto = {k: v for k, v in self.balcao_carrinho.items() if k != produto_id}
+        if atual > 1:
+            resto[produto_id] = atual - 1
+        self.balcao_carrinho = resto
+
+    async def confirmar_venda(self):
+        if not self.balcao_cliente:
+            self.balcao_erro = "Escolha o cliente."
+            return
+        if not self.balcao_carrinho:
+            self.balcao_erro = "Adicione ao menos um produto."
+            return
+        self.balcao_erro = ""
+        self.salvando = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            itens = [{"produto_id": int(pid), "quantidade": q}
+                     for pid, q in self.balcao_carrinho.items()]
+            venda = await xano.vender_no_balcao(int(self.balcao_cliente), itens, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            yield await self._encerrar(erro)
+            return
+        except XanoError as erro:
+            self.balcao_erro = str(erro)
+            return
+        finally:
+            self.salvando = False
+        cliente = next((t["nome"] for t in self.tutores
+                        if str(t["id"]) == self.balcao_cliente), "")
+        self.balcao_aviso = (f"Venda nº {venda.get('id')} registrada para {cliente}: "
+                             f"{reais(venda.get('total'))}.")
+        self.balcao_carrinho = {}
+        resultado = await self.carregar_produtos()
+        if resultado is not None:
+            yield resultado
+
+    # --- agenda do dia (change `agendamento`, D8) ---------------------------
+
+    @rx.var
+    def agenda_titulo(self) -> str:
+        if not self.agenda_dia_iso:
+            return ""
+        return regras_da_agenda.data_por_extenso(date.fromisoformat(self.agenda_dia_iso))
+
+    @rx.var
+    def tem_agenda(self) -> bool:
+        return len(self.agenda) > 0
+
+    async def carregar_agenda(self):
+        self._comecar()
+        self.agenda = []
+        if not self.agenda_dia_iso:
+            self.agenda_dia_iso = regras_da_agenda.hoje().isoformat()
+        dia = date.fromisoformat(self.agenda_dia_iso)
+        try:
+            token = await self._token_de_equipe()
+            registros = await xano.agenda_da_clinica(
+                regras_da_agenda.inicio_do_dia_ms(dia), token=token
+            )
+        except (SemSessao, SessaoExpirada) as erro:
+            self.carregando = False
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return self._falhou(erro)
+
+        self.agenda = [
+            {
+                "id": a.get("id"),
+                "horario": f"{regras_da_agenda.hora(a.get('inicio'))}–"
+                           f"{regras_da_agenda.hora(a.get('fim'))}",
+                "animal": " · ".join(filter(None, [a.get("pet_nome") or "-",
+                                                   a.get("pet_especie") or ""])),
+                "tutor": " · ".join(filter(None, [a.get("tutor_nome") or "-",
+                                                  a.get("tutor_telefone") or ""])),
+                "servico": a.get("servico_nome") or "-",
+                "profissional": a.get("profissional_nome") or "-",
+                "situacao": regras_da_agenda.SITUACOES.get(a.get("situacao") or "", "-"),
+                "cancelado": a.get("situacao") == "cancelado",
+                "observacoes": a.get("observacoes") or "",
+            }
+            for a in registros
+        ]
+        self.carregando = False
+        self.ja_carregou = True
+
+    async def mudar_dia_da_agenda(self, passo: int):
+        dia = date.fromisoformat(self.agenda_dia_iso or regras_da_agenda.hoje().isoformat())
+        self.agenda_dia_iso = (dia + timedelta(days=passo)).isoformat()
+        return await self.carregar_agenda()
+
+    async def agenda_de_hoje(self):
+        self.agenda_dia_iso = regras_da_agenda.hoje().isoformat()
+        return await self.carregar_agenda()
     # --- a visão da clínica -----------------------------------------------
     #
     # Só leitura, e a ausência de botões de criar e alterar é o que comunica

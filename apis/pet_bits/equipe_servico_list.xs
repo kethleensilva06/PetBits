@@ -53,7 +53,7 @@ query "equipe/servicos" verb=GET {
     // `items.`, e misturar as duas formas devolve lista vazia com 200.
     db.query servico {
       sort = {nome: "asc"}
-      output = ["id", "nome", "descricao", "preco", "duracao_minutos"]
+      output = ["id", "nome", "descricao", "preco", "duracao_minutos", "categoria"]
       return = {type: "list"}
     } as $servicos
   }

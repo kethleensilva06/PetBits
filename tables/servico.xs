@@ -35,6 +35,14 @@ table servico {
     decimal preco
     int duracao_minutos
 
+    // O que o tutor escolhe na agenda: Clinica ou Banho e tosa (change
+    // `agendamento`, D5). OPCIONAL porque ja havia servicos cadastrados antes
+    // dela, e nao ha como saber qual e qual sem perguntar a clinica. Servico
+    // sem categoria nao e oferecido ao tutor e nao pode ser agendado.
+    enum categoria? {
+      values = ["clinica", "banho_tosa"]
+    }
+
     timestamp created_at?=now
   }
 

@@ -18,6 +18,7 @@ import reflex as rx
 
 from petbits import datas, xano
 from petbits.states.auth_state import AuthState
+from petbits.states import sessao
 from petbits.states.sessao import SemSessao
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
@@ -123,17 +124,12 @@ class PetState(rx.State):
     # --- sessão -----------------------------------------------------------
 
     async def _token(self) -> str:
-        """Token de quem está logado. Levanta `SemSessao` se não houver."""
-        auth = await self.get_state(AuthState)
-        if not auth.token:
-            raise SemSessao()
-        return auth.token
+        """Este State só carrega no endereço principal, cujo visitante sem
+        sessão vê a página inicial (change `porta-de-entrada`, D3)."""
+        return await sessao.token_de_cliente(self, sem_sessao="/boas-vindas")
 
     async def _encerrar(self, erro: Exception):
-        if isinstance(erro, SessaoExpirada):
-            auth = await self.get_state(AuthState)
-            auth._limpar(expirou=True)
-        return rx.redirect(getattr(erro, "destino", "/entrar"))
+        return await sessao.encerrar(self, erro)
 
     # --- carregar ---------------------------------------------------------
 

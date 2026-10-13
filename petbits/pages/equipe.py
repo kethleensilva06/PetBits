@@ -15,11 +15,16 @@ import reflex as rx
 
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import FUNCAO_LEGIVEL, FUNCOES, EquipeState
+from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
+    ("/equipe/agenda", "Agenda", "calendar-days"),
     ("/equipe/colaboradores", "Colaboradores", "users"),
     ("/equipe/servicos", "Serviços", "scissors"),
+    ("/equipe/produtos", "Produtos", "package"),
+    ("/equipe/pedidos", "Pedidos", "receipt"),
+    ("/equipe/balcao", "Balcão", "store"),
     ("/equipe/tutores", "Tutores", "contact"),
     ("/equipe/animais", "Animais", "paw-print"),
 ]
@@ -389,6 +394,8 @@ def _cartao_servico(s: dict) -> rx.Component:
                     rx.badge(s["preco"], variant="soft", radius="full"),
                     rx.badge(s["duracao"], color_scheme="gray", variant="soft",
                              radius="full"),
+                    rx.badge(s["categoria"], radius="full",
+                             color_scheme=rx.cond(s["_categoria"] == "", "amber", "teal")),
                     spacing="2", align="center", wrap="wrap",
                 ),
                 rx.cond(
@@ -431,6 +438,19 @@ def _dialogo_servico() -> rx.Component:
                                                      width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
+                # Change `agendamento`, D5: sem categoria, o serviço não é
+                # oferecido ao tutor.
+                _campo("Categoria", rx.select.root(
+                    rx.select.trigger(placeholder="Escolha: Clínica ou Banho e tosa",
+                                      width="100%"),
+                    rx.select.content(
+                        rx.select.item("Clínica", value="clinica"),
+                        rx.select.item("Banho e tosa", value="banho_tosa"),
+                    ),
+                    value=EquipeState.srv_categoria,
+                    on_change=EquipeState.set_srv_categoria,
+                    width="100%",
+                )),
                 # A duração é o que torna a agenda calculável: sem ela não há
                 # como saber se dois atendimentos se sobrepõem.
                 rx.text(
@@ -483,6 +503,341 @@ def servicos_page() -> rx.Component:
                       on_click=EquipeState.novo_servico),
             rx.fragment(),
         ),
+    )
+
+
+# --- produtos da loja (change `loja`) ---------------------------------------------
+
+
+def _cartao_produto(p: dict) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.vstack(
+                rx.hstack(
+                    rx.heading(p["nome"], size="4"),
+                    rx.badge(p["categoria"], variant="soft", radius="full"),
+                    rx.badge(p["preco"], color_scheme="gray", variant="soft", radius="full"),
+                    rx.badge(p["estoque"], color_scheme="gray", variant="soft", radius="full"),
+                    rx.cond(p["ativo"], rx.fragment(),
+                            rx.badge("Inativo", color_scheme="amber", radius="full")),
+                    spacing="2", align="center", wrap="wrap",
+                ),
+                rx.text(p["marca"], " ", p["unidade"], size="1", color=rx.color("gray", 10)),
+                rx.cond(p["descricao"],
+                        rx.text(p["descricao"], size="1", color=rx.color("gray", 11))),
+                spacing="1", align_items="start",
+            ),
+            rx.spacer(),
+            rx.button(rx.cond(p["ativo"], "Desativar", "Ativar"),
+                      on_click=lambda: EquipeState.alternar_ativo(p),
+                      variant="soft", color_scheme=rx.cond(p["ativo"], "amber", "teal"),
+                      size="1"),
+            rx.button("Editar", on_click=lambda: EquipeState.editar_produto(p),
+                      variant="soft", size="1"),
+            width="100%", align="start", spacing="2",
+        ),
+        width="100%",
+        opacity=rx.cond(p["ativo"], "1", "0.6"),
+    )
+
+
+def _dialogo_produto() -> rx.Component:
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(EquipeState.titulo_prd),
+            rx.vstack(
+                _campo("Nome", rx.input(placeholder="Ração adulto 1 kg",
+                                        value=EquipeState.prd_nome,
+                                        on_change=EquipeState.set_prd_nome, width="100%")),
+                rx.hstack(
+                    _campo("Categoria", rx.select.root(
+                        rx.select.trigger(width="100%"),
+                        rx.select.content(*[rx.select.item(rotulo, value=valor)
+                                            for valor, rotulo in CATEGORIAS_PRODUTO.items()]),
+                        value=EquipeState.prd_categoria,
+                        on_change=EquipeState.set_prd_categoria,
+                    )),
+                    _campo("Marca", rx.input(placeholder="Opcional",
+                                             value=EquipeState.prd_marca,
+                                             on_change=EquipeState.set_prd_marca,
+                                             width="100%")),
+                    spacing="3", width="100%", align="start",
+                ),
+                rx.hstack(
+                    _campo("Unidade", rx.input(placeholder="un, pacote 1 kg...",
+                                               value=EquipeState.prd_unidade,
+                                               on_change=EquipeState.set_prd_unidade,
+                                               width="100%")),
+                    _campo("Preço (R$)", rx.input(placeholder="49,90",
+                                                  value=EquipeState.prd_preco,
+                                                  on_change=EquipeState.set_prd_preco,
+                                                  width="100%")),
+                    _campo("Estoque", rx.input(placeholder="20",
+                                               value=EquipeState.prd_estoque,
+                                               on_change=EquipeState.set_prd_estoque,
+                                               width="100%")),
+                    spacing="3", width="100%", align="start",
+                ),
+                _campo("Descrição", rx.text_area(placeholder="Opcional",
+                                                 value=EquipeState.prd_descricao,
+                                                 on_change=EquipeState.set_prd_descricao,
+                                                 width="100%")),
+                rx.cond(EquipeState.prd_erro,
+                        rx.callout(EquipeState.prd_erro, icon="triangle_alert",
+                                   color_scheme="red", size="1", width="100%")),
+                rx.hstack(
+                    rx.button("Cancelar", on_click=EquipeState.set_prd_dialogo(False),
+                              variant="soft", color_scheme="gray"),
+                    rx.button("Salvar", on_click=EquipeState.salvar_produto,
+                              disabled=EquipeState.salvando),
+                    justify="end", spacing="3", width="100%", padding_top="0.5rem",
+                ),
+                spacing="3", width="100%",
+            ),
+            max_width="36rem",
+        ),
+        open=EquipeState.prd_dialogo,
+        on_open_change=EquipeState.set_prd_dialogo,
+    )
+
+
+def produtos_page() -> rx.Component:
+    return _casca(
+        _lista(
+            EquipeState.tem_produtos,
+            EquipeState.produtos,
+            _cartao_produto,
+            _vazio("Nenhum produto na loja",
+                   "Cadastre o que a loja vende, com preço e estoque.",
+                   rx.button("Cadastrar produto", on_click=EquipeState.novo_produto,
+                             size="3")),
+            "os produtos",
+        ),
+        _dialogo_produto(),
+        rota="/equipe/produtos",
+        titulo="Produtos",
+        subtitulo="O catálogo da loja. Produto inativo ou sem estoque não aparece para o cliente.",
+        acao=rx.cond(EquipeState.tem_produtos,
+                     rx.button(rx.icon("plus", size=16), "Novo produto",
+                               on_click=EquipeState.novo_produto),
+                     rx.fragment()),
+    )
+
+
+# --- pedidos da loja (change `pedidos-da-equipe`) ---------------------------------
+
+
+def _acao_pedido(pedido_id, a: dict) -> rx.Component:
+    return rx.button(
+        a["rotulo"],
+        on_click=EquipeState.avancar_pedido(pedido_id, a["situacao"]),
+        size="1",
+        variant=rx.cond(a["situacao"] == "cancelado", "soft", "solid"),
+        color_scheme=rx.cond(a["situacao"] == "cancelado", "red", "teal"),
+    )
+
+
+def _cartao_pedido(p: dict) -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text("Pedido nº ", p["id"], weight="bold"),
+                rx.badge(p["situacao"], radius="full"),
+                rx.cond(p["pago"], rx.badge("Pagamento registrado", color_scheme="green",
+                                            variant="soft", radius="full")),
+                rx.spacer(),
+                rx.text(p["total"], weight="bold"),
+                width="100%", align="center", wrap="wrap",
+            ),
+            rx.text(p["cliente"], size="2"),
+            rx.text(p["quando"], " · ", p["origem"], " · ", p["entrega"], " · ",
+                    p["pagamento"], size="1", color=rx.color("gray", 10)),
+            rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
+                                           color=rx.color("gray", 10))),
+            rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(
+                rx.text(i["texto"], size="2"), rx.spacer(), rx.text(i["linha"], size="2"),
+                width="100%")),
+            rx.hstack(
+                rx.foreach(p["acoes"].to(list[dict]), lambda a: _acao_pedido(p["id"], a)),
+                spacing="2", wrap="wrap", padding_top="0.25rem",
+            ),
+            spacing="1", width="100%", align_items="start",
+        ),
+        width="100%",
+    )
+
+
+def pedidos_equipe_page() -> rx.Component:
+    return _casca(
+        rx.select.root(
+            rx.select.trigger(),
+            rx.select.content(
+                rx.select.item("Todos", value="todos"),
+                rx.select.item("Aguardando pagamento", value="pendente"),
+                rx.select.item("Pagos", value="pago"),
+                rx.select.item("Prontos para retirada", value="pronto_retirada"),
+                rx.select.item("Enviados", value="enviado"),
+                rx.select.item("Entregues", value="entregue"),
+                rx.select.item("Cancelados", value="cancelado"),
+            ),
+            value=EquipeState.filtro_pedidos,
+            on_change=EquipeState.set_filtro_pedidos,
+        ),
+        _lista(
+            EquipeState.tem_pedidos_clinica,
+            EquipeState.pedidos_clinica,
+            _cartao_pedido,
+            _vazio("Nenhum pedido", "Os pedidos feitos na loja aparecem aqui."),
+            "os pedidos",
+        ),
+        rota="/equipe/pedidos",
+        titulo="Pedidos",
+        subtitulo="Os pedidos da loja. Cancelar devolve os itens ao estoque.",
+    )
+
+
+# --- venda no balcão (change `venda-no-balcao`) -----------------------------------
+
+
+def _produto_balcao(p: dict) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.vstack(
+                rx.text(p["nome"], weight="medium", size="2"),
+                rx.text(p["preco"], " · ", p["estoque"], size="1", color=rx.color("gray", 10)),
+                spacing="0", align_items="start",
+            ),
+            rx.spacer(),
+            rx.icon_button(rx.icon("plus", size=14), size="1",
+                           on_click=EquipeState.balcao_adicionar(p["id"]),
+                           aria_label="Adicionar à venda"),
+            width="100%", align="center",
+        ),
+        width="100%",
+    )
+
+
+def _item_balcao(i: dict) -> rx.Component:
+    return rx.hstack(
+        rx.text(i["nome"], size="2", flex="1"),
+        rx.icon_button(rx.icon("minus", size=14), size="1", variant="soft",
+                       on_click=EquipeState.balcao_tirar(i["id"]), aria_label="Tirar um"),
+        rx.text(i["quantidade"], size="2", min_width="1.5rem", text_align="center"),
+        rx.icon_button(rx.icon("plus", size=14), size="1", variant="soft",
+                       on_click=EquipeState.balcao_adicionar(i["id"].to(int)),
+                       disabled=~i["pode_mais"].to(bool), aria_label="Mais um"),
+        rx.text(i["linha"], size="2", min_width="6rem", text_align="right"),
+        width="100%", align="center", spacing="2",
+    )
+
+
+def balcao_page() -> rx.Component:
+    return _casca(
+        rx.cond(EquipeState.balcao_aviso,
+                rx.callout(EquipeState.balcao_aviso, icon="circle_check",
+                           color_scheme="green", size="1", width="100%")),
+        rx.grid(
+            rx.vstack(
+                rx.text("Produtos à venda", weight="bold"),
+                rx.cond(
+                    EquipeState.produtos_a_venda.length() > 0,
+                    rx.grid(rx.foreach(EquipeState.produtos_a_venda, _produto_balcao),
+                            columns=rx.breakpoints(initial="1", sm="2"), spacing="2",
+                            width="100%"),
+                    rx.text("Nenhum produto ativo com estoque.", size="2",
+                            color=rx.color("gray", 10)),
+                ),
+                spacing="2", width="100%", align_items="start",
+            ),
+            rx.card(
+                rx.vstack(
+                    rx.text("Venda", weight="bold"),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Escolha o cliente", width="100%"),
+                        rx.select.content(rx.foreach(
+                            EquipeState.tutores,
+                            lambda t: rx.select.item(t["nome"], " · ", t["documento"],
+                                                     value=t["id"].to_string()))),
+                        value=EquipeState.balcao_cliente,
+                        on_change=EquipeState.set_balcao_cliente,
+                        width="100%",
+                    ),
+                    rx.foreach(EquipeState.itens_balcao, _item_balcao),
+                    rx.divider(),
+                    rx.hstack(rx.text("Total"), rx.spacer(),
+                              rx.text(EquipeState.total_balcao, weight="bold"), width="100%"),
+                    rx.text("A venda é registrada como entregue e paga na loja, na conta do "
+                            "cliente.", size="1", color=rx.color("gray", 10)),
+                    rx.cond(EquipeState.balcao_erro,
+                            rx.callout(EquipeState.balcao_erro, icon="triangle_alert",
+                                       color_scheme="red", size="1", width="100%")),
+                    rx.button("Confirmar venda", on_click=EquipeState.confirmar_venda,
+                              disabled=EquipeState.salvando, size="3", width="100%"),
+                    spacing="2", width="100%",
+                ),
+                width="100%",
+            ),
+            columns=rx.breakpoints(initial="1", md="3fr 2fr"),
+            spacing="4", width="100%", align_items="start",
+        ),
+        rota="/equipe/balcao",
+        titulo="Venda no balcão",
+        subtitulo="Venda presencial, registrada na conta do cliente.",
+    )
+
+
+# --- agenda do dia (change `agendamento`) -----------------------------------------
+
+
+def _item_da_agenda(a: dict) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.text(a["horario"], weight="bold", min_width="6.5rem"),
+            rx.vstack(
+                rx.hstack(
+                    rx.text(a["servico"], weight="medium"),
+                    rx.badge(a["situacao"], radius="full",
+                             color_scheme=rx.cond(a["cancelado"], "gray", "teal")),
+                    spacing="2", align="center", wrap="wrap",
+                ),
+                rx.text(a["animal"], " — ", a["tutor"], size="2",
+                        color=rx.color("gray", 11)),
+                rx.text("Com ", a["profissional"], size="1", color=rx.color("gray", 10)),
+                rx.cond(a["observacoes"],
+                        rx.text(a["observacoes"], size="1", color=rx.color("gray", 11))),
+                spacing="1", align_items="start",
+            ),
+            spacing="4", align="start", width="100%",
+            opacity=rx.cond(a["cancelado"], "0.55", "1"),
+        ),
+        width="100%",
+    )
+
+
+def agenda_equipe_page() -> rx.Component:
+    return _casca(
+        rx.hstack(
+            rx.icon_button(rx.icon("chevron_left"), variant="soft",
+                           on_click=EquipeState.mudar_dia_da_agenda(-1),
+                           aria_label="Dia anterior"),
+            rx.text(EquipeState.agenda_titulo, weight="bold", size="4"),
+            rx.icon_button(rx.icon("chevron_right"), variant="soft",
+                           on_click=EquipeState.mudar_dia_da_agenda(1),
+                           aria_label="Próximo dia"),
+            rx.button("Hoje", variant="ghost", on_click=EquipeState.agenda_de_hoje),
+            spacing="3", align="center",
+        ),
+        _lista(
+            EquipeState.tem_agenda,
+            EquipeState.agenda,
+            _item_da_agenda,
+            _vazio("Nenhum agendamento neste dia",
+                   "Os agendamentos marcados pelos tutores aparecem aqui."),
+            "a agenda",
+        ),
+        rota="/equipe/agenda",
+        titulo="Agenda",
+        subtitulo="Os agendamentos do dia, de todos os profissionais. Só leitura.",
     )
 
 

@@ -7,8 +7,18 @@ página deve aparecer aqui sem uma change correspondente em
 
 import reflex as rx
 
-from petbits.pages.entrar import cadastro_page, entrar_page
+from petbits.pages.agenda import agenda_page
+from petbits.pages.entrar import (
+    boas_vindas_page,
+    cadastro_page,
+    entrar_equipe_page,
+    entrar_page,
+)
 from petbits.pages.equipe import (
+    balcao_page,
+    pedidos_equipe_page,
+    produtos_page,
+    agenda_equipe_page,
     animais_page,
     colaboradores_page,
     painel_page,
@@ -16,8 +26,11 @@ from petbits.pages.equipe import (
     tutores_page,
 )
 from petbits.pages.inicio import inicio_page
+from petbits.pages.loja import loja_page, pedidos_page
+from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import EquipeState
+from petbits.states.loja_state import LojaState
 from petbits.states.pet_state import PetState
 
 app = rx.App()
@@ -30,7 +43,23 @@ app.add_page(
     inicio_page,
     route="/",
     title="PetBits",
-    on_load=[AuthState.carregar_sessao, PetState.carregar],
+    on_load=[AuthState.carregar_sessao_da_casa, PetState.carregar],
+)
+
+# Loja do cliente (change `loja`). Mesma guarda da área de cliente: sem sessão,
+# ou com conta de equipe, `LojaState._token` levanta antes de qualquer requisição.
+app.add_page(loja_page, route="/loja", title="PetBits | Loja",
+             on_load=[AuthState.carregar_sessao, LojaState.carregar_loja])
+app.add_page(pedidos_page, route="/pedidos", title="PetBits | Meus pedidos",
+             on_load=[AuthState.carregar_sessao, LojaState.carregar_pedidos])
+
+# Agenda do tutor (change `agendamento`). Mesma guarda da casa: sem sessão,
+# `AgendaState._token` levanta antes de qualquer requisição.
+app.add_page(
+    agenda_page,
+    route="/agenda",
+    title="PetBits | Agendar",
+    on_load=[AuthState.carregar_sessao, AgendaState.carregar],
 )
 
 # Área da clínica. Cada tela tem o seu próprio carregamento, e nenhuma
@@ -44,9 +73,13 @@ app.add_page(
 # na fila do backend.
 for rota, pagina, titulo, carregar in (
     ("/equipe", painel_page, "Painel", EquipeState.carregar_painel),
+    ("/equipe/agenda", agenda_equipe_page, "Agenda", EquipeState.carregar_agenda),
     ("/equipe/colaboradores", colaboradores_page, "Colaboradores",
      EquipeState.carregar_colaboradores),
     ("/equipe/servicos", servicos_page, "Serviços", EquipeState.carregar_servicos),
+    ("/equipe/produtos", produtos_page, "Produtos", EquipeState.carregar_produtos),
+    ("/equipe/pedidos", pedidos_equipe_page, "Pedidos", EquipeState.carregar_pedidos_clinica),
+    ("/equipe/balcao", balcao_page, "Balcão", EquipeState.carregar_balcao),
     ("/equipe/tutores", tutores_page, "Tutores", EquipeState.carregar_tutores),
     ("/equipe/animais", animais_page, "Animais", EquipeState.carregar_animais),
 ):
@@ -60,11 +93,26 @@ for rota, pagina, titulo, carregar in (
 # Portas de entrada. `redirecionar_se_logado` evita mostrar o formulário a
 # quem já entrou: voltar para cá por engano e ver campos vazios passa a
 # impressão de que a sessão caiu.
+# Página inicial pública e as duas entradas (change `porta-de-entrada`). As
+# duas entradas são o mesmo formulário; o `on_load` de cada uma define a aba,
+# que só vale depois da senha confirmada (change `papeis-e-abas`).
+app.add_page(
+    boas_vindas_page,
+    route="/boas-vindas",
+    title="PetBits",
+    on_load=AuthState.redirecionar_se_logado,
+)
 app.add_page(
     entrar_page,
     route="/entrar",
     title="PetBits | Entrar",
-    on_load=AuthState.redirecionar_se_logado,
+    on_load=AuthState.abrir_entrada_de_clientes,
+)
+app.add_page(
+    entrar_equipe_page,
+    route="/entrar/equipe",
+    title="PetBits | Entrada da equipe",
+    on_load=AuthState.abrir_entrada_da_equipe,
 )
 app.add_page(
     cadastro_page,

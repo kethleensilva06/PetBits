@@ -10,21 +10,36 @@ chega ao navegador, e a garantia de que nada disso existe em produção.
 
 ### Requirement: Atalho de contas de teste na tela de entrada
 
-Em modo de desenvolvimento, a tela de entrada SHALL abrir uma lista das
-contas de teste quando a pessoa pressionar `Alt+1`, e SHALL fechá-la com
-`Alt+1` de novo ou com `Esc`. A lista MUST mostrar, para cada conta, apenas o
-rótulo e o e-mail — nunca a senha.
+Em modo de desenvolvimento, a tela de entrada SHALL abrir a lista das contas
+de teste da **equipe** quando a pessoa pressionar `Alt+1`, e a dos
+**clientes** quando pressionar `Alt+2`. Uma conta é de cliente quando o
+rótulo do bloco começa com `TUTOR` ou `CLIENTE`; qualquer outra é de equipe.
+Com uma lista aberta, o atalho da outra SHALL trocar de lista, o da mesma
+SHALL fechá-la, e `Esc` SHALL fechar qualquer uma. A lista MUST mostrar, para
+cada conta, apenas o rótulo e o e-mail — nunca a senha.
 
 #### Scenario: Abrir a lista
 
 - **WHEN** a pessoa está na tela de entrada, em modo de desenvolvimento, e
   pressiona `Alt+1`
-- **THEN** a lista de contas de teste aparece no canto inferior esquerdo
+- **THEN** a lista das contas de equipe aparece no canto inferior esquerdo
 - **AND** cada item mostra o rótulo e o e-mail da conta, sem a senha
+
+#### Scenario: Abrir a lista de clientes
+
+- **WHEN** a pessoa pressiona `Alt+2`
+- **THEN** aparece só a lista das contas cujo rótulo começa com `TUTOR` ou
+  `CLIENTE`
+
+#### Scenario: Trocar de lista
+
+- **WHEN** a lista da equipe está aberta e a pessoa pressiona `Alt+2`
+- **THEN** a lista passa a ser a dos clientes, sem fechar
 
 #### Scenario: Fechar a lista
 
-- **WHEN** a lista está aberta e a pessoa pressiona `Esc` ou `Alt+1`
+- **WHEN** a lista está aberta e a pessoa pressiona `Esc`, ou o mesmo atalho
+  que a abriu
 - **THEN** a lista fecha e o formulário fica como estava
 
 #### Scenario: A lista não depende da aba
@@ -94,3 +109,34 @@ backend, mesmo que o evento chegue por outro caminho.
 - **WHEN** em modo de produção chega ao backend um pedido de preenchimento por
   conta de teste
 - **THEN** o pedido é ignorado e nenhum campo é preenchido
+
+### Requirement: Script cria clientes de teste e os registra no arquivo
+
+O projeto SHALL ter um script que cria N clientes de teste pelo cadastro
+público e acrescenta cada um, como bloco `TUTOR`, ao arquivo local de contas
+de teste. Os dados gerados MUST cumprir as regras do cadastro — CPF de 11
+dígitos e senha com ao menos 8 caracteres, uma letra e um número — e o e-mail
+MUST ser único e do domínio `exemplo.com`. A senha MUST NOT aparecer na saída
+do script.
+
+#### Scenario: Criar clientes
+
+- **WHEN** quem desenvolve roda o script pedindo 3 clientes
+- **THEN** três contas de cliente são criadas pelo cadastro público
+- **AND** as três aparecem no `Alt+2`, com e-mail e senha corretos
+
+#### Scenario: Cadastro recusado
+
+- **WHEN** o cadastro público recusa um dos clientes
+- **THEN** o script informa a recusa, não grava esse cliente no arquivo e
+  continua com os demais
+
+#### Scenario: Sem configuração do Xano
+
+- **WHEN** o `.env` não tem o endereço do Xano
+- **THEN** o script para antes de qualquer requisição, explicando o que falta
+
+#### Scenario: Senha fora da saída
+
+- **WHEN** o script termina
+- **THEN** a saída mostra nome e e-mail de cada cliente criado, e nenhuma senha

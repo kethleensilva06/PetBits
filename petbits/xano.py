@@ -102,13 +102,14 @@ def papel_legivel(papel: str) -> str:
 
 
 def rota_do_papel(papel: str) -> str:
-    """Para onde a pessoa vai depois de entrar.
+    """Para onde a pessoa vai **depois** de a credencial ser aceita.
 
-    O papel vem de `/auth/me`, **nunca** da aba escolhida na tela de entrada:
-    é essa separação que impede descobrir quem é da equipe tentando o mesmo
-    e-mail nas duas abas. Papel desconhecido vai para a área do tutor, onde um
-    aviso explícito diz o que aconteceu — e, como a conta não tem ficha, ela
-    não alcança dado de ninguém.
+    Só o papel decide, vindo do `/auth/me` (change `porta-de-entrada`, D1 e
+    D5): conta de equipe vai sempre para a gerência, por qualquer entrada, e o
+    resto para a área de cliente. A página de entrada usada nunca é enviada
+    ao servidor nem pesa aqui. Papel desconhecido vai para a área do tutor,
+    onde um aviso explícito diz o que aconteceu — e, como a conta não tem
+    ficha, ela não alcança dado de ninguém.
     """
     return ROTA_EQUIPE if eh_equipe(papel) else ROTA_TUTOR
 
@@ -573,3 +574,158 @@ async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
     if criado is None:
         raise XanoError("O Xano não confirmou o cadastro do animal.")
     return criado
+
+
+# --- agendamento (change `agendamento`) ----------------------------------------
+#
+# Do lado do tutor, a tela só **sugere** horários: quem decide é o
+# `POST agendamentos`, que refaz no Xano a conta inteira — posse, expediente,
+# grade, profissional livre (design.md da change, D2).
+
+
+async def listar_servicos_agendaveis(*, token: str) -> list[dict]:
+    """O catálogo que o tutor vê: só serviços com categoria."""
+    dados = await _requisitar("GET", "/servicos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def ocupacao_do_dia(servico_id: int, dia_ms: int, *, token: str) -> dict:
+    """Profissionais compatíveis e intervalos ocupados de um dia.
+
+    `dia_ms` é a meia-noite de São Paulo daquele dia, em ms UTC.
+    """
+    dados = await _requisitar(
+        "GET",
+        "/agenda/ocupacao",
+        token=token,
+        params={"servico_id": servico_id, "dia": dia_ms},
+    )
+    return dados if isinstance(dados, dict) else {}
+
+
+async def listar_agendamentos(*, token: str) -> list[dict]:
+    """Os agendamentos dos animais do tutor, do mais recente para o mais antigo."""
+    dados = await _requisitar("GET", "/agendamentos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def criar_agendamento(dados: dict, *, token: str) -> dict:
+    """Marca um agendamento. O profissional é escolhido pelo backend."""
+    criado = await _requisitar("POST", "/agendamentos", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou o agendamento.")
+    return criado
+
+
+async def cancelar_agendamento(agendamento_id: int, *, token: str) -> dict:
+    """Cancela um agendamento do tutor, até 24 h antes.
+
+    Agendamento alheio e inexistente chegam iguais, como 404 — e o 404 vira
+    `NaoEncontrado` aqui, pelo mesmo motivo da edição de animal: devolver None
+    deixaria a tela mostrar como cancelado o que o backend recusou.
+    """
+    cancelado = await _requisitar(
+        "POST", f"/agendamentos/{agendamento_id}/cancelar", token=token
+    )
+    if cancelado is None:
+        raise NaoEncontrado("Este agendamento não está mais disponível.", status=404)
+    return cancelado
+
+
+async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
+    """A agenda de um dia, para a equipe. Só leitura."""
+    dados = await _requisitar(
+        "GET", "/equipe/agenda", token=token, params={"dia": dia_ms}
+    )
+    return dados if isinstance(dados, list) else []
+
+
+# --- loja (change `loja`) -------------------------------------------------------
+#
+# Do cliente sai só produto e quantidade: preço, linha e total são calculados
+# no servidor, que também baixa o estoque numa transação com trava (D2).
+
+
+async def produtos_da_loja(*, token: str) -> list[dict]:
+    """Produtos ativos com estoque, para o cliente."""
+    dados = await _requisitar("GET", "/loja/produtos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def fazer_pedido(
+    itens: list[dict], entrega: str, forma_pagamento: str, *, token: str
+) -> dict:
+    """`itens` é uma lista de `{produto_id, quantidade}`, e nada mais."""
+    criado = await _requisitar(
+        "POST",
+        "/pedidos",
+        token=token,
+        json={"itens": itens, "entrega": entrega, "forma_pagamento": forma_pagamento},
+    )
+    if criado is None:
+        raise XanoError("O Xano não confirmou o pedido.")
+    return criado
+
+
+async def meus_pedidos(*, token: str) -> dict:
+    """`{pedidos, itens}` do cliente; os itens são agrupados pela tela."""
+    dados = await _requisitar("GET", "/pedidos", token=token)
+    return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
+
+
+async def listar_produtos(*, token: str) -> list[dict]:
+    """O catálogo inteiro, ativos e inativos, para a equipe."""
+    dados = await _requisitar("GET", "/equipe/produtos", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def criar_produto(dados: dict, *, token: str) -> dict:
+    criado = await _requisitar("POST", "/equipe/produtos", token=token, json=dados)
+    if criado is None:
+        raise XanoError("O Xano não confirmou a criação do produto.")
+    return criado
+
+
+async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
+    """Altera só os campos informados; os ausentes permanecem."""
+    atualizado = await _requisitar(
+        "PATCH", f"/equipe/produtos/{produto_id}", token=token, json=dados
+    )
+    if atualizado is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return atualizado
+
+
+# --- pedidos da equipe (change `pedidos-da-equipe`) ----------------------------
+
+
+async def pedidos_da_clinica(situacao: str = "", *, token: str) -> dict:
+    """`{pedidos, itens}` de todos os clientes; `situacao` vazia traz todos."""
+    params = {"situacao": situacao} if situacao else None
+    dados = await _requisitar("GET", "/equipe/pedidos", token=token, params=params)
+    return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
+
+
+async def mudar_situacao_do_pedido(pedido_id: int, situacao: str, *, token: str) -> dict:
+    """O backend confere o caminho (D2); um caminho inválido volta como recusa."""
+    feito = await _requisitar(
+        "POST", f"/equipe/pedidos/{pedido_id}/situacao", token=token,
+        json={"situacao": situacao},
+    )
+    if feito is None:
+        raise NaoEncontrado("Este pedido não está mais disponível.", status=404)
+    return feito
+
+
+# --- venda no balcão (change `venda-no-balcao`) ---------------------------------
+
+
+async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> dict:
+    """Venda presencial na conta de um cliente. `itens`: `{produto_id, quantidade}`."""
+    feita = await _requisitar(
+        "POST", "/equipe/vendas", token=token,
+        json={"tutor_id": tutor_id, "itens": itens},
+    )
+    if feita is None:
+        raise XanoError("O Xano não confirmou a venda.")
+    return feita

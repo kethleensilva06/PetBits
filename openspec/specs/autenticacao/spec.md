@@ -87,6 +87,17 @@ número de requisições — MUST diferir entre as abas.
 - **AND** não é possível deduzir o papel de uma conta pela aba em que ela
   falha
 
+#### Scenario: Equipe entra pela aba Cliente
+
+- **WHEN** uma conta de equipe acerta a senha pela aba Cliente
+- **THEN** a sessão não é iniciada
+- **AND** a mensagem orienta a entrar pela aba Colaborador
+
+#### Scenario: Equipe entra pela aba Colaborador
+
+- **WHEN** uma conta de equipe acerta a senha pela aba Colaborador
+- **THEN** a sessão é iniciada e ela vai para a área da equipe
+
 #### Scenario: Pessoa entra pela aba que não corresponde ao papel dela
 
 - **WHEN** uma pessoa informa a senha **correta** numa aba que não é a do
@@ -235,3 +246,18 @@ oculto.
 
 - **WHEN** a tela de entrada ou a de cadastro é aberta
 - **THEN** os campos de senha estão ocultos
+
+### Requirement: Saudação pelo nome
+
+A interface SHALL cumprimentar a pessoa pelo primeiro nome, ignorando
+títulos no começo do nome (Dr., Dra., Sr., Sra.).
+
+#### Scenario: Nome com título
+
+- **WHEN** a conta se chama "Dr. Otavio Lins"
+- **THEN** a saudação é "Olá, Otavio!"
+
+#### Scenario: Nome sem título
+
+- **WHEN** a conta se chama "Ana Ribeiro"
+- **THEN** a saudação é "Olá, Ana!"
