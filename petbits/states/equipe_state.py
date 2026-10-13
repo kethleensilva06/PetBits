@@ -501,8 +501,17 @@ class EquipeState(rx.State):
             "telefone": self.col_telefone.strip(),
             "email": self.col_email.strip(),
         }
-        if self.col_entrada.strip():
-            dados["data_entrada"] = self.col_entrada.strip()
+        # Enviada SEMPRE, inclusive vazia. Antes ela só ia quando tinha
+        # valor, então esvaziar o campo virava chave ausente, o `pick` do
+        # backend não a tocava, e a tela dizia que salvou com o valor antigo
+        # de volta — uma data digitada errada só podia ser trocada, nunca
+        # removida.
+        #
+        # MEDIDO (tarefa 1.1): string vazia, `null` e `0` gravam todos 0 no
+        # `timestamp`, e 0 é o que `datas.para_campo` já lê como "sem data".
+        # Vazio é a forma escolhida por ser o que um campo de data vazio
+        # produz sozinho — as outras duas exigiriam converter antes.
+        dados["data_entrada"] = self.col_entrada.strip()
 
         self.salvando = True
         yield
@@ -528,6 +537,29 @@ class EquipeState(rx.State):
         resultado = await self.carregar_colaboradores()
         if resultado is not None:
             yield resultado
+
+    async def alternar_ativo_colaborador(self, registro: dict):
+        """Desligar ou religar quem trabalha na clínica.
+
+        Manda **só** `ativo`. O padrão `pick` do backend deixa o resto como
+        está, e é isso que faz desligar alguém não apagar o telefone dele —
+        mandar o formulário inteiro desfaria a garantia.
+
+        Não existe excluir colaborador, de propósito: quem saiu da clínica
+        ainda é quem executou os serviços já registrados. Desligar é a
+        operação certa; excluir destruiria história.
+        """
+        try:
+            token = await self._token_de_equipe()
+            await xano.atualizar_colaborador(
+                registro["id"], {"ativo": not registro["ativo"]}, token=token
+            )
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_colaboradores()
 
     # --- serviços ---------------------------------------------------------
 

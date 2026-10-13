@@ -240,6 +240,10 @@ def painel_page() -> rx.Component:
 
 
 def _cartao_colaborador(c: dict) -> rx.Component:
+    # Quem foi desligado CONTINUA na lista, e isso é requisito, não descuido:
+    # esconder quem saiu esconderia o único caminho de religar, e apagaria a
+    # informação de que aquela pessoa trabalhou aqui — que é o motivo de
+    # desligar existir em vez de excluir.
     return rx.card(
         rx.hstack(
             rx.vstack(
@@ -273,11 +277,23 @@ def _cartao_colaborador(c: dict) -> rx.Component:
             # do `exige_gerencia` em cada tentativa.
             rx.cond(
                 AuthState.eh_gerencia,
-                rx.button(
-                    "Editar",
-                    on_click=lambda: EquipeState.editar_colaborador(c),
-                    variant="soft",
-                    size="1",
+                rx.hstack(
+                    # Mesma linguagem visual dos produtos inativos, na change
+                    # `loja`: quem aprende uma tela entende a outra.
+                    rx.button(
+                        rx.cond(c["ativo"], "Desligar", "Religar"),
+                        on_click=lambda: EquipeState.alternar_ativo_colaborador(c),
+                        variant="soft",
+                        color_scheme=rx.cond(c["ativo"], "amber", "teal"),
+                        size="1",
+                    ),
+                    rx.button(
+                        "Editar",
+                        on_click=lambda: EquipeState.editar_colaborador(c),
+                        variant="soft",
+                        size="1",
+                    ),
+                    spacing="2",
                 ),
                 rx.fragment(),
             ),
@@ -286,6 +302,7 @@ def _cartao_colaborador(c: dict) -> rx.Component:
             spacing="3",
         ),
         width="100%",
+        opacity=rx.cond(c["ativo"], "1", "0.6"),
     )
 
 
