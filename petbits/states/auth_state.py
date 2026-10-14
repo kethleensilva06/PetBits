@@ -439,7 +439,7 @@ class AuthState(rx.State):
         loja.limpar_dados()
 
         self._limpar()
-        return rx.redirect("/entrar")
+        return rx.redirect("/entrar/cliente")
 
     # --- a guarda ---------------------------------------------------------
 
@@ -455,14 +455,14 @@ class AuthState(rx.State):
         deste navegador. Uma falha de rede aqui **não** desloga: só o 401
         desloga.
         """
-        return await self._validar_sessao("/entrar")
+        return await self._validar_sessao("/entrar/cliente")
 
     async def carregar_sessao_da_casa(self):
         """O mesmo, para o endereço principal: quem chega sem sessão vê a
         página inicial pública, e não um formulário (change
         `porta-de-entrada`, D3). Sessão expirada continua indo para a
         entrada, com o aviso."""
-        return await self._validar_sessao("/boas-vindas")
+        return await self._validar_sessao("/")
 
     async def _validar_sessao(self, destino_sem_sessao: str):
         if not self.token:
@@ -474,7 +474,7 @@ class AuthState(rx.State):
             perfil = await xano.usuario_atual(self.token)
         except SessaoExpirada:
             self._limpar(expirou=True)
-            return rx.redirect("/entrar")
+            return rx.redirect("/entrar/cliente")
         except FalhaDeComunicacao as erro:
             # A sessão permanece. Quem está sem rede não está deslogado.
             self.erro = str(erro)
@@ -486,7 +486,7 @@ class AuthState(rx.State):
         return None
 
     def abrir_entrada_de_clientes(self):
-        """`on_load` de `/entrar`: a página faz o papel da aba Cliente."""
+        """`on_load` de `/entrar/cliente`: a página faz o papel da aba Cliente."""
         self.aba = "cliente"
         return self.redirecionar_se_logado()
 

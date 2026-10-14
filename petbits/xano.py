@@ -39,7 +39,7 @@ PAPEL_GERENCIA = "admin"
 PAPEL_EQUIPE_COMUM = "staff"
 
 ROTA_EQUIPE = "/equipe"
-ROTA_TUTOR = "/"
+ROTA_TUTOR = "/inicio"
 
 # Mantido para quem ainda importa pelo nome antigo. `admin` deixou de querer
 # dizer "equipe" e passou a querer dizer "gerencia" quando o terceiro papel

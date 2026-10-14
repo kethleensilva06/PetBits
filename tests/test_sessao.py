@@ -34,13 +34,13 @@ def destino(State, token="", expirou=False, papel=""):
 
 class GuardaDeCliente(unittest.TestCase):
     def test_visitante(self):
-        self.assertEqual(destino(PetState), "/boas-vindas")
-        self.assertEqual(destino(AgendaState), "/entrar")
-        self.assertEqual(destino(LojaState), "/entrar")
+        self.assertEqual(destino(PetState), "/")
+        self.assertEqual(destino(AgendaState), "/entrar/cliente")
+        self.assertEqual(destino(LojaState), "/entrar/cliente")
 
     def test_sessao_expirada_vai_para_a_entrada_com_aviso(self):
         for State in (PetState, AgendaState, LojaState):
-            self.assertEqual(destino(State, expirou=True), "/entrar")
+            self.assertEqual(destino(State, expirou=True), "/entrar/cliente")
 
     def test_equipe_vai_para_a_gerencia(self):
         for State in (PetState, AgendaState, LojaState):

@@ -45,7 +45,7 @@ def entrar(aba: str, papel: str, senha_certa: bool = True) -> SimpleNamespace:
 class Entrada(unittest.TestCase):
     def test_cliente_pela_entrada_de_clientes(self):
         s = entrar("cliente", "member")
-        self.assertEqual((s.token, s.redirecionou), ("t", "/"))
+        self.assertEqual((s.token, s.redirecionou), ("t", "/inicio"))
 
     def test_gerencia_e_equipe_pela_entrada_da_equipe(self):
         for papel in ("admin", "staff"):

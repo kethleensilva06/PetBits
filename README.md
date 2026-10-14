@@ -54,20 +54,22 @@ A aplicação fica em http://localhost:3000.
 
 ## Primeiro acesso
 
-A primeira tela é a página inicial (`/boas-vindas`), com três caminhos:
-**Sou cliente** (`/entrar`), **Sou da equipe** (`/entrar/equipe`) e
-**Criar conta** (`/cadastro`).
+A primeira tela é a página inicial (`/`), com três caminhos:
+**Sou cliente** (`/entrar/cliente`), **Sou da equipe** (`/entrar/equipe`) e
+**Criar conta** (`/cadastro`). Os endereços antigos `/entrar` e `/boas-vindas`
+continuam funcionando e levam às páginas novas.
 
 1. Clique em **Criar conta** e preencha nome, e-mail, documento e senha.
    A senha precisa de pelo menos 8 caracteres, com uma letra e um número.
 2. Ao concluir, você já entra autenticado e cai na sua área.
 3. Para voltar depois, use **Sou cliente → Entrar** com o mesmo e-mail e senha.
 
-Funcionários entram por **Sou da equipe**. A gerência só abre para contas com
-`role = admin` no Xano; qualquer outra conta, mesmo por essa entrada, vai para
-a área de cliente.
+Funcionários entram por **Sou da equipe** e vão para a gerência (`/equipe`).
+Contas `staff` (equipe comum) e `admin` (gerência) entram por ela; uma conta de
+cliente nessa entrada é recusada, assim como uma conta de equipe na entrada de
+clientes.
 
-Na tela inicial ficam os seus animais. Use **Cadastrar animal** para o
+Na área do cliente (`/inicio`) ficam os seus animais. Use **Cadastrar animal** para o
 primeiro, e **Editar** para alterar qualquer um deles. Você vê apenas os seus:
 quem decide isso é o backend, a partir de quem está autenticado.
 

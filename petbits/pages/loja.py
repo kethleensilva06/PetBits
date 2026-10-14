@@ -15,9 +15,9 @@ def _topo(atual: str) -> rx.Component:
         return rx.link(rotulo, href=href, size="2",
                        weight="bold" if href == atual else "regular")
     return rx.hstack(
-        rx.link(rx.heading("PetBits", size="6"), href="/", underline="none", color="inherit"),
+        rx.link(rx.heading("PetBits", size="6"), href="/inicio", underline="none", color="inherit"),
         rx.spacer(),
-        link("Meus animais", "/"),
+        link("Meus animais", "/inicio"),
         link("Agendar", "/agenda"),
         link("Loja", "/loja"),
         link("Meus pedidos", "/pedidos"),

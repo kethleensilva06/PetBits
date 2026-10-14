@@ -374,9 +374,9 @@ class EquipeState(rx.State):
         """
         auth = await self.get_state(AuthState)
         if not auth.token:
-            raise SemSessao("/entrar")
+            raise SemSessao("/entrar/cliente")
         if not xano.eh_equipe(auth.usuario_papel):
-            raise SemSessao("/")
+            raise SemSessao("/inicio")
         return auth.token
 
     async def _encerrar(self, erro: Exception):

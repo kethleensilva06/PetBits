@@ -83,7 +83,7 @@ def _escolhas() -> rx.Component:
                 rx.hstack(
                     rx.text("Você ainda não cadastrou nenhum animal.", size="2",
                             color=rx.color("gray", 10)),
-                    rx.link("Cadastrar", href="/", size="2", weight="medium"),
+                    rx.link("Cadastrar", href="/inicio", size="2", weight="medium"),
                     spacing="2",
                 ),
             ),
@@ -306,10 +306,10 @@ def agenda_page() -> rx.Component:
     return rx.container(
         rx.vstack(
             rx.hstack(
-                rx.link(rx.heading("PetBits", size="6"), href="/", underline="none",
+                rx.link(rx.heading("PetBits", size="6"), href="/inicio", underline="none",
                         color="inherit"),
                 rx.spacer(),
-                rx.link("Meus animais", href="/", size="2"),
+                rx.link("Meus animais", href="/inicio", size="2"),
                 rx.button("Sair", on_click=AuthState.sair, variant="soft",
                           color_scheme="gray", size="2"),
                 width="100%",

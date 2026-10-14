@@ -249,7 +249,7 @@ def entrar_equipe_page() -> rx.Component:
                         color=rx.color("gray", 10)),
                 rx.hstack(
                     rx.text("É cliente?", size="2", color=rx.color("gray", 10)),
-                    rx.link("Entrada de clientes", href="/entrar", size="2",
+                    rx.link("Entrada de clientes", href="/entrar/cliente", size="2",
                             weight="medium"),
                     spacing="2",
                 ),
@@ -302,7 +302,7 @@ def boas_vindas_page() -> rx.Component:
             rx.grid(
                 _caminho("heart", "Sou cliente",
                          "Veja seus animais e marque atendimentos.",
-                         "Entrar", "/entrar"),
+                         "Entrar", "/entrar/cliente"),
                 _caminho("stethoscope", "Sou da equipe",
                          "Agenda do dia, serviços, colaboradores e clientes.",
                          "Entrada da equipe", "/entrar/equipe", "soft"),
@@ -374,7 +374,7 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
         ),
         rodape=rx.vstack(
             rodape,
-            rx.link("← Voltar ao início", href="/boas-vindas", size="1",
+            rx.link("← Voltar ao início", href="/", size="1",
                     color=rx.color("gray", 10)),
             spacing="3",
             align_items="start",
@@ -466,7 +466,7 @@ def cadastro_page() -> rx.Component:
         on_submit=AuthState.cadastrar,
         rodape=rx.hstack(
             rx.text("Já tem conta?", size="2", color=rx.color("gray", 10)),
-            rx.link("Entrar", href="/entrar", size="2", weight="medium"),
+            rx.link("Entrar", href="/entrar/cliente", size="2", weight="medium"),
             spacing="2",
         ),
     )
