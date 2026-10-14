@@ -28,7 +28,7 @@
 
 ## 4. Verificação de integração
 
-- [ ] 4.1 Percurso de balcão completo: entrar como equipe comum, cadastrar um tutor, cadastrar um animal para ele, e vê-lo na lista da clínica; verificar cada passo
+- [x] 4.1 Percurso de balcão completo: entrar como equipe comum, cadastrar um tutor, cadastrar um animal para ele, e vê-lo na lista da clínica; verificar cada passo — **Situação:** verificado em 2026-10-14 por quem desenvolve, com a conta de teste do projeto: no navegador, como equipe comum: tutor cadastrado, animal cadastrado para ele e visto na lista
 - [x] 4.2 Confirmar que o animal cadastrado pela clínica aparece **na área do tutor**, entrando com a conta dele; verificar com um tutor que tenha conta
 - [x] 4.3 Confirmar que o caminho do tutor não mudou: `POST /pet` com `id_tutor` de outra pessoa continua criando para o dono da credencial; verificar que o cenário "dono forjado na criação" segue valendo
 - [x] 4.4 Rodar `openspec validate --strict`, o validador de XanoScript e a guarda; verificar que os três passam

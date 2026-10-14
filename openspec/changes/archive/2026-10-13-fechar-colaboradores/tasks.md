@@ -4,7 +4,7 @@
 
 - [x] 1.1 Medir o que o Xano grava num `timestamp` que recebe string vazia, com um colaborador descartável: enviar `data_entrada: ""` e ler a linha; verificar se grava 0, se recusa, ou se grava algo que a leitura mostra como 1970 — e registrar o resultado como fato medido, porque a próxima tela com data opcional vai esbarrar nisto
 - [x] 1.2 Se string vazia não servir, medir `null` e `0` até achar a forma que apaga; verificar que a leitura depois mostra o campo como vazio, e não como uma data de 1970
-- [ ] 1.3 Apagar o colaborador descartável; verificar pela lista que não sobrou
+- [x] 1.3 Apagar o colaborador descartável; verificar pela lista que não sobrou — **Situação:** verificado em 2026-10-14 por quem desenvolve, com a conta de teste do projeto: o colaborador descartável foi apagado pelo painel do Xano (o sistema não tem exclusão de colaborador, de propósito)
 
 ## 2. Desligar e religar
 
@@ -23,7 +23,7 @@
 ## 4. Verificação
 
 - [x] 4.1 Percurso da gerência: desligar alguém, ver o cartão mudar, religar, e apagar uma data de entrada; verificar cada passo na tela
-- [ ] 4.2 Percurso da equipe comum: abrir a mesma tela e confirmar que nenhum dos controles aparece; verificar que a lista continua completa, com desligados e tudo
+- [x] 4.2 Percurso da equipe comum: abrir a mesma tela e confirmar que nenhum dos controles aparece; verificar que a lista continua completa, com desligados e tudo — **Situação:** verificado em 2026-10-14 por quem desenvolve, com a conta de teste do projeto: no navegador, como equipe comum: desligar e religar não aparecem e a lista continua completa
 - [x] 4.3 Rodar `openspec validate --strict`, o validador de XanoScript e a guarda; verificar que os três passam
 
 
