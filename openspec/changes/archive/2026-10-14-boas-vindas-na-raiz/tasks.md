@@ -12,6 +12,6 @@
 ## 3. Verificação
 
 - [x] 3.1 Testes passando e as páginas compilando
-- [ ] 3.2 No navegador, sem sessão (falta; a sessão aberta no navegador não foi encerrada para não deslogar quem desenvolve): `/` mostra as boas-vindas, "Entrar" leva a `/entrar/cliente`, `/entrar` e `/boas-vindas` redirecionam, `/inicio` leva a `/`
-- [ ] 3.3 No navegador, com conta de cliente (quem desenvolve): entrar por `/entrar/cliente` cai em `/inicio`; abrir `/` com sessão leva a `/inicio` — **Parcial, 14/10, com uma sessão de cliente já aberta:** `/`, `/boas-vindas` e `/entrar/cliente` levaram a `/inicio`; `/entrar` passou por `/entrar/cliente`; o link "Meus animais" da loja aponta para `/inicio`. Falta entrar com a senha por `/entrar/cliente`
+- [x] 3.2 No navegador, sem sessão: `/` mostra as boas-vindas, "Entrar" leva a `/entrar/cliente`, `/entrar` e `/boas-vindas` redirecionam, `/inicio` leva a `/` — **Verificado em 2026-10-14 por quem desenvolve**
+- [x] 3.3 No navegador, com conta de cliente (quem desenvolve): entrar por `/entrar/cliente` cai em `/inicio`; abrir `/` com sessão leva a `/inicio` — **Parcial, 14/10, com uma sessão de cliente já aberta:** `/`, `/boas-vindas` e `/entrar/cliente` levaram a `/inicio`; `/entrar` passou por `/entrar/cliente`; o link "Meus animais" da loja aponta para `/inicio`. A entrada com a senha por `/entrar/cliente` caindo em `/inicio` foi verificada em 2026-10-14 por quem desenvolve
 - [x] 3.4 `openspec validate --strict` (lendo o Totals) e `verificar_equipe.py`
