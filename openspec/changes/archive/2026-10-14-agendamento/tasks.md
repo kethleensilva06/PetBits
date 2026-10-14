@@ -35,7 +35,20 @@
 
 ## 6. Verificação de ponta a ponta
 
-- [ ] 6.1 Percurso do tutor no navegador: marcar, ver na lista, cancelar com mais de 24 h; e o horário cancelado voltar a aparecer como livre
-- [ ] 6.2 Percurso da equipe: definir categoria de um serviço, ver o agendamento na agenda do dia
-- [ ] 6.3 Medir o custo em requisições de abrir a agenda e de escolher um dia (`PETBITS_MEDIR`)
+- [x] 6.1 Percurso do tutor no navegador: marcar, ver na lista, cancelar com mais de 24 h; e o horário cancelado voltar a aparecer como livre — **os quatro feitos na tela em 14/10.**
+      A ordem acabou provando mais do que a soma das partes: cancelei o de 21/10 às 14h (status virou *Cancelado* e o cartão perdeu o botão), e **o mesmo horário reapareceu na lista de livres do calendário** — não só na consulta de ocupação. Marquei de novo nele, para outro animal, e o novo agendamento entrou como *Marcado*.
+      O cancelamento pede confirmação e identifica o agendamento no diálogo. A tela mostra o expediente escrito ("Domingo fechado · seg a sex 8h–18h · sábado 8h–12h"), e os horários oferecidos já vêm descontados do que está ocupado
+- [x] 6.2 Percurso da equipe: definir categoria de um serviço, ver o agendamento na agenda do dia — **feito na tela em 14/10.** A categoria foi definida pela edição do serviço e o cartão passou de *Sem categoria* para *Clínica*.
+      A agenda do dia 21/10 mostrou os quatro agendamentos — três *Marcado* e um *Cancelado* —, cada um com faixa de horário, serviço, situação, animal com espécie, tutor com telefone e o profissional. Entre eles o que foi marcado pela tela do cliente, o que fecha o circuito: marcado de um lado, visto do outro
+- [x] 6.3 Medir o custo em requisições de abrir a agenda e de escolher um dia (`PETBITS_MEDIR`) — **medido em 14/10:**
+
+      | gesto | requisições |
+      |---|---|
+      | abrir a agenda | **3** — `/servicos`, `/pet`, `/agendamentos` |
+      | escolher o serviço | 0 |
+      | escolher o animal | 0 |
+      | escolher um dia | **1** — `/agenda/ocupacao` |
+
+      Escolher serviço e animal não custa nada: as duas listas vêm na abertura e a escolha é só estado da tela. Só o dia custa, e custa uma — a ocupação depende do dia e do serviço, então não dá para trazer tudo na abertura sem pedir a agenda inteira do mês.
+      **O que o número pede que se diga:** abrir a agenda e comparar **sete dias** custa 3 + 7 = 10, que é exatamente o teto de 10 requisições por 20 segundos, compartilhado por toda a instância. Quem estiver escolhendo horário com calma chega lá sozinho, e o 429 cai em quem se mexer depois — possivelmente outra pessoa. Não é defeito desta change: é o custo de uma tela que pergunta ao servidor a cada clique, e fica registrado porque a próxima pessoa a mexer no calendário precisa saber onde está o limite
 - [x] 6.4 `openspec validate --strict` e `verificar_equipe.py` limpos — **Situação:** em 2026-10-11, depois da change `limpar-endpoints-fora-do-ar`: `validate --all --strict` sem falha e `verificar_equipe.py` sem acusação
