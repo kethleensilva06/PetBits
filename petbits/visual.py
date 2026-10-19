@@ -125,3 +125,24 @@ def titulo_de_pagina(titulo, subtitulo=None) -> rx.Component:
         spacing="1",
         align_items="start",
     )
+
+
+def tela_vazia(imagem: str, titulo: str, texto: str, acao: rx.Component) -> rx.Component:
+    """Ilustração, o que fazer e o botão para fazer (change `cliente-ilustrado`, D4).
+
+    Quem chama decide QUANDO mostrar: nunca enquanto carrega nem quando falhou.
+    """
+    return rx.card(
+        rx.vstack(
+            rx.image(src=imagem, alt="", width="13rem", max_width="70%", height="auto"),
+            rx.heading(titulo, size="5", weight="bold", text_align="center"),
+            rx.text(texto, size="2", color=rx.color("gray", 11), text_align="center",
+                    max_width="26rem"),
+            acao,
+            spacing="3",
+            align="center",
+            width="100%",
+            padding="2rem 1rem",
+        ),
+        width="100%",
+    )

@@ -8,7 +8,7 @@ animais de quem perguntou.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
-from petbits.visual import titulo_de_pagina, topo_do_cliente
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 from petbits.states.pet_state import PetState
 
 
@@ -25,6 +25,8 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
+            rx.image(src=animal["imagem"], alt=animal["especie"], width="4.5rem",
+                     height="4.5rem", border_radius="1.1rem", flex_shrink="0"),
             rx.vstack(
                 rx.hstack(
                     rx.heading(animal["nome"], size="4"),
@@ -126,17 +128,51 @@ def _dialogo() -> rx.Component:
 
 
 def _vazio() -> rx.Component:
+    return tela_vazia(
+        "/ilustracoes/vazio-animais.svg",
+        "A casinha ainda está vazia",
+        "Cadastre o seu primeiro animal para a clínica poder acompanhá-lo de perto.",
+        rx.button(rx.icon("plus", size=16), "Cadastrar animal", on_click=PetState.novo,
+                  size="3"),
+    )
+
+
+def _banner() -> rx.Component:
+    """Boas-vindas da casa (D3): saudação, atalhos e a ilustração."""
     return rx.card(
-        rx.vstack(
-            rx.heading("Nenhum animal cadastrado ainda", size="4"),
-            rx.text(
-                "Cadastre o primeiro para a clínica poder acompanhá-lo.",
-                size="2", color=rx.color("gray", 10),
+        rx.hstack(
+            rx.vstack(
+                rx.badge("PetBits · clínica e petshop", variant="soft",
+                         color_scheme="orange", radius="full"),
+                rx.heading("Olá, ", AuthState.primeiro_nome, "!", size="8",
+                           weight="bold"),
+                rx.text("Que bom ter você e os seus por aqui. Marque um atendimento "
+                        "ou passe na lojinha.", size="3", color=rx.color("gray", 11),
+                        max_width="28rem"),
+                rx.hstack(
+                    rx.link(rx.button(rx.icon("calendar", size=16), "Agendar", size="3"),
+                            href="/agenda"),
+                    rx.link(rx.button(rx.icon("shopping-bag", size=16), "Ir à loja",
+                                      size="3", variant="soft"),
+                            href="/loja"),
+                    spacing="3",
+                    wrap="wrap",
+                    padding_top="0.5rem",
+                ),
+                spacing="2",
+                align_items="start",
+                flex="1",
             ),
-            rx.button("Cadastrar animal", on_click=PetState.novo, size="3"),
-            spacing="3", align="center", width="100%", padding="2.5rem",
+            rx.image(src="/ilustracoes/banner.svg", alt="", width="17rem",
+                     height="auto", flex_shrink="0",
+                     display=rx.breakpoints(initial="none", sm="block")),
+            align="center",
+            spacing="4",
+            width="100%",
         ),
+        size="4",
         width="100%",
+        background=f"linear-gradient(120deg, {rx.color('teal', 3)}, {rx.color('orange', 2)})",
     )
 
 
@@ -157,9 +193,9 @@ def inicio_page() -> rx.Component:
     return rx.container(
         rx.vstack(
             topo_do_cliente("/"),
+            _banner(),
             rx.hstack(
-                titulo_de_pagina(rx.text.span("Olá, ", AuthState.primeiro_nome, "!"),
-                                 "Os seus animais sob cuidado da clínica."),
+                titulo_de_pagina("Seus animais", "Os seus animais sob cuidado da clínica."),
                 rx.spacer(),
                 # Agendar, Loja e Meus pedidos saíram daqui: estão no cabeçalho
                 # (change `identidade-visual`, D4).
@@ -193,12 +229,12 @@ def inicio_page() -> rx.Component:
             # Atalho para quem é da equipe e caiu aqui por digitar o endereço.
             rx.cond(
                 AuthState.eh_equipe,
+                # Texto e link soltos: o callout põe os filhos num <p>, e um
+                # hstack ali dentro é <div> em <p> (change `cliente-ilustrado`, D5).
                 rx.callout(
-                    rx.hstack(
-                        rx.text("Você tem acesso à área da clínica."),
+                    rx.fragment(
+                        "Você tem acesso à área da clínica. ",
                         rx.link("Abrir o painel", href="/equipe", weight="medium"),
-                        spacing="2",
-                        wrap="wrap",
                     ),
                     icon="info",
                     size="1",

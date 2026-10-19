@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Higiene"><title>Higiene</title><rect width="200" height="200" rx="48" fill="#E3F4FB"/><rect x="68" y="72" width="64" height="98" rx="18" fill="#12A594"/><rect x="88" y="50" width="24" height="24" rx="6" fill="#0B6E63"/>
+<path d="M100 50 v-12 h22" stroke="#0B6E63" stroke-width="7" fill="none" stroke-linecap="round"/>
+<rect x="80" y="100" width="40" height="34" rx="8" fill="#fff"/><g transform="translate(100 117) scale(0.45)" fill="#12A594">
+<ellipse cx="0" cy="14" rx="22" ry="18"/><ellipse cx="-24" cy="-10" rx="9" ry="12"/><ellipse cx="-8" cy="-24" rx="9" ry="12"/>
+<ellipse cx="8" cy="-24" rx="9" ry="12"/><ellipse cx="24" cy="-10" rx="9" ry="12"/></g>
+<circle cx="152" cy="70" r="12" fill="#fff" stroke="#12A594" stroke-width="3"/><circle cx="160" cy="100" r="7" fill="#fff" stroke="#12A594" stroke-width="3"/><circle cx="46" cy="84" r="9" fill="#fff" stroke="#12A594" stroke-width="3"/></svg>

@@ -17,6 +17,7 @@ from typing import Optional
 import reflex as rx
 
 from petbits import datas, xano
+from petbits.ilustracoes import imagem_da_especie
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -158,6 +159,7 @@ class PetState(rx.State):
                 "id": a.get("id"),
                 "nome": a.get("nome") or "-",
                 "especie": a.get("especie") or "-",
+                "imagem": imagem_da_especie(a.get("especie")),
                 "raca": a.get("raca") or "-",
                 "nascimento": _data_para_exibir(a.get("data_nascimento")),
                 "peso": _numero_para_tela(a.get("peso")) or "-",

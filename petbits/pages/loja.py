@@ -7,7 +7,7 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 import reflex as rx
 
 from petbits.states.loja_state import LojaState
-from petbits.visual import titulo_de_pagina, topo_do_cliente
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _avisos() -> rx.Component:
@@ -24,6 +24,9 @@ def _avisos() -> rx.Component:
 def _produto(p: rx.Var) -> rx.Component:
     return rx.card(
         rx.vstack(
+            rx.image(src=p["imagem"], alt=p["categoria"], width="100%", height="8.5rem",
+                     object_fit="contain", border_radius="0.9rem",
+                     background=rx.color("gray", 2), padding="0.5rem"),
             rx.hstack(
                 rx.badge(p["categoria"], variant="soft", radius="full"),
                 rx.cond(p["marca"], rx.text(p["marca"], size="1", color=rx.color("gray", 10))),
@@ -232,9 +235,15 @@ def pedidos_page() -> rx.Component:
                 rx.cond(
                     LojaState.carregando,
                     rx.hstack(rx.spinner(size="2"), rx.text("Carregando...")),
-                    rx.hstack(rx.text("Você ainda não fez nenhum pedido.",
-                                      color=rx.color("gray", 10)),
-                              rx.link("Ir para a loja", href="/loja")),
+                    # Falhou não é vazio: o erro já está no callout acima.
+                    rx.cond(LojaState.erro, rx.fragment(), tela_vazia(
+                        "/ilustracoes/vazio-pedidos.svg",
+                        "Nenhum pedido por aqui",
+                        "Ração, petisco, brinquedo: o que você comprar na loja aparece aqui, "
+                        "com a situação de cada pedido.",
+                        rx.link(rx.button(rx.icon("shopping-bag", size=16), "Ir à loja",
+                                          size="3"), href="/loja"),
+                    )),
                 ),
             ),
             spacing="4",

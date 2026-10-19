@@ -9,7 +9,7 @@ import reflex as rx
 
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
-from petbits.visual import titulo_de_pagina, topo_do_cliente
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -293,7 +293,15 @@ def _meus_agendamentos() -> rx.Component:
             rx.cond(
                 AgendaState.carregando,
                 rx.hstack(rx.spinner(size="1"), rx.text("Carregando...", size="2"), spacing="2"),
-                rx.text("Nenhum agendamento ainda.", size="2", color=rx.color("gray", 10)),
+                # Falhou não é vazio: o erro já está no callout acima.
+                rx.cond(AgendaState.erro_lista, rx.fragment(), tela_vazia(
+                    "/ilustracoes/vazio-agenda.svg",
+                    "Nenhum agendamento ainda",
+                    "Consulta, vacina ou banho e tosa: escolha o serviço, o animal e um "
+                    "horário livre aqui em cima.",
+                    rx.button(rx.icon("calendar-plus", size=16), "Marcar agora", size="3",
+                              on_click=rx.scroll_to("marcar")),
+                )),
             ),
         ),
         spacing="3",
@@ -319,6 +327,8 @@ def agenda_page() -> rx.Component:
                 columns=rx.breakpoints(initial="1", md="2"),
                 spacing="6",
                 width="100%",
+                # Alvo do "Marcar agora" da tela vazia.
+                id="marcar",
             ),
             rx.divider(margin_y="1rem"),
             _meus_agendamentos(),

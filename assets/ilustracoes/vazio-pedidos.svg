@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Sacola vazia"><title>Sacola vazia</title><ellipse cx="120" cy="166" rx="80" ry="8" fill="#2D2A26" opacity=".08"/>
+<path d="M72 60 h96 l-10 100 h-76 z" fill="#12A594"/><path d="M96 66 v-16 a24 24 0 0 1 48 0 v16" stroke="#0B6E63" stroke-width="8" fill="none" stroke-linecap="round"/>
+<circle cx="104" cy="104" r="5" fill="#fff"/><circle cx="136" cy="104" r="5" fill="#fff"/><path d="M106 128 q14 -10 28 0" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+<g transform="translate(198 52) scale(0.25)" fill="#F76B15">
+<ellipse cx="0" cy="14" rx="22" ry="18"/><ellipse cx="-24" cy="-10" rx="9" ry="12"/><ellipse cx="-8" cy="-24" rx="9" ry="12"/>
+<ellipse cx="8" cy="-24" rx="9" ry="12"/><ellipse cx="24" cy="-10" rx="9" ry="12"/></g><g transform="translate(42 70) scale(0.2)" fill="#F76B15">
+<ellipse cx="0" cy="14" rx="22" ry="18"/><ellipse cx="-24" cy="-10" rx="9" ry="12"/><ellipse cx="-8" cy="-24" rx="9" ry="12"/>
+<ellipse cx="8" cy="-24" rx="9" ry="12"/><ellipse cx="24" cy="-10" rx="9" ry="12"/></g></svg>

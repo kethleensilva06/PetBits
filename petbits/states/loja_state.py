@@ -11,6 +11,7 @@ requisição sai (change `porta-de-entrada`, D5).
 import reflex as rx
 
 from petbits import agenda, rotulos, xano
+from petbits.ilustracoes import imagem_da_categoria
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -131,6 +132,7 @@ class LojaState(rx.State):
                 "nome": p.get("nome") or "-",
                 "descricao": p.get("descricao") or "",
                 "categoria": CATEGORIAS.get(p.get("categoria") or "", "-"),
+                "imagem": imagem_da_categoria(p.get("categoria")),
                 "marca": p.get("marca") or "",
                 "unidade": p.get("unidade") or "",
                 "preco": reais(p.get("preco")),
