@@ -9,7 +9,7 @@ import reflex as rx
 
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
-from petbits.states.auth_state import AuthState
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -293,7 +293,15 @@ def _meus_agendamentos() -> rx.Component:
             rx.cond(
                 AgendaState.carregando,
                 rx.hstack(rx.spinner(size="1"), rx.text("Carregando...", size="2"), spacing="2"),
-                rx.text("Nenhum agendamento ainda.", size="2", color=rx.color("gray", 10)),
+                # Falhou não é vazio: o erro já está no callout acima.
+                rx.cond(AgendaState.erro_lista, rx.fragment(), tela_vazia(
+                    "/fotos/vazio-agenda.webp",
+                    "Nenhum agendamento ainda",
+                    "Consulta, vacina ou banho e tosa: escolha o serviço, o animal e um "
+                    "horário livre aqui em cima.",
+                    rx.button(rx.icon("calendar-plus", size=16), "Marcar agora", size="3",
+                              on_click=rx.scroll_to("marcar")),
+                )),
             ),
         ),
         spacing="3",
@@ -305,19 +313,8 @@ def _meus_agendamentos() -> rx.Component:
 def agenda_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
-                rx.link(rx.heading("PetBits", size="6"), href="/inicio", underline="none",
-                        color="inherit"),
-                rx.spacer(),
-                rx.link("Meus animais", href="/inicio", size="2"),
-                rx.button("Sair", on_click=AuthState.sair, variant="soft",
-                          color_scheme="gray", size="2"),
-                width="100%",
-                align="center",
-                spacing="4",
-                padding_bottom="1.5rem",
-            ),
-            rx.heading("Agendar", size="7"),
+            topo_do_cliente("/agenda"),
+            titulo_de_pagina("Agendar", "Escolha o animal, o serviço e um horário livre."),
             rx.cond(
                 AgendaState.aviso,
                 rx.callout(AgendaState.aviso, icon="circle_check", color_scheme="green",
@@ -330,12 +327,14 @@ def agenda_page() -> rx.Component:
                 columns=rx.breakpoints(initial="1", md="2"),
                 spacing="6",
                 width="100%",
+                # Alvo do "Marcar agora" da tela vazia.
+                id="marcar",
             ),
             rx.divider(margin_y="1rem"),
             _meus_agendamentos(),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
     )

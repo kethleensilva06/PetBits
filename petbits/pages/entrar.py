@@ -9,6 +9,7 @@ import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
 from petbits.states.auth_state import AuthState
+from petbits.visual import botao_tema, marca
 
 
 def _campo_senha(
@@ -75,48 +76,61 @@ def _casca(
     aviso: rx.Component | None = None,
 ) -> rx.Component:
     return rx.center(
+        # As entradas não têm faixa no topo: o sol/lua fica fixo no canto
+        # (change `tema-claro-escuro`, D2).
+        botao_tema(position="fixed", top="1rem", right="1rem", z_index="5"),
         rx.vstack(
-            rx.vstack(
-                rx.heading(titulo, size="7"),
-                rx.text(subtitulo, size="2", color=rx.color("gray", 10)),
-                spacing="1",
-                align_items="start",
-                width="100%",
-            ),
-            aviso if aviso is not None else rx.fragment(),
-            rx.form(
+            marca("/"),
+            rx.card(
                 rx.vstack(
-                    *campos,
-                    rx.cond(
-                        AuthState.erro,
-                        rx.callout(
-                            AuthState.erro,
-                            icon="triangle_alert",
-                            color_scheme="red",
-                            size="1",
+                    rx.vstack(
+                        rx.heading(titulo, size="7", weight="bold"),
+                        rx.text(subtitulo, size="2", color=rx.color("gray", 10)),
+                        spacing="1",
+                        align_items="start",
+                        width="100%",
+                    ),
+                    aviso if aviso is not None else rx.fragment(),
+                    rx.form(
+                        rx.vstack(
+                            *campos,
+                            rx.cond(
+                                AuthState.erro,
+                                rx.callout(
+                                    AuthState.erro,
+                                    icon="triangle_alert",
+                                    color_scheme="red",
+                                    size="1",
+                                    width="100%",
+                                ),
+                            ),
+                            rx.button(
+                                rotulo_envio,
+                                type="submit",
+                                size="3",
+                                width="100%",
+                                disabled=AuthState.enviando,
+                                margin_top="0.5rem",
+                            ),
+                            spacing="3",
                             width="100%",
                         ),
-                    ),
-                    rx.button(
-                        rotulo_envio,
-                        type="submit",
-                        size="3",
+                        on_submit=on_submit,
+                        reset_on_submit=False,
                         width="100%",
-                        disabled=AuthState.enviando,
-                        margin_top="0.5rem",
                     ),
-                    spacing="3",
+                    rodape,
+                    spacing="4",
                     width="100%",
+                    align_items="start",
                 ),
-                on_submit=on_submit,
-                reset_on_submit=False,
+                size="4",
                 width="100%",
             ),
-            rodape,
-            spacing="4",
+            spacing="5",
             width="100%",
-            max_width="26rem",
-            align_items="start",
+            max_width="28rem",
+            align_items="center",
         ),
         min_height="100vh",
         padding="2rem 1.5rem",
@@ -264,8 +278,10 @@ def _caminho(icone: str, titulo: str, texto: str, rotulo: str, href: str,
              variante: str = "solid") -> rx.Component:
     return rx.card(
         rx.vstack(
-            rx.icon(icone, size=28, color=rx.color("accent", 10)),
-            rx.heading(titulo, size="4"),
+            rx.center(rx.icon(icone, size=24, color=rx.color("teal", 11)),
+                      width="3rem", height="3rem", border_radius="30%",
+                      background=rx.color("teal", 3)),
+            rx.heading(titulo, size="4", weight="bold", padding_top="0.25rem"),
             rx.text(texto, size="2", color=rx.color("gray", 10)),
             rx.spacer(),
             rx.link(rx.button(rotulo, variant=variante, size="3", width="100%"),
@@ -274,6 +290,7 @@ def _caminho(icone: str, titulo: str, texto: str, rotulo: str, href: str,
             align_items="start",
             height="100%",
         ),
+        size="3",
         width="100%",
     )
 
@@ -284,13 +301,11 @@ def boas_vindas_page() -> rx.Component:
     Sem `on_load` que chame o Xano (D4): só redireciona quem já tem sessão.
     """
     return rx.center(
+        # As entradas não têm faixa no topo: o sol/lua fica fixo no canto
+        # (change `tema-claro-escuro`, D2).
+        botao_tema(position="fixed", top="1rem", right="1rem", z_index="5"),
         rx.vstack(
-            rx.hstack(
-                rx.icon("paw-print", size=32, color=rx.color("accent", 10)),
-                rx.heading("PetBits", size="8"),
-                spacing="3",
-                align="center",
-            ),
+            marca(tamanho="8"),
             rx.text(
                 "Clínica veterinária e petshop. Acompanhe seus animais, marque "
                 "consultas e banho e tosa.",

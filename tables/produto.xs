@@ -33,6 +33,10 @@ table produto {
     // apontando para ele.
     bool ativo?=true
 
+    // Foto enviada pela equipe (change `foto-do-produto`, D1). Sem ela, a loja
+    // usa a que acompanha o app, pela chave do nome, e depois a da categoria.
+    image? foto
+
     timestamp created_at?=now
   }
 

@@ -70,6 +70,9 @@ table colaborador {
     // publicado vier sem padrao, nada quebra hoje; o que se perde e a rede.
     bool ativo?=true
 
+    // Foto do colaborador, enviada por ele mesmo (change `perfil-do-colaborador`, D5).
+    image? foto
+
     timestamp created_at?=now
   }
 

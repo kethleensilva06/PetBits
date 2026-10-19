@@ -8,7 +8,8 @@ animais de quem perguntou.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
-from petbits.states.pet_state import PetState
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
 
 def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
@@ -24,10 +25,15 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
+            rx.image(src=rx.cond(animal["foto"], animal["foto"], animal["imagem"]),
+                     alt=animal["nome"], width="4.5rem",
+                     height="4.5rem", border_radius="1.1rem", flex_shrink="0",
+                     object_fit="cover"),
             rx.vstack(
                 rx.hstack(
                     rx.heading(animal["nome"], size="4"),
-                    rx.badge(animal["especie"], variant="soft", radius="full"),
+                    rx.badge(animal["especie"], variant="soft", radius="full",
+                             color_scheme="orange"),
                     spacing="2",
                     align="center",
                     wrap="wrap",
@@ -70,6 +76,49 @@ def _dialogo() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title(PetState.titulo_dialogo),
             rx.vstack(
+                # Foto do animal: o próprio cliente escolhe (change
+                # `perfil-e-fotos`, D7). Só depois que o animal existe, porque
+                # a foto é gravada pelo id dele.
+                rx.cond(
+                    PetState.editando_id,
+                    rx.hstack(
+                        rx.image(src=rx.cond(PetState.f_foto, PetState.f_foto,
+                                             PetState.f_imagem),
+                                 alt="Foto do animal", width="5.5rem", height="5.5rem",
+                                 object_fit="cover", border_radius="1.25rem",
+                                 flex_shrink="0"),
+                        rx.vstack(
+                            rx.upload.root(
+                                rx.button(
+                                    rx.cond(PetState.enviando_foto, rx.spinner(size="2"),
+                                            rx.icon("camera", size=16)),
+                                    rx.cond(PetState.f_foto, "Trocar foto",
+                                            "Escolher foto"),
+                                    variant="soft",
+                                    disabled=PetState.enviando_foto,
+                                ),
+                                id=ID_UPLOAD_ANIMAL,
+                                max_files=1,
+                                multiple=False,
+                                no_drag=True,
+                                on_drop=PetState.enviar_foto(
+                                    rx.upload_files(upload_id=ID_UPLOAD_ANIMAL)),
+                            ),
+                            rx.text("JPG, PNG ou WebP, até 5 MB.", size="1",
+                                    color=rx.color("gray", 10)),
+                            rx.cond(PetState.erro_foto,
+                                    rx.text(PetState.erro_foto, size="1",
+                                            color=rx.color("red", 11))),
+                            spacing="1",
+                            align_items="start",
+                        ),
+                        spacing="3",
+                        align="center",
+                        width="100%",
+                    ),
+                    rx.text("Depois de cadastrar, edite o animal para pôr a foto dele.",
+                            size="1", color=rx.color("gray", 10)),
+                ),
                 _campo("Nome", rx.input(placeholder="Nome do animal",
                                         value=PetState.f_nome,
                                         on_change=PetState.set_f_nome,
@@ -124,17 +173,52 @@ def _dialogo() -> rx.Component:
 
 
 def _vazio() -> rx.Component:
+    return tela_vazia(
+        "/fotos/vazio-animais.webp",
+        "A casinha ainda está vazia",
+        "Cadastre o seu primeiro animal para a clínica poder acompanhá-lo de perto.",
+        rx.button(rx.icon("plus", size=16), "Cadastrar animal", on_click=PetState.novo,
+                  size="3"),
+    )
+
+
+def _banner() -> rx.Component:
+    """Boas-vindas da casa (D3): saudação, atalhos e a ilustração."""
     return rx.card(
-        rx.vstack(
-            rx.heading("Nenhum animal cadastrado ainda", size="4"),
-            rx.text(
-                "Cadastre o primeiro para a clínica poder acompanhá-lo.",
-                size="2", color=rx.color("gray", 10),
+        rx.hstack(
+            rx.vstack(
+                rx.badge("PetBits · clínica e petshop", variant="soft",
+                         color_scheme="orange", radius="full"),
+                rx.heading("Olá, ", AuthState.primeiro_nome, "!", size="8",
+                           weight="bold"),
+                rx.text("Que bom ter você e os seus por aqui. Marque um atendimento "
+                        "ou passe na lojinha.", size="3", color=rx.color("gray", 11),
+                        max_width="28rem"),
+                rx.hstack(
+                    rx.link(rx.button(rx.icon("calendar", size=16), "Agendar", size="3"),
+                            href="/agenda"),
+                    rx.link(rx.button(rx.icon("shopping-bag", size=16), "Ir à loja",
+                                      size="3", variant="soft"),
+                            href="/loja"),
+                    spacing="3",
+                    wrap="wrap",
+                    padding_top="0.5rem",
+                ),
+                spacing="2",
+                align_items="start",
+                flex="1",
             ),
-            rx.button("Cadastrar animal", on_click=PetState.novo, size="3"),
-            spacing="3", align="center", width="100%", padding="2.5rem",
+            rx.image(src="/fotos/banner.webp", alt="Um cão e um gato abraçados",
+                     width="17rem", height="11.5rem", object_fit="cover",
+                     border_radius="1.25rem", flex_shrink="0",
+                     display=rx.breakpoints(initial="none", sm="block")),
+            align="center",
+            spacing="4",
+            width="100%",
         ),
+        size="4",
         width="100%",
+        background=f"linear-gradient(120deg, {rx.color('teal', 3)}, {rx.color('orange', 2)})",
     )
 
 
@@ -154,34 +238,13 @@ def _carregando() -> rx.Component:
 def inicio_page() -> rx.Component:
     return rx.container(
         rx.vstack(
+            topo_do_cliente("/inicio"),
+            _banner(),
             rx.hstack(
-                rx.heading("PetBits", size="6"),
+                titulo_de_pagina("Seus animais", "Os seus animais sob cuidado da clínica."),
                 rx.spacer(),
-                rx.badge(AuthState.papel_exibido, variant="soft", radius="full"),
-                rx.button("Sair", on_click=AuthState.sair, variant="soft",
-                          color_scheme="gray", size="2"),
-                width="100%", align="center", padding_bottom="2rem",
-            ),
-            rx.hstack(
-                rx.vstack(
-                    rx.heading("Olá, ", AuthState.primeiro_nome, "!", size="7"),
-                    rx.text("Os seus animais sob cuidado da clínica.",
-                            color=rx.color("gray", 11)),
-                    spacing="1", align_items="start",
-                ),
-                rx.spacer(),
-                rx.link(
-                    rx.button(rx.icon("calendar", size=16), "Agendar", variant="soft"),
-                    href="/agenda",
-                ),
-                rx.link(
-                    rx.button(rx.icon("shopping-bag", size=16), "Loja", variant="soft"),
-                    href="/loja",
-                ),
-                rx.link(
-                    rx.button(rx.icon("receipt", size=16), "Meus pedidos", variant="soft"),
-                    href="/pedidos",
-                ),
+                # Agendar, Loja e Meus pedidos saíram daqui: estão no cabeçalho
+                # (change `identidade-visual`, D4).
                 rx.cond(
                     PetState.tem_animais,
                     rx.button(rx.icon("plus", size=16), "Novo animal",
@@ -212,12 +275,12 @@ def inicio_page() -> rx.Component:
             # Atalho para quem é da equipe e caiu aqui por digitar o endereço.
             rx.cond(
                 AuthState.eh_equipe,
+                # Texto e link soltos: o callout põe os filhos num <p>, e um
+                # hstack ali dentro é <div> em <p> (change `cliente-ilustrado`, D5).
                 rx.callout(
-                    rx.hstack(
-                        rx.text("Você tem acesso à área da clínica."),
+                    rx.fragment(
+                        "Você tem acesso à área da clínica. ",
                         rx.link("Abrir o painel", href="/equipe", weight="medium"),
-                        spacing="2",
-                        wrap="wrap",
                     ),
                     icon="info",
                     size="1",
@@ -247,6 +310,7 @@ def inicio_page() -> rx.Component:
                 ),
             ),
             _dialogo(),
-            spacing="4", align_items="start", padding_y="3rem", width="100%",
-        )
+            spacing="4", align_items="start", padding_y="2rem", width="100%",
+        ),
+        size="3",
     )

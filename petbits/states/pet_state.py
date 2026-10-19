@@ -17,6 +17,8 @@ from typing import Optional
 import reflex as rx
 
 from petbits import datas, xano
+from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto, url_da_foto
+from petbits.ilustracoes import imagem_da_especie
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -30,6 +32,9 @@ from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 _data_para_tela = datas.para_campo
 _data_para_exibir = datas.para_exibir
 _numero_para_tela = datas.numero_para_campo
+
+
+ID_UPLOAD_ANIMAL = "foto_do_animal"
 
 
 class PetState(rx.State):
@@ -49,6 +54,11 @@ class PetState(rx.State):
     f_nascimento: str = ""
     f_peso: str = ""
     f_observacoes: str = ""
+    # Foto do animal em edição (change `perfil-e-fotos`, D7).
+    f_foto: str = ""
+    f_imagem: str = ""
+    enviando_foto: bool = False
+    erro_foto: str = ""
 
     def set_show_dialog(self, value: bool):
         self.show_dialog = value
@@ -116,6 +126,10 @@ class PetState(rx.State):
         self.f_nascimento = ""
         self.f_peso = ""
         self.f_observacoes = ""
+        self.f_foto = ""
+        self.f_imagem = ""
+        self.enviando_foto = False
+        self.erro_foto = ""
 
     @rx.var
     def titulo_dialogo(self) -> str:
@@ -158,6 +172,9 @@ class PetState(rx.State):
                 "id": a.get("id"),
                 "nome": a.get("nome") or "-",
                 "especie": a.get("especie") or "-",
+                "imagem": imagem_da_especie(a.get("especie")),
+                # A foto enviada pelo dono vence a genérica da espécie (D7).
+                "foto": url_da_foto(a.get("foto")),
                 "raca": a.get("raca") or "-",
                 "nascimento": _data_para_exibir(a.get("data_nascimento")),
                 "peso": _numero_para_tela(a.get("peso")) or "-",
@@ -183,6 +200,9 @@ class PetState(rx.State):
         self.f_nascimento = ""
         self.f_peso = ""
         self.f_observacoes = ""
+        self.f_foto = ""
+        self.f_imagem = ""
+        self.erro_foto = ""
         self.show_dialog = True
 
     def editar(self, animal: dict):
@@ -194,11 +214,51 @@ class PetState(rx.State):
         self.f_nascimento = animal["_nascimento_iso"]
         self.f_peso = animal["_peso_cru"]
         self.f_observacoes = animal["observacoes"]
+        self.f_foto = animal["foto"]
+        self.f_imagem = animal["imagem"]
+        self.erro_foto = ""
         self.show_dialog = True
 
     def fechar(self):
         self.show_dialog = False
         self.form_error = ""
+
+    async def enviar_foto(self, arquivos: list[rx.UploadFile]):
+        """Só para animal que já existe: a foto é gravada pelo id dele, e o
+        dono é provado pelo token no backend."""
+        self.erro_foto = ""
+        if self.editando_id is None or not arquivos:
+            return
+        arquivo = arquivos[0]
+        conteudo = await arquivo.read()
+        try:
+            extensao = extensao_da_foto(arquivo.name, len(conteudo))
+        except FotoRecusada as motivo:
+            self.erro_foto = str(motivo)
+            return
+        self.enviando_foto = True
+        yield
+        try:
+            token = await self._token()
+            foto = await xano.enviar_foto_do_animal(self.editando_id, conteudo, extensao,
+                                                    token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.enviando_foto = False
+            yield await self._encerrar(erro)
+            return
+        except (FalhaDeComunicacao, XanoError) as erro:
+            self.enviando_foto = False
+            self.erro_foto = str(erro)
+            return
+        self.enviando_foto = False
+        self.f_foto = url_da_foto(foto)
+        # A lista é atualizada aqui mesmo, sem recarregar: a resposta já traz
+        # a foto, e recarregar custaria mais uma requisição.
+        self.animais = [
+            {**a, "foto": self.f_foto} if a["id"] == self.editando_id else a
+            for a in self.animais
+        ]
+        yield rx.clear_selected_files(ID_UPLOAD_ANIMAL)
 
     async def salvar(self):
         if not self.f_nome.strip():

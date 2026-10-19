@@ -1,0 +1,33 @@
+/* Identidade visual do PetBits (change `identidade-visual`, D2).
+ *
+ * Só usa variáveis do próprio tema do Radix, para o degradê e a fonte
+ * acompanharem o modo escuro sem uma segunda regra. */
+
+/* A fonte vale para todo `.radix-themes`, inclusive os menus e as janelas que o
+ * Radix abre fora da página. */
+.radix-themes {
+  --default-font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --heading-font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* O fundo e a altura são só do tema da PÁGINA, filho direto do body. O Radix
+ * marca cada menu flutuante com `.radix-themes` também, e com a regra geral o
+ * menu da clínica no celular ganhava 100vh e o degradê (change
+ * `acabamentos-de-tela`). */
+body > .radix-themes {
+  min-height: 100vh;
+  background:
+    radial-gradient(60rem 30rem at 0% 0%, var(--accent-a3), transparent 70%),
+    radial-gradient(50rem 28rem at 100% 0%, var(--orange-a2), transparent 70%),
+    var(--color-background);
+  background-attachment: fixed;
+}
+
+.rt-Heading {
+  letter-spacing: -0.01em;
+}
+
+/* Cartões um pouco mais leves que o padrão, com sombra suave. */
+.rt-Card.rt-variant-surface {
+  box-shadow: 0 1px 2px var(--gray-a3), 0 6px 20px -8px var(--gray-a5);
+}

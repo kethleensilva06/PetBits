@@ -120,6 +120,20 @@ async def loja(equipe: str, cliente: str, cliente2: str | None) -> None:
         {"nome": nome, "categoria": "acessorio", "preco": 10.0, "estoque": 3}, token=equipe))
     pid = produto["id"]
     registrar("Equipe cadastra produto", bool(pid))
+    # O produto de verificação é desativado SEMPRE, mesmo se a rodada parar no
+    # meio: foi uma rodada interrompida que deixou um "Produto de verificação"
+    # à venda na loja do cliente (change `acabamentos-de-tela`, D6).
+    try:
+        await _loja_com_produto(equipe, cliente, cliente2, pid, nome)
+    finally:
+        try:
+            await chamar(xano.atualizar_produto(pid, {"ativo": False}, token=equipe))
+        except xano.XanoError as erro:
+            print(f"  ATENÇÃO: não deu para desativar o produto {pid}: {erro}")
+
+
+async def _loja_com_produto(equipe: str, cliente: str, cliente2: str | None, pid: int,
+                            nome: str) -> None:
 
     msg = await recusa(xano.criar_produto({"nome": "x", "categoria": "racao", "preco": 0,
                                            "estoque": 1}, token=equipe))

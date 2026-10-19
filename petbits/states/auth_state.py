@@ -18,6 +18,9 @@ import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
 from petbits import contas_de_teste, xano
+from petbits.documentos import cpf_valido
+from petbits import mascaras
+from petbits.fotos_enviadas import url_da_foto
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
 # Espelha os filtros da coluna `password` da tabela user no Xano
@@ -40,15 +43,14 @@ def _senha_fraca(senha: str) -> Optional[str]:
     return None
 
 
-def _so_digitos(texto: str) -> str:
-    return "".join(c for c in texto if c.isdigit())
-
-
 class AuthState(rx.State):
     # --- sessão: sobrevive ao F5, à aba nova e ao restart do servidor ---
     token: str = rx.LocalStorage("", name="petbits_token", sync=True)
     usuario_nome: str = rx.LocalStorage("", name="petbits_nome", sync=True)
     usuario_papel: str = rx.LocalStorage("", name="petbits_papel", sync=True)
+    # URL pública da foto de perfil do tutor (change `perfil-e-fotos`, D6):
+    # guardada ao ler a ficha, para o cabeçalho não pedir a ficha em toda tela.
+    usuario_foto: str = rx.LocalStorage("", name="petbits_foto", sync=True)
 
     # Deliberadamente NÃO persistida. Quando o backend não lembra mais deste
     # navegador (aba nova, servidor reiniciado), ela volta a False e forçamos
@@ -206,10 +208,11 @@ class AuthState(rx.State):
         self.cad_confirmar = value
 
     def set_cad_documento(self, value: str):
-        self.cad_documento = value
+        # Formatado a cada tecla (change `acabamentos-de-tela`, D5).
+        self.cad_documento = mascaras.cpf(value)
 
     def set_cad_telefone(self, value: str):
-        self.cad_telefone = value
+        self.cad_telefone = mascaras.telefone(value)
 
     def set_cad_endereco(self, value: str):
         self.cad_endereco = value
@@ -226,6 +229,13 @@ class AuthState(rx.State):
         while len(partes) > 1 and partes[0].lower().rstrip(".") in TITULOS:
             partes = partes[1:]
         return partes[0] if partes else ""
+
+    @rx.var
+    def iniciais(self) -> str:
+        """Para o avatar sem foto: "Ana Ribeiro" → "AR"."""
+        partes = [p for p in (self.usuario_nome or "").split()
+                  if p[:1].isalpha() and p.lower().rstrip(".") not in TITULOS]
+        return "".join(p[0] for p in partes[:2]).upper() or "?"
 
     @rx.var
     def papel_exibido(self) -> str:
@@ -290,6 +300,7 @@ class AuthState(rx.State):
         self.token = ""
         self.usuario_nome = ""
         self.usuario_papel = ""
+        self.usuario_foto = ""
         self.sessao_validada = False
         self.sessao_expirou = expirou
         # O formulário também: sem isto, sair deixa o e-mail de quem saiu
@@ -359,6 +370,22 @@ class AuthState(rx.State):
 
         self._guardar(sessao["authToken"], perfil)
         self.login_senha = ""
+        # A foto do cabeçalho do tutor (change `perfil-e-fotos`, D6): uma
+        # requisição a mais, só na entrada e só para tutor, para o cabeçalho
+        # não precisar da ficha em toda tela. Falhar aqui não impede a entrada.
+        if xano.eh_tutor(self.usuario_papel):
+            try:
+                ficha = await xano.minha_ficha(self.token)
+                self.usuario_foto = url_da_foto((ficha or {}).get("foto"))
+            except XanoError:
+                self.usuario_foto = ""
+        elif xano.eh_equipe(self.usuario_papel):
+            # O mesmo para a equipe (change `perfil-do-colaborador`, D6).
+            try:
+                perfil_equipe = await xano.meu_perfil_de_equipe(token=self.token)
+                self.usuario_foto = url_da_foto((perfil_equipe.get("ficha") or {}).get("foto"))
+            except XanoError:
+                self.usuario_foto = ""
         # O destino vem do papel que o servidor devolveu, não da aba: a aba só
         # decidiu se a entrada era permitida, e a área é consequência do papel.
         yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
@@ -371,8 +398,9 @@ class AuthState(rx.State):
         if "@" not in self.cad_email:
             self.erro = "Informe um e-mail válido."
             return
-        if len(_so_digitos(self.cad_documento)) != 11:
-            self.erro = "O documento precisa ter 11 dígitos."
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
+        if not cpf_valido(self.cad_documento):
+            self.erro = "CPF inválido. Confira os números."
             return
         motivo = _senha_fraca(self.cad_senha)
         if motivo:
@@ -424,7 +452,14 @@ class AuthState(rx.State):
         from petbits.states.agenda_state import AgendaState
         from petbits.states.equipe_state import EquipeState
         from petbits.states.loja_state import LojaState
+        from petbits.states.perfil_state import PerfilEquipeState, PerfilState
         from petbits.states.pet_state import PetState
+
+        perfil = await self.get_state(PerfilState)
+        perfil.limpar_dados()
+
+        perfil_equipe = await self.get_state(PerfilEquipeState)
+        perfil_equipe.limpar_dados()
 
         pet = await self.get_state(PetState)
         pet.limpar_dados()

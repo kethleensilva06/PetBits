@@ -39,7 +39,7 @@ query pet verb=GET {
 
       where = $db.tutor.id_user == $auth.id
       sort = {nome: "asc"}
-      output = ["id", "nome", "especie", "raca", "data_nascimento", "peso", "observacoes"]
+      output = ["id", "nome", "especie", "raca", "data_nascimento", "peso", "observacoes", "foto"]
       return = {type: "list"}
     } as $meus
   }

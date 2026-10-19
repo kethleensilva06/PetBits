@@ -183,3 +183,86 @@ a recusa é genérica de propósito.
 - **WHEN** uma conta de tutor tenta criar um tutor, fora da interface
 - **THEN** o backend recusa
 - **AND** nada é gravado
+
+### Requirement: CPF válido pelos dígitos verificadores
+
+O documento de identificação do tutor SHALL ser um CPF cujos dois dígitos
+verificadores confiram pelo cálculo de módulo 11, e que não seja composto de
+onze dígitos iguais. A conferência MUST acontecer no backend, antes de
+qualquer gravação, tanto no cadastro público quanto no cadastro de balcão. A
+pontuação (pontos, traço, espaço) SHALL ser ignorada.
+
+#### Scenario: CPF com dígito verificador errado
+
+- **WHEN** alguém se cadastra pelo site com o documento `123.456.789-00`
+- **THEN** o cadastro é recusado com "CPF inválido. Confira os números."
+- **AND** nenhuma conta de acesso nem ficha de tutor é criada
+
+#### Scenario: Onze dígitos iguais
+
+- **WHEN** o documento enviado é `111.111.111-11`
+- **THEN** o cadastro é recusado da mesma forma, embora os dígitos verificadores confiram
+
+#### Scenario: CPF válido com ou sem pontuação
+
+- **WHEN** o documento enviado é um CPF válido, com pontuação ou só dígitos
+- **THEN** o cadastro segue para as demais conferências (e-mail e documento já em uso)
+
+#### Scenario: Balcão com CPF inválido
+
+- **WHEN** a equipe cadastra um tutor no balcão com CPF inválido
+- **THEN** a criação é recusada com a mesma mensagem e nenhuma ficha é gravada
+
+#### Scenario: Chamada direta à API
+
+- **WHEN** alguém envia CPF inválido direto ao `POST tutor/cadastro`, sem passar pela tela
+- **THEN** a recusa é a mesma: a conferência da tela é só aviso, a regra é do backend
+
+### Requirement: O tutor altera os próprios dados
+
+Um tutor autenticado SHALL alterar nome, telefone e endereço da própria
+ficha. A ficha alterada MUST ser a do token, nunca uma indicada na
+requisição. Nome MUST NOT ficar em branco. CPF e e-mail MUST NOT ser
+alterados por este caminho. Alterar o nome SHALL alterar também o nome da
+conta de acesso, de onde vem a saudação.
+
+#### Scenario: Troca de telefone
+
+- **WHEN** a tutora muda o telefone no perfil e salva
+- **THEN** a ficha dela passa a ter o novo telefone, e os outros dados ficam como estavam
+
+#### Scenario: Nome em branco
+
+- **WHEN** o tutor apaga o nome e salva
+- **THEN** a alteração é recusada e o motivo é informado
+
+#### Scenario: Tentativa de alterar o CPF
+
+- **WHEN** uma requisição direta envia `documento` ou `email` junto com o telefone
+- **THEN** documento e e-mail não mudam
+
+#### Scenario: Conta sem ficha
+
+- **WHEN** uma conta de equipe chama a alteração de perfil de tutor
+- **THEN** é recusada, sem alterar ficha nenhuma
+
+#### Scenario: Nome novo depois de sair e entrar
+
+- **WHEN** a tutora muda o nome no perfil, sai e entra de novo
+- **THEN** a saudação usa o nome novo
+
+### Requirement: Foto de perfil do tutor
+
+Um tutor autenticado SHALL enviar uma foto de perfil, que substitui a
+anterior e aparece no avatar do cabeçalho. Só imagens JPG, PNG ou WebP de até
+5 MB SHALL ser aceitas. Sem foto, o avatar mostra as iniciais do nome.
+
+#### Scenario: Envio de foto
+
+- **WHEN** o tutor envia uma foto JPG de 2 MB
+- **THEN** a foto passa a aparecer no avatar do cabeçalho
+
+#### Scenario: Arquivo que não é imagem
+
+- **WHEN** o tutor envia um PDF ou uma imagem de 8 MB
+- **THEN** o envio é recusado com o motivo, e a foto anterior continua

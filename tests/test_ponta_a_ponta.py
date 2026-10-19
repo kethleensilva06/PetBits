@@ -261,6 +261,22 @@ def falhas(resultados):
 
 
 class PontaAPonta(unittest.TestCase):
+    def test_rodada_que_cai_no_meio_desativa_o_produto(self):
+        """Change `acabamentos-de-tela`, D6: foi uma rodada interrompida que
+        deixou um "Produto de verificação" à venda na loja do cliente."""
+
+        class CaiNoMeio(XanoSimulado):
+            async def meus_pedidos(self, *, token):
+                raise RuntimeError("queda no meio da rodada")
+
+        simulado = CaiNoMeio()
+        with self.assertRaises(RuntimeError):
+            rodar(simulado)
+        de_verificacao = [p for p in simulado.produtos.values()
+                          if p["nome"].startswith("Produto de verificação")]
+        self.assertTrue(de_verificacao)
+        self.assertTrue(all(not p["ativo"] for p in de_verificacao))
+
     def test_backend_certo_tudo_passa(self):
         codigo, saida, res = rodar(XanoSimulado())
         self.assertEqual(falhas(res), [])

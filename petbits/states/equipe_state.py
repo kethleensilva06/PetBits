@@ -25,14 +25,19 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, rotulos, xano
+from petbits import datas, mascaras, rotulos, xano
+from petbits.documentos import cpf_valido, so_digitos
+from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
+from petbits.ilustracoes import imagem_do_produto
 from petbits.states.auth_state import AuthState
 from petbits.pedidos import ROTULOS_ACAO, proximas
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
 from petbits.states.loja_state import ENTREGAS, ORIGENS, PAGAMENTOS, SITUACOES, reais
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
-from petbits.xano import NaoEncontrado, SessaoExpirada, XanoError
+from petbits.xano import FalhaDeComunicacao, NaoEncontrado, SessaoExpirada, XanoError
+
+ID_UPLOAD_PRODUTO = "foto_do_produto"
 
 # A função é o CARGO, não o nível de acesso. "Gerente" aqui quer dizer quem
 # administra a clínica no dia a dia; quem administra o SISTEMA é definido pelo
@@ -122,6 +127,12 @@ class EquipeState(rx.State):
     prd_unidade: str = ""
     prd_preco: str = ""
     prd_estoque: str = ""
+    # Foto do produto em edição (change `foto-do-produto`, D5): a imagem que a
+    # loja mostra e se ela é uma foto enviada ou a automática.
+    prd_imagem: str = ""
+    prd_tem_foto: bool = False
+    prd_enviando_foto: bool = False
+    prd_erro_foto: str = ""
 
     # Pedidos da loja (change `pedidos-da-equipe`).
     pedidos_clinica: list[dict] = []
@@ -166,10 +177,11 @@ class EquipeState(rx.State):
         self.tut_nome = v
 
     def set_tut_documento(self, v: str):
-        self.tut_documento = v
+        # Formatado a cada tecla (change `acabamentos-de-tela`, D5).
+        self.tut_documento = mascaras.cpf(v)
 
     def set_tut_telefone(self, v: str):
-        self.tut_telefone = v
+        self.tut_telefone = mascaras.telefone(v)
 
     def set_tut_email(self, v: str):
         self.tut_email = v
@@ -212,7 +224,7 @@ class EquipeState(rx.State):
         self.col_funcao = v
 
     def set_col_telefone(self, v: str):
-        self.col_telefone = v
+        self.col_telefone = mascaras.telefone(v)
 
     def set_col_email(self, v: str):
         self.col_email = v
@@ -342,6 +354,10 @@ class EquipeState(rx.State):
         self.prd_dialogo = False
         self.prd_editando = None
         self.prd_erro = ""
+        self.prd_imagem = ""
+        self.prd_tem_foto = False
+        self.prd_enviando_foto = False
+        self.prd_erro_foto = ""
         self.carregando = False
         self.erro = ""
         self.ja_carregou = False
@@ -710,9 +726,10 @@ class EquipeState(rx.State):
         if not self.tut_nome.strip():
             self.tut_erro = "Informe o nome do tutor."
             return
-        documento = "".join(c for c in self.tut_documento if c.isdigit())
-        if len(documento) != 11:
-            self.tut_erro = "O documento precisa ter 11 dígitos."
+        documento = so_digitos(self.tut_documento)
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
+        if not cpf_valido(documento):
+            self.tut_erro = "CPF inválido. Confira os números."
             return
 
         dados = {
@@ -873,6 +890,9 @@ class EquipeState(rx.State):
                 "preco": _dinheiro(p.get("preco")),
                 "estoque": f"{int(p.get('estoque') or 0)} em estoque",
                 "ativo": bool(p.get("ativo")),
+                # A mesma imagem que a loja mostra (change `foto-do-produto`, D4).
+                "imagem": imagem_do_produto(p.get("nome"), p.get("categoria"), p.get("foto")),
+                "tem_foto": bool((p.get("foto") or {}).get("url")),
                 "_categoria": p.get("categoria") or "racao",
                 "_preco": datas.numero_para_campo(p.get("preco")),
                 "_estoque": str(int(p.get("estoque") or 0)),
@@ -892,6 +912,9 @@ class EquipeState(rx.State):
         self.prd_unidade = ""
         self.prd_preco = ""
         self.prd_estoque = ""
+        self.prd_imagem = ""
+        self.prd_tem_foto = False
+        self.prd_erro_foto = ""
         self.prd_dialogo = True
 
     def editar_produto(self, registro: dict):
@@ -904,7 +927,49 @@ class EquipeState(rx.State):
         self.prd_unidade = registro["unidade"]
         self.prd_preco = registro["_preco"]
         self.prd_estoque = registro["_estoque"]
+        self.prd_imagem = registro["imagem"]
+        self.prd_tem_foto = registro["tem_foto"]
+        self.prd_erro_foto = ""
         self.prd_dialogo = True
+
+    async def enviar_foto_produto(self, arquivos: list[rx.UploadFile]):
+        """Só para produto que já existe: a foto é gravada pelo id dele, e a
+        prova de equipe é do backend (change `foto-do-produto`, D5)."""
+        self.prd_erro_foto = ""
+        if self.prd_editando is None or not arquivos:
+            return
+        arquivo = arquivos[0]
+        conteudo = await arquivo.read()
+        try:
+            extensao = extensao_da_foto(arquivo.name, len(conteudo))
+        except FotoRecusada as motivo:
+            self.prd_erro_foto = str(motivo)
+            return
+        self.prd_enviando_foto = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            foto = await xano.enviar_foto_do_produto(self.prd_editando, conteudo, extensao,
+                                                     token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.prd_enviando_foto = False
+            yield await self._encerrar(erro)
+            return
+        except (FalhaDeComunicacao, NaoEncontrado, XanoError) as erro:
+            self.prd_enviando_foto = False
+            self.prd_erro_foto = str(erro)
+            return
+        self.prd_enviando_foto = False
+        self.prd_imagem = foto.get("url") or self.prd_imagem
+        self.prd_tem_foto = bool(foto.get("url"))
+        # O cartão é atualizado aqui mesmo: a resposta já traz a foto, e
+        # recarregar o catálogo custaria mais uma requisição.
+        self.produtos = [
+            {**p, "imagem": self.prd_imagem, "tem_foto": self.prd_tem_foto}
+            if p["id"] == self.prd_editando else p
+            for p in self.produtos
+        ]
+        yield rx.clear_selected_files(ID_UPLOAD_PRODUTO)
 
     async def salvar_produto(self):
         if not self.prd_nome.strip():

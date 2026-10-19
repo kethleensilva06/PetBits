@@ -27,13 +27,16 @@ from petbits.pages.equipe import (
 )
 from petbits.pages.inicio import inicio_page
 from petbits.pages.loja import loja_page, pedidos_page
+from petbits.pages.perfil import perfil_equipe_page, perfil_page
 from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import EquipeState
 from petbits.states.loja_state import LojaState
+from petbits.states.perfil_state import PerfilEquipeState, PerfilState
 from petbits.states.pet_state import PetState
+from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 
-app = rx.App()
+app = rx.App(theme=TEMA, stylesheets=FOLHAS_DE_ESTILO)
 
 # Rota privada. O `on_load` é a guarda: `carregar_sessao` devolve um
 # redirecionamento e **retorna antes** de qualquer chamada ao Xano quando não
@@ -52,6 +55,11 @@ app.add_page(loja_page, route="/loja", title="PetBits | Loja",
              on_load=[AuthState.carregar_sessao, LojaState.carregar_loja])
 app.add_page(pedidos_page, route="/pedidos", title="PetBits | Meus pedidos",
              on_load=[AuthState.carregar_sessao, LojaState.carregar_pedidos])
+
+# Meu perfil (change `perfil-e-fotos`). Mesma guarda: `PerfilState._token`
+# levanta antes de qualquer requisição sem sessão ou com conta de equipe.
+app.add_page(perfil_page, route="/perfil", title="PetBits | Meu perfil",
+             on_load=[AuthState.carregar_sessao, PerfilState.carregar])
 
 # Agenda do tutor (change `agendamento`). Mesma guarda da casa: sem sessão,
 # `AgendaState._token` levanta antes de qualquer requisição.
@@ -82,6 +90,9 @@ for rota, pagina, titulo, carregar in (
     ("/equipe/balcao", balcao_page, "Balcão", EquipeState.carregar_balcao),
     ("/equipe/tutores", tutores_page, "Tutores", EquipeState.carregar_tutores),
     ("/equipe/animais", animais_page, "Animais", EquipeState.carregar_animais),
+    # Meu perfil da equipe (change `perfil-do-colaborador`): a mesma guarda —
+    # `PerfilEquipeState._token` levanta antes de qualquer requisição.
+    ("/equipe/perfil", perfil_equipe_page, "Meu perfil", PerfilEquipeState.carregar),
 ):
     app.add_page(
         pagina,

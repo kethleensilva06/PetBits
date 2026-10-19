@@ -60,17 +60,6 @@ def cpf_ficticio() -> str:
     return "".join(map(str, base))
 
 
-def cpf_valido(cpf: str) -> bool:
-    if len(cpf) != 11 or not cpf.isdigit() or len(set(cpf)) == 1:
-        return False
-    numeros = [int(c) for c in cpf]
-    for tamanho in (9, 10):
-        soma = sum(d * p for d, p in zip(numeros[:tamanho], range(tamanho + 1, 1, -1)))
-        if numeros[tamanho] != (0 if (soma * 10) % 11 == 10 else (soma * 10) % 11):
-            return False
-    return True
-
-
 def senha_gerada() -> str:
     """12 caracteres, sempre com letra e dígito — a regra do cadastro."""
     alfabeto = string.ascii_letters + string.digits

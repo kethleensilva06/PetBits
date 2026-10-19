@@ -20,6 +20,8 @@ from typing import Any, Optional
 import httpx
 from dotenv import load_dotenv
 
+from petbits.mensagens import acentuar
+
 load_dotenv()
 
 TIMEOUT = httpx.Timeout(15.0)
@@ -198,7 +200,9 @@ def _detalhe(resposta: httpx.Response) -> str:
     except ValueError:
         return resposta.text[:200] or "sem detalhes"
     if isinstance(corpo, dict):
-        return str(corpo.get("message") or corpo.get("error") or corpo)[:200]
+        # O backend escreve sem acento; a tela mostra com (change
+        # `acabamentos-de-tela`, D1).
+        return acentuar(str(corpo.get("message") or corpo.get("error") or corpo)[:200])
     return str(corpo)[:200]
 
 
@@ -417,6 +421,50 @@ async def atualizar_animal(animal_id: int, dados: dict, *, token: str) -> dict:
             "Este animal nao esta mais disponivel para edicao.", status=404
         )
     return atualizado
+
+
+# --- perfil e fotos (change `perfil-e-fotos`) --------------------------------
+
+_MIME_DA_EXTENSAO = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                     "webp": "image/webp"}
+
+
+def _arquivo_de_foto(conteudo: bytes, extensao: str) -> tuple[dict, dict]:
+    """O corpo multipart: o arquivo e a extensao em campo proprio. O nome
+    original nao chega ao Xano pelo `input` (medido), e o `storage.create_image`
+    exige a extensao no nome que ele grava."""
+    mime = _MIME_DA_EXTENSAO.get(extensao, "application/octet-stream")
+    return {"foto": (f"foto.{extensao}", conteudo, mime)}, {"extensao": extensao}
+
+
+async def alterar_minha_ficha(dados: dict, *, token: str) -> dict:
+    """Altera nome, telefone e endereco da ficha do token. CPF e e-mail nao
+    estao no `input` do endpoint: mesmo enviados, nao mudariam."""
+    ficha = await _requisitar("PATCH", "/me/tutor", token=token, json=dados)
+    if ficha is None:
+        raise XanoError("O Xano nao confirmou a alteracao do perfil.")
+    return ficha
+
+
+async def trocar_senha(atual: str, nova: str, confirmar: str, *, token: str) -> None:
+    await _requisitar("POST", "/me/senha", token=token,
+                      json={"senha_atual": atual, "nova_senha": nova, "confirmar": confirmar})
+
+
+async def enviar_foto_de_perfil(conteudo: bytes, extensao: str, *, token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", "/me/tutor/foto", token=token, files=files, data=data)
+    return (resposta or {}).get("foto") or {}
+
+
+async def enviar_foto_do_animal(animal_id: int, conteudo: bytes, extensao: str, *,
+                                token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", f"/pet/{animal_id}/foto", token=token,
+                                 files=files, data=data)
+    if resposta is None:
+        raise NaoEncontrado("Este animal nao esta mais disponivel.", status=404)
+    return resposta.get("foto") or {}
 
 
 # --- área da equipe -----------------------------------------------------------
@@ -686,6 +734,18 @@ async def criar_produto(dados: dict, *, token: str) -> dict:
     return criado
 
 
+async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str, *,
+                                 token: str) -> dict:
+    """Grava a foto do produto (change `foto-do-produto`); devolve o objeto
+    de imagem do Xano."""
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", f"/equipe/produtos/{produto_id}/foto", token=token,
+                                 files=files, data=data)
+    if resposta is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return resposta.get("foto") or {}
+
+
 async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
     """Altera só os campos informados; os ausentes permanecem."""
     atualizado = await _requisitar(
@@ -729,3 +789,27 @@ async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> d
     if feita is None:
         raise XanoError("O Xano não confirmou a venda.")
     return feita
+
+
+# --- perfil de quem é da equipe (change `perfil-do-colaborador`) -------------
+
+
+async def meu_perfil_de_equipe(*, token: str) -> dict:
+    """`{conta: {nome, email}, ficha: {...} | None}`: a ficha de colaborador
+    com o mesmo e-mail da conta do token, quando há uma."""
+    return await _requisitar("GET", "/equipe/meu-perfil", token=token) or {}
+
+
+async def alterar_meu_perfil_de_equipe(dados: dict, *, token: str) -> dict:
+    """Nome e telefone. Função, e-mail, entrada e ativo nem estão no `input`."""
+    ficha = await _requisitar("PATCH", "/equipe/meu-perfil", token=token, json=dados)
+    if ficha is None:
+        raise XanoError("O Xano nao confirmou a alteracao do perfil.")
+    return ficha
+
+
+async def enviar_minha_foto_de_equipe(conteudo: bytes, extensao: str, *, token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", "/equipe/meu-perfil/foto", token=token,
+                                 files=files, data=data)
+    return (resposta or {}).get("foto") or {}

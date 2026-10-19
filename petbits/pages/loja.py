@@ -6,29 +6,8 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 
 import reflex as rx
 
-from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
-
-
-def _topo(atual: str) -> rx.Component:
-    def link(rotulo, href):
-        return rx.link(rotulo, href=href, size="2",
-                       weight="bold" if href == atual else "regular")
-    return rx.hstack(
-        rx.link(rx.heading("PetBits", size="6"), href="/inicio", underline="none", color="inherit"),
-        rx.spacer(),
-        link("Meus animais", "/inicio"),
-        link("Agendar", "/agenda"),
-        link("Loja", "/loja"),
-        link("Meus pedidos", "/pedidos"),
-        rx.button("Sair", on_click=AuthState.sair, variant="soft", color_scheme="gray",
-                  size="2"),
-        width="100%",
-        align="center",
-        spacing="4",
-        wrap="wrap",
-        padding_bottom="1.5rem",
-    )
+from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _avisos() -> rx.Component:
@@ -45,13 +24,18 @@ def _avisos() -> rx.Component:
 def _produto(p: rx.Var) -> rx.Component:
     return rx.card(
         rx.vstack(
+            # A foto e o nome abrem o detalhe, como numa loja de verdade.
+            rx.image(src=p["imagem"], alt=p["nome"], width="100%", height="10rem",
+                     object_fit="cover", border_radius="0.9rem", cursor="zoom-in",
+                     on_click=LojaState.abrir_produto(p)),
             rx.hstack(
                 rx.badge(p["categoria"], variant="soft", radius="full"),
                 rx.cond(p["marca"], rx.text(p["marca"], size="1", color=rx.color("gray", 10))),
                 spacing="2",
                 align="center",
             ),
-            rx.heading(p["nome"], size="3"),
+            rx.heading(p["nome"], size="3", cursor="pointer",
+                       on_click=LojaState.abrir_produto(p)),
             rx.cond(p["unidade"], rx.text(p["unidade"], size="1", color=rx.color("gray", 10))),
             rx.cond(p["descricao"], rx.text(p["descricao"], size="2", color=rx.color("gray", 11))),
             rx.spacer(),
@@ -69,6 +53,89 @@ def _produto(p: rx.Var) -> rx.Component:
             height="100%",
         ),
         width="100%",
+    )
+
+
+def _detalhe_do_produto() -> rx.Component:
+    """Foto grande e tudo sobre o produto (change `fotos-realistas`)."""
+    p = LojaState.produto_aberto
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.grid(
+                rx.image(src=p["imagem"], alt=p["nome"], width="100%",
+                         height=rx.breakpoints(initial="15rem", sm="22rem"),
+                         object_fit="cover", border_radius="1rem"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.badge(p["categoria"], variant="soft", radius="full"),
+                        rx.cond(p["marca"], rx.text(p["marca"], size="2",
+                                                    color=rx.color("gray", 10))),
+                        spacing="2",
+                        align="center",
+                    ),
+                    rx.dialog.title(p["nome"], size="6", margin="0"),
+                    rx.cond(p["unidade"], rx.text(p["unidade"], size="2",
+                                                  color=rx.color("gray", 10))),
+                    rx.cond(p["descricao"], rx.text(p["descricao"], size="3",
+                                                    color=rx.color("gray", 11))),
+                    rx.spacer(),
+                    rx.text(p["preco"], weight="bold", size="7",
+                            color=rx.color("teal", 11)),
+                    rx.text(p["disponivel"], size="1", color=rx.color("gray", 10)),
+                    rx.cond(
+                        LojaState.quantidade_do_aberto > 0,
+                        rx.badge(rx.icon("shopping-cart", size=12), "No carrinho: ",
+                                 LojaState.quantidade_do_aberto, variant="soft",
+                                 color_scheme="orange", radius="full"),
+                    ),
+                    # Quantidade antes de adicionar, até o que ainda cabe no estoque
+                    # (change `acabamentos-de-tela`, D4).
+                    rx.cond(
+                        LojaState.pode_por_mais_no_aberto > 0,
+                        rx.hstack(
+                            rx.hstack(
+                                rx.icon_button(rx.icon("minus", size=14),
+                                               on_click=LojaState.menos_um, variant="soft",
+                                               size="3", aria_label="Menos um",
+                                               disabled=LojaState.qtd_detalhe <= 1),
+                                rx.text(LojaState.qtd_detalhe, weight="bold", size="4",
+                                        min_width="2rem", text_align="center"),
+                                rx.icon_button(rx.icon("plus", size=14),
+                                               on_click=LojaState.mais_um, variant="soft",
+                                               size="3", aria_label="Mais um",
+                                               disabled=LojaState.qtd_detalhe
+                                               >= LojaState.pode_por_mais_no_aberto),
+                                spacing="2",
+                                align="center",
+                            ),
+                            rx.button(rx.icon("shopping-cart", size=16), "Adicionar",
+                                      on_click=LojaState.adicionar_do_detalhe, size="3",
+                                      flex="1"),
+                            spacing="3",
+                            width="100%",
+                            align="center",
+                        ),
+                        rx.text("Todo o estoque disponível já está no seu carrinho.",
+                                size="2", color=rx.color("gray", 10)),
+                    ),
+                    spacing="2",
+                    align_items="start",
+                    height="100%",
+                ),
+                columns=rx.breakpoints(initial="1", sm="2"),
+                spacing="5",
+                width="100%",
+            ),
+            rx.dialog.close(
+                rx.icon_button(rx.icon("x", size=16), variant="ghost", color_scheme="gray",
+                               aria_label="Fechar", position="absolute", top="0.75rem",
+                               right="0.75rem"),
+            ),
+            max_width="52rem",
+            position="relative",
+        ),
+        open=LojaState.detalhe_aberto,
+        on_open_change=LojaState.set_detalhe_aberto,
     )
 
 
@@ -177,18 +244,59 @@ def _finalizacao() -> rx.Component:
     )
 
 
+def _busca_e_filtro() -> rx.Component:
+    """Busca pelo nome e filtro por categoria (change `acabamentos-de-tela`, D4)."""
+    return rx.hstack(
+        rx.input(
+            rx.input.slot(rx.icon("search", size=16)),
+            placeholder="Buscar produto",
+            value=LojaState.busca,
+            on_change=LojaState.set_busca,
+            size="3",
+            flex="1",
+            min_width="12rem",
+        ),
+        rx.select(
+            LojaState.categorias_da_loja,
+            value=rx.cond(LojaState.categoria_filtro, LojaState.categoria_filtro, "Todas"),
+            on_change=LojaState.set_categoria_filtro,
+            size="3",
+        ),
+        spacing="3",
+        width="100%",
+        wrap="wrap",
+    )
+
+
 def loja_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            _topo("/loja"),
-            rx.heading("Loja", size="7"),
+            topo_do_cliente("/loja"),
+            titulo_de_pagina("Loja", "Rações, petiscos e cuidados para o seu animal."),
             _avisos(),
+            rx.cond(LojaState.produtos.length() > 0, _busca_e_filtro()),
             rx.grid(
                 rx.cond(
                     LojaState.produtos.length() > 0,
-                    rx.grid(rx.foreach(LojaState.produtos, _produto),
-                            columns=rx.breakpoints(initial="1", sm="2"), spacing="3",
-                            width="100%"),
+                    rx.cond(
+                        LojaState.produtos_visiveis.length() > 0,
+                        rx.grid(rx.foreach(LojaState.produtos_visiveis, _produto),
+                                columns=rx.breakpoints(initial="1", sm="2"), spacing="3",
+                                width="100%"),
+                        rx.card(
+                            rx.vstack(
+                                rx.icon("search-x", size=28, color=rx.color("gray", 9)),
+                                rx.text("Nenhum produto encontrado com essa busca.",
+                                        color=rx.color("gray", 11)),
+                                rx.button("Limpar a busca", on_click=LojaState.limpar_filtros,
+                                          variant="soft"),
+                                spacing="3",
+                                align="center",
+                                padding="2rem",
+                            ),
+                            width="100%",
+                        ),
+                    ),
                     rx.cond(
                         LojaState.carregando,
                         rx.hstack(rx.spinner(size="2"), rx.text("Carregando a loja...")),
@@ -202,9 +310,10 @@ def loja_page() -> rx.Component:
                 align_items="start",
             ),
             _finalizacao(),
+            _detalhe_do_produto(),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="4",
@@ -242,8 +351,8 @@ def _pedido(p: rx.Var) -> rx.Component:
 def pedidos_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            _topo("/pedidos"),
-            rx.heading("Meus pedidos", size="7"),
+            topo_do_cliente("/pedidos"),
+            titulo_de_pagina("Meus pedidos"),
             rx.cond(LojaState.erro,
                     rx.callout(LojaState.erro, icon="triangle_alert", color_scheme="red",
                                size="1", width="100%")),
@@ -253,14 +362,20 @@ def pedidos_page() -> rx.Component:
                 rx.cond(
                     LojaState.carregando,
                     rx.hstack(rx.spinner(size="2"), rx.text("Carregando...")),
-                    rx.hstack(rx.text("Você ainda não fez nenhum pedido.",
-                                      color=rx.color("gray", 10)),
-                              rx.link("Ir para a loja", href="/loja")),
+                    # Falhou não é vazio: o erro já está no callout acima.
+                    rx.cond(LojaState.erro, rx.fragment(), tela_vazia(
+                        "/fotos/vazio-pedidos.webp",
+                        "Nenhum pedido por aqui",
+                        "Ração, petisco, brinquedo: o que você comprar na loja aparece aqui, "
+                        "com a situação de cada pedido.",
+                        rx.link(rx.button(rx.icon("shopping-bag", size=16), "Ir à loja",
+                                          size="3"), href="/loja"),
+                    )),
                 ),
             ),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="3",

@@ -14,8 +14,10 @@ tutor e animal não foi desenhada nesta change.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
-from petbits.states.equipe_state import FUNCAO_LEGIVEL, FUNCOES, EquipeState
+from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
+                                         EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
+from petbits.visual import barra, botao_tema, marca, pilula, sair, titulo_de_pagina
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -41,28 +43,55 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 
 
 def _navegacao(atual: str) -> rx.Component:
-    return rx.hstack(
-        *[
-            rx.link(
-                rx.hstack(
-                    rx.icon(icone, size=15),
-                    rx.text(rotulo, size="2"),
-                    spacing="2",
-                    align="center",
-                ),
-                href=rota,
-                weight="medium" if rota == atual else "regular",
-                color=rx.color("accent", 11) if rota == atual else rx.color("gray", 11),
-                text_decoration="none",
-            )
-            for rota, rotulo, icone in AREAS
-        ],
-        spacing="5",
+    """Abas na tela larga; no celular, um botão que abre a lista (change
+    `acabamentos-de-tela`, D3). As 9 abas quebravam em 3 linhas no celular."""
+    rotulo_atual, icone_atual = next(
+        ((rotulo, icone) for rota, rotulo, icone in AREAS if rota == atual),
+        ("Menu", "menu"),
+    )
+    abas = rx.hstack(
+        *[pilula(rotulo, icone, rota, rota == atual) for rota, rotulo, icone in AREAS],
+        spacing="1",
         wrap="wrap",
         width="100%",
-        padding_y="0.75rem",
-        border_bottom=f"1px solid {rx.color('gray', 5)}",
-        margin_bottom="1.5rem",
+        display=rx.breakpoints(initial="none", md="flex"),
+    )
+    menu = rx.menu.root(
+        rx.menu.trigger(
+            rx.button(
+                rx.icon("menu", size=16),
+                rx.icon(icone_atual, size=15),
+                rotulo_atual,
+                rx.icon("chevron-down", size=14),
+                variant="soft",
+                size="3",
+                width="100%",
+                justify="start",
+            ),
+        ),
+        rx.menu.content(
+            *[
+                rx.menu.item(
+                    rx.link(
+                        rx.hstack(rx.icon(icone, size=15), rx.text(rotulo), spacing="2",
+                                  align="center"),
+                        href=rota,
+                        underline="none",
+                        color="inherit",
+                        width="100%",
+                    ),
+                    color=rx.color("teal", 11) if rota == atual else None,
+                )
+                for rota, rotulo, icone in AREAS
+            ],
+            min_width="14rem",
+        ),
+    )
+    return rx.box(
+        abas,
+        rx.box(menu, display=rx.breakpoints(initial="block", md="none"), width="100%"),
+        width="100%",
+        padding_bottom="0.75rem",
     )
 
 
@@ -75,34 +104,38 @@ def _casca(
 ) -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
-                rx.hstack(
-                    rx.heading("PetBits", size="6"),
-                    rx.badge("Clínica", variant="soft", radius="full"),
-                    spacing="2",
-                    align="center",
-                ),
+            barra(
+                marca("/equipe"),
+                # No celular o topo tem de caber numa linha: os selos e o nome somem
+                # abaixo de `sm`, e ficam a marca, o avatar e o sair.
+                rx.badge("Clínica", variant="soft", color_scheme="orange", radius="full",
+                         display=rx.breakpoints(initial="none", sm="inline-flex")),
                 rx.spacer(),
-                rx.text(AuthState.primeiro_nome, size="2", color=rx.color("gray", 11)),
-                rx.badge(AuthState.papel_exibido, variant="soft", radius="full"),
-                rx.button(
-                    "Sair",
-                    on_click=AuthState.sair,
-                    variant="soft",
-                    color_scheme="gray",
-                    size="2",
+                rx.badge(AuthState.papel_exibido, variant="soft", radius="full",
+                         display=rx.breakpoints(initial="none", sm="inline-flex")),
+                botao_tema(),
+                # Tocar no próprio avatar abre o perfil (change `perfil-do-colaborador`).
+                rx.link(
+                    rx.hstack(
+                        rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
+                                  radius="full", size="3", color_scheme="teal",
+                                  variant="solid"),
+                        rx.text(AuthState.primeiro_nome, size="2",
+                                color=rx.color("gray", 11),
+                                display=rx.breakpoints(initial="none", sm="block")),
+                        spacing="2",
+                        align="center",
+                    ),
+                    href="/equipe/perfil",
+                    aria_label="Meu perfil",
+                    title="Meu perfil",
+                    underline="none",
                 ),
-                width="100%",
-                align="center",
+                sair(),
             ),
             _navegacao(rota),
             rx.hstack(
-                rx.vstack(
-                    rx.heading(titulo, size="7"),
-                    rx.text(subtitulo, color=rx.color("gray", 11), size="2"),
-                    spacing="1",
-                    align_items="start",
-                ),
+                titulo_de_pagina(titulo, subtitulo),
                 rx.spacer(),
                 acao if acao is not None else rx.fragment(),
                 width="100%",
@@ -125,7 +158,7 @@ def _casca(
             *conteudo,
             spacing="4",
             align_items="start",
-            padding_y="2.5rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="4",
@@ -529,6 +562,9 @@ def servicos_page() -> rx.Component:
 def _cartao_produto(p: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
+            # A mesma imagem que o cliente vê na loja (change `foto-do-produto`, D4).
+            rx.image(src=p["imagem"], alt=p["nome"], width="3.5rem", height="3.5rem",
+                     object_fit="cover", border_radius="0.75rem", flex_shrink="0"),
             rx.vstack(
                 rx.hstack(
                     rx.heading(p["nome"], size="4"),
@@ -558,11 +594,57 @@ def _cartao_produto(p: dict) -> rx.Component:
     )
 
 
+def _foto_do_produto() -> rx.Component:
+    """Foto do produto (change `foto-do-produto`, D5). Só na edição, porque a
+    foto é gravada pelo id. O seletor não filtra por tipo: com `accept` e
+    `max_size`, o arquivo recusado sumia sem aviso (change `perfil-e-fotos`)."""
+    return rx.cond(
+        EquipeState.prd_editando,
+        rx.hstack(
+            rx.image(src=EquipeState.prd_imagem, alt="Foto do produto",
+                     width="5.5rem", height="5.5rem", object_fit="cover",
+                     border_radius="1rem", flex_shrink="0"),
+            rx.vstack(
+                rx.upload.root(
+                    rx.button(
+                        rx.cond(EquipeState.prd_enviando_foto, rx.spinner(size="2"),
+                                rx.icon("camera", size=16)),
+                        rx.cond(EquipeState.prd_tem_foto, "Trocar foto", "Escolher foto"),
+                        variant="soft",
+                        disabled=EquipeState.prd_enviando_foto,
+                    ),
+                    id=ID_UPLOAD_PRODUTO,
+                    max_files=1,
+                    multiple=False,
+                    no_drag=True,
+                    on_drop=EquipeState.enviar_foto_produto(
+                        rx.upload_files(upload_id=ID_UPLOAD_PRODUTO)),
+                ),
+                rx.text(rx.cond(EquipeState.prd_tem_foto,
+                                "Foto enviada pela equipe. JPG, PNG ou WebP, até 5 MB.",
+                                "Foto automática. JPG, PNG ou WebP, até 5 MB."),
+                        size="1", color=rx.color("gray", 10)),
+                rx.cond(EquipeState.prd_erro_foto,
+                        rx.text(EquipeState.prd_erro_foto, size="1",
+                                color=rx.color("red", 11))),
+                spacing="1",
+                align_items="start",
+            ),
+            spacing="3",
+            align="center",
+            width="100%",
+        ),
+        rx.text("Depois de cadastrar, edite o produto para pôr a foto dele.",
+                size="1", color=rx.color("gray", 10)),
+    )
+
+
 def _dialogo_produto() -> rx.Component:
     return rx.dialog.root(
         rx.dialog.content(
             rx.dialog.title(EquipeState.titulo_prd),
             rx.vstack(
+                _foto_do_produto(),
                 _campo("Nome", rx.input(placeholder="Ração adulto 1 kg",
                                         value=EquipeState.prd_nome,
                                         on_change=EquipeState.set_prd_nome, width="100%")),
@@ -974,7 +1056,7 @@ def _cartao_animal(a: dict) -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.heading(a["nome"], size="4"),
-                rx.badge(a["especie"], variant="soft", radius="full"),
+                rx.badge(a["especie"], variant="soft", radius="full", color_scheme="orange"),
                 # Animal sem tutor válido é registro quebrado: para o tutor
                 # ele é invisível por construção, e escondê-lo também da
                 # clínica seria esconder o problema de quem pode resolvê-lo.
