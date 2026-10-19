@@ -66,7 +66,8 @@ a clínica.
 - Controle de estoque com entrada de mercadoria.
 - Prontuário com anexo de imagens ou exames. (Foto de perfil do tutor e do
   animal, enviada pelo próprio tutor, está dentro do escopo desde a change
-  `perfil-e-fotos`; imagem de atendimento ou de exame continua fora.)
+  `perfil-e-fotos`, e a foto do produto, enviada pela equipe, desde a change
+  `foto-do-produto`; imagem de atendimento ou de exame continua fora.)
 
 O escopo pode crescer, mas cada ampliação deve entrar como uma change própria,
 não como decisão tomada durante a implementação de outra coisa.

@@ -17,7 +17,7 @@ query "loja/produtos" verb=GET {
     db.query produto {
       where = ($db.produto.ativo == true) && ($db.produto.estoque > 0)
       sort = {nome: "asc"}
-      output = ["id", "nome", "descricao", "categoria", "marca", "unidade", "preco", "estoque"]
+      output = ["id", "nome", "descricao", "categoria", "marca", "unidade", "preco", "estoque", "foto"]
       return = {type: "list"}
     } as $vitrine
   }

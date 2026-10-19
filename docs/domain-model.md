@@ -256,7 +256,8 @@ Item vendável do petshop: ração, brinquedo, medicamento, acessório.
 - nome;
 - categoria e marca;
 - unidade de venda;
-- preço.
+- preço;
+- foto, opcional, enviada pela equipe.
 
 ### Relacionamentos
 

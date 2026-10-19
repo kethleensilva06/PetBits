@@ -86,24 +86,31 @@ escolha SHALL ignorar maiúsculas, acentos e espaços nas pontas.
 
 ### Requirement: Imagem do produto pela categoria
 
-Cada produto da loja SHALL mostrar a foto do próprio produto quando ela
-existir — escolhida pelo nome e pela descrição, e encontrada pela chave do
-nome —, e a foto da sua categoria quando não existir. Produto sem categoria
-conhecida SHALL mostrar a foto genérica.
+Cada produto da loja SHALL mostrar, nesta ordem: a foto enviada pela equipe,
+quando houver; senão a foto do próprio produto que acompanha o app —
+escolhida pelo nome e pela descrição, e encontrada pela chave do nome —;
+senão a foto da sua categoria. Produto sem categoria conhecida SHALL mostrar
+a foto genérica. A tela da equipe SHALL mostrar a mesma imagem que a loja
+mostra.
 
 #### Scenario: Produto de higiene
 
-- **WHEN** a loja lista a "Areia higiênica", da categoria `higiene`
+- **WHEN** a loja lista a "Areia higiênica", da categoria `higiene`, sem foto enviada
 - **THEN** o cartão mostra a foto de areia para gatos, e não a foto geral de higiene
+
+#### Scenario: Foto enviada pela equipe vence
+
+- **WHEN** a equipe enviou uma foto para a "Areia higiênica"
+- **THEN** o cartão e o detalhe da loja mostram a foto enviada, e não a que acompanha o app
 
 #### Scenario: Produto novo sem foto própria
 
-- **WHEN** a equipe cadastra um produto da categoria `acessorio` que ainda não tem foto
+- **WHEN** a equipe cadastra um produto da categoria `acessorio` e não envia foto
 - **THEN** o cartão mostra a foto da categoria Acessório
 
 #### Scenario: Categoria ausente
 
-- **WHEN** um produto sem foto própria chega sem categoria
+- **WHEN** um produto sem foto chega sem categoria
 - **THEN** o cartão mostra a foto genérica
 
 ### Requirement: Banner de boas-vindas da casa
@@ -135,15 +142,18 @@ carrega ou quando ela falhou, a tela vazia SHALL NOT aparecer.
 
 ### Requirement: Ilustrações sem custo de requisição
 
-As imagens da área do cliente SHALL ser fotografias de licença livre,
+As imagens que acompanham o app SHALL ser fotografias de licença livre,
 guardadas como arquivos do próprio app e servidas com ele, cada uma com
-origem e autor registrados em `assets/fotos/CREDITOS.md`. Escolher e mostrar
-uma imagem SHALL NOT disparar requisição ao Xano nem a serviço externo.
+origem e autor registrados em `assets/fotos/CREDITOS.md`. As fotos enviadas
+por pessoas — do tutor, do animal e do produto — SHALL ficar no
+armazenamento público do Xano e chegar à tela pela URL que vem junto com o
+registro. Escolher e mostrar uma imagem SHALL NOT disparar requisição à API
+do Xano além das que a tela já faz.
 
 #### Scenario: Abrir a loja
 
 - **WHEN** a tutora abre a loja
-- **THEN** as requisições ao Xano são as mesmas de antes, e as imagens vêm de `/fotos/`
+- **THEN** as requisições à API do Xano são as mesmas de antes; as imagens vêm de `/fotos/` ou da URL pública da foto enviada
 
 #### Scenario: Toda foto tem crédito
 

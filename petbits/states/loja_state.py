@@ -150,7 +150,7 @@ class LojaState(rx.State):
                 "nome": p.get("nome") or "-",
                 "descricao": p.get("descricao") or "",
                 "categoria": CATEGORIAS.get(p.get("categoria") or "", "-"),
-                "imagem": imagem_do_produto(p.get("nome"), p.get("categoria")),
+                "imagem": imagem_do_produto(p.get("nome"), p.get("categoria"), p.get("foto")),
                 "marca": p.get("marca") or "",
                 "unidade": p.get("unidade") or "",
                 "preco": reais(p.get("preco")),

@@ -47,7 +47,12 @@ def chave_do_produto(nome: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "-", _normalizar(nome)).strip("-")
 
 
-def imagem_do_produto(nome: str | None, categoria: str | None) -> str:
+def imagem_do_produto(nome: str | None, categoria: str | None, foto=None) -> str:
+    """A foto enviada pela equipe vence (change `foto-do-produto`, D4); sem
+    ela, a que acompanha o app pela chave do nome; sem essa, a da categoria.
+    `foto` é o objeto de imagem do Xano, como vem no registro."""
+    if isinstance(foto, dict) and foto.get("url"):
+        return foto["url"]
     chave = chave_do_produto(nome)
     if chave in _FOTOS_DE_PRODUTO:
         return f"{PASTA}/produtos/{chave}.webp"

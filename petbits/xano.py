@@ -730,6 +730,18 @@ async def criar_produto(dados: dict, *, token: str) -> dict:
     return criado
 
 
+async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str, *,
+                                 token: str) -> dict:
+    """Grava a foto do produto (change `foto-do-produto`); devolve o objeto
+    de imagem do Xano."""
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", f"/equipe/produtos/{produto_id}/foto", token=token,
+                                 files=files, data=data)
+    if resposta is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return resposta.get("foto") or {}
+
+
 async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
     """Altera só os campos informados; os ausentes permanecem."""
     atualizado = await _requisitar(

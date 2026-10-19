@@ -28,7 +28,7 @@ query "equipe/produtos" verb=GET {
 
     db.query produto {
       sort = {nome: "asc"}
-      output = ["id", "nome", "descricao", "categoria", "marca", "unidade", "preco", "estoque", "ativo"]
+      output = ["id", "nome", "descricao", "categoria", "marca", "unidade", "preco", "estoque", "ativo", "foto"]
       return = {type: "list"}
     } as $produtos
   }

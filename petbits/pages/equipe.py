@@ -14,7 +14,8 @@ tutor e animal não foi desenhada nesta change.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
-from petbits.states.equipe_state import FUNCAO_LEGIVEL, FUNCOES, EquipeState
+from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
+                                         EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
 from petbits.visual import barra, marca, pilula, sair, titulo_de_pagina
 
@@ -497,6 +498,9 @@ def servicos_page() -> rx.Component:
 def _cartao_produto(p: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
+            # A mesma imagem que o cliente vê na loja (change `foto-do-produto`, D4).
+            rx.image(src=p["imagem"], alt=p["nome"], width="3.5rem", height="3.5rem",
+                     object_fit="cover", border_radius="0.75rem", flex_shrink="0"),
             rx.vstack(
                 rx.hstack(
                     rx.heading(p["nome"], size="4"),
@@ -526,11 +530,57 @@ def _cartao_produto(p: dict) -> rx.Component:
     )
 
 
+def _foto_do_produto() -> rx.Component:
+    """Foto do produto (change `foto-do-produto`, D5). Só na edição, porque a
+    foto é gravada pelo id. O seletor não filtra por tipo: com `accept` e
+    `max_size`, o arquivo recusado sumia sem aviso (change `perfil-e-fotos`)."""
+    return rx.cond(
+        EquipeState.prd_editando,
+        rx.hstack(
+            rx.image(src=EquipeState.prd_imagem, alt="Foto do produto",
+                     width="5.5rem", height="5.5rem", object_fit="cover",
+                     border_radius="1rem", flex_shrink="0"),
+            rx.vstack(
+                rx.upload.root(
+                    rx.button(
+                        rx.cond(EquipeState.prd_enviando_foto, rx.spinner(size="2"),
+                                rx.icon("camera", size=16)),
+                        rx.cond(EquipeState.prd_tem_foto, "Trocar foto", "Escolher foto"),
+                        variant="soft",
+                        disabled=EquipeState.prd_enviando_foto,
+                    ),
+                    id=ID_UPLOAD_PRODUTO,
+                    max_files=1,
+                    multiple=False,
+                    no_drag=True,
+                    on_drop=EquipeState.enviar_foto_produto(
+                        rx.upload_files(upload_id=ID_UPLOAD_PRODUTO)),
+                ),
+                rx.text(rx.cond(EquipeState.prd_tem_foto,
+                                "Foto enviada pela equipe. JPG, PNG ou WebP, até 5 MB.",
+                                "Foto automática. JPG, PNG ou WebP, até 5 MB."),
+                        size="1", color=rx.color("gray", 10)),
+                rx.cond(EquipeState.prd_erro_foto,
+                        rx.text(EquipeState.prd_erro_foto, size="1",
+                                color=rx.color("red", 11))),
+                spacing="1",
+                align_items="start",
+            ),
+            spacing="3",
+            align="center",
+            width="100%",
+        ),
+        rx.text("Depois de cadastrar, edite o produto para pôr a foto dele.",
+                size="1", color=rx.color("gray", 10)),
+    )
+
+
 def _dialogo_produto() -> rx.Component:
     return rx.dialog.root(
         rx.dialog.content(
             rx.dialog.title(EquipeState.titulo_prd),
             rx.vstack(
+                _foto_do_produto(),
                 _campo("Nome", rx.input(placeholder="Ração adulto 1 kg",
                                         value=EquipeState.prd_nome,
                                         on_change=EquipeState.set_prd_nome, width="100%")),

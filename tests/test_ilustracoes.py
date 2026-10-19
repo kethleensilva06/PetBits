@@ -47,6 +47,19 @@ class ProdutoTest(unittest.TestCase):
         self.assertEqual(imagem_do_produto("Cama ortopédica", "acessorio"),
                          "/fotos/produto-acessorio.webp")
 
+    def test_foto_enviada_pela_equipe_vence(self):
+        """Change `foto-do-produto`, D4: a foto enviada vem antes da do app."""
+        url = "https://exemplo.xano.io/vault/abc/produto.webp"
+        self.assertEqual(imagem_do_produto("Areia higiênica", "higiene", {"url": url}), url)
+        self.assertEqual(imagem_do_produto("Cama ortopédica", "acessorio", {"url": url}), url)
+
+    def test_sem_foto_enviada_segue_a_regra_de_antes(self):
+        for foto in (None, {}, {"url": ""}, "texto"):
+            self.assertEqual(imagem_do_produto("Areia higiênica", "higiene", foto),
+                             "/fotos/produtos/areia-higienica.webp", foto)
+            self.assertEqual(imagem_do_produto("Cama ortopédica", "acessorio", foto),
+                             "/fotos/produto-acessorio.webp", foto)
+
     def test_todo_produto_de_exemplo_tem_foto(self):
         import scripts.criar_produtos_de_exemplo as exemplo
         for nome, categoria, *_ in exemplo.PRODUTOS:
