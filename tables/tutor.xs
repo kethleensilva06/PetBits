@@ -32,6 +32,9 @@ table tutor {
       table = "user"
     }
 
+    // Foto de perfil, enviada pelo proprio dono (change `perfil-e-fotos`, D1).
+    image? foto
+
     timestamp created_at?=now
   }
 

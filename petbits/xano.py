@@ -419,6 +419,50 @@ async def atualizar_animal(animal_id: int, dados: dict, *, token: str) -> dict:
     return atualizado
 
 
+# --- perfil e fotos (change `perfil-e-fotos`) --------------------------------
+
+_MIME_DA_EXTENSAO = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                     "webp": "image/webp"}
+
+
+def _arquivo_de_foto(conteudo: bytes, extensao: str) -> tuple[dict, dict]:
+    """O corpo multipart: o arquivo e a extensao em campo proprio. O nome
+    original nao chega ao Xano pelo `input` (medido), e o `storage.create_image`
+    exige a extensao no nome que ele grava."""
+    mime = _MIME_DA_EXTENSAO.get(extensao, "application/octet-stream")
+    return {"foto": (f"foto.{extensao}", conteudo, mime)}, {"extensao": extensao}
+
+
+async def alterar_minha_ficha(dados: dict, *, token: str) -> dict:
+    """Altera nome, telefone e endereco da ficha do token. CPF e e-mail nao
+    estao no `input` do endpoint: mesmo enviados, nao mudariam."""
+    ficha = await _requisitar("PATCH", "/me/tutor", token=token, json=dados)
+    if ficha is None:
+        raise XanoError("O Xano nao confirmou a alteracao do perfil.")
+    return ficha
+
+
+async def trocar_senha(atual: str, nova: str, confirmar: str, *, token: str) -> None:
+    await _requisitar("POST", "/me/senha", token=token,
+                      json={"senha_atual": atual, "nova_senha": nova, "confirmar": confirmar})
+
+
+async def enviar_foto_de_perfil(conteudo: bytes, extensao: str, *, token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", "/me/tutor/foto", token=token, files=files, data=data)
+    return (resposta or {}).get("foto") or {}
+
+
+async def enviar_foto_do_animal(animal_id: int, conteudo: bytes, extensao: str, *,
+                                token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", f"/pet/{animal_id}/foto", token=token,
+                                 files=files, data=data)
+    if resposta is None:
+        raise NaoEncontrado("Este animal nao esta mais disponivel.", status=404)
+    return resposta.get("foto") or {}
+
+
 # --- área da equipe -----------------------------------------------------------
 #
 # Caminhos SEPARADOS dos do tutor, com prefixo `equipe/`. Não é organização de

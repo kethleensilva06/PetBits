@@ -9,7 +9,7 @@ import reflex as rx
 
 from petbits.states.auth_state import AuthState
 from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
-from petbits.states.pet_state import PetState
+from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
 
 def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
@@ -25,7 +25,8 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
-            rx.image(src=animal["imagem"], alt=animal["especie"], width="4.5rem",
+            rx.image(src=rx.cond(animal["foto"], animal["foto"], animal["imagem"]),
+                     alt=animal["nome"], width="4.5rem",
                      height="4.5rem", border_radius="1.1rem", flex_shrink="0",
                      object_fit="cover"),
             rx.vstack(
@@ -75,6 +76,49 @@ def _dialogo() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title(PetState.titulo_dialogo),
             rx.vstack(
+                # Foto do animal: o próprio cliente escolhe (change
+                # `perfil-e-fotos`, D7). Só depois que o animal existe, porque
+                # a foto é gravada pelo id dele.
+                rx.cond(
+                    PetState.editando_id,
+                    rx.hstack(
+                        rx.image(src=rx.cond(PetState.f_foto, PetState.f_foto,
+                                             PetState.f_imagem),
+                                 alt="Foto do animal", width="5.5rem", height="5.5rem",
+                                 object_fit="cover", border_radius="1.25rem",
+                                 flex_shrink="0"),
+                        rx.vstack(
+                            rx.upload.root(
+                                rx.button(
+                                    rx.cond(PetState.enviando_foto, rx.spinner(size="2"),
+                                            rx.icon("camera", size=16)),
+                                    rx.cond(PetState.f_foto, "Trocar foto",
+                                            "Escolher foto"),
+                                    variant="soft",
+                                    disabled=PetState.enviando_foto,
+                                ),
+                                id=ID_UPLOAD_ANIMAL,
+                                max_files=1,
+                                multiple=False,
+                                no_drag=True,
+                                on_drop=PetState.enviar_foto(
+                                    rx.upload_files(upload_id=ID_UPLOAD_ANIMAL)),
+                            ),
+                            rx.text("JPG, PNG ou WebP, até 5 MB.", size="1",
+                                    color=rx.color("gray", 10)),
+                            rx.cond(PetState.erro_foto,
+                                    rx.text(PetState.erro_foto, size="1",
+                                            color=rx.color("red", 11))),
+                            spacing="1",
+                            align_items="start",
+                        ),
+                        spacing="3",
+                        align="center",
+                        width="100%",
+                    ),
+                    rx.text("Depois de cadastrar, edite o animal para pôr a foto dele.",
+                            size="1", color=rx.color("gray", 10)),
+                ),
                 _campo("Nome", rx.input(placeholder="Nome do animal",
                                         value=PetState.f_nome,
                                         on_change=PetState.set_f_nome,

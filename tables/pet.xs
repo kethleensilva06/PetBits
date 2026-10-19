@@ -43,6 +43,9 @@ table pet {
     // apaga-lo por omissao (design.md, D8).
     text observacoes? filters=trim
 
+    // Foto de perfil, enviada pelo proprio dono (change `perfil-e-fotos`, D1).
+    image? foto
+
     timestamp created_at?=now
   }
 

@@ -102,6 +102,18 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
                      radius="full"),
+            # Tocar no próprio avatar abre o perfil (change `perfil-e-fotos`, D6).
+            rx.link(
+                rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
+                          radius="full", size="3", color_scheme="teal",
+                          variant="solid"),
+                href="/perfil",
+                aria_label="Meu perfil",
+                title="Meu perfil",
+                border_radius="9999px",
+                box_shadow=(f"0 0 0 2px {rx.color('teal', 8)}" if atual == "/perfil"
+                            else "none"),
+            ),
             sair(),
         ),
         rx.hstack(
