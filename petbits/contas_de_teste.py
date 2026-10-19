@@ -1,9 +1,9 @@
 """Contas de teste para o atalho `Alt+1` da tela de entrada.
 
 As credenciais moram em `contas-de-teste.local.txt`, na raiz do projeto, que
-o `.gitignore` exclui. É o mesmo arquivo e o mesmo formato que
-`scripts/teste_duas_contas.py` já lê: uma linha que começa com maiúscula abre
-um bloco e vira o rótulo dele; dentro do bloco, `email:` e `senha:`.
+o `.gitignore` exclui; `scripts/teste_duas_contas.py` e os outros scripts
+leem por este módulo. Uma linha que começa com maiúscula abre um bloco e vira
+o rótulo dele; dentro do bloco, `email:` e `senha:`.
 
     EQUIPE — Nome da pessoa
       email: pessoa@exemplo.com

@@ -27,7 +27,6 @@ então o roteiro faz pausas — e é por isso que ele demora.
 from __future__ import annotations
 
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -36,11 +35,13 @@ import httpx
 from dotenv import load_dotenv
 
 PROJETO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJETO))
 load_dotenv(PROJETO / ".env", override=True)
+
+from petbits import contas_de_teste  # noqa: E402
 
 BASE = os.getenv("XANO_BASE_URL", "").strip().rstrip("/")
 AUTH = os.getenv("XANO_AUTH_BASE_URL", "").strip().rstrip("/")
-CREDENCIAIS = PROJETO / "contas-de-teste.local.txt"
 
 # Folga sobre o limite de 10/20s. Duas requisições por segundo estouraria.
 PAUSA = 2.2
@@ -64,27 +65,25 @@ SUPERFICIE_DA_EQUIPE = [
 
 
 def ler_credenciais() -> dict:
-    if not CREDENCIAIS.exists():
+    """A primeira conta de cada grupo, pelo mesmo leitor do atalho da tela de
+    entrada. O leitor próprio que havia aqui tratava toda linha em maiúscula
+    como cabeçalho e perdia a conta de equipe."""
+    if not contas_de_teste.ARQUIVO.exists():
         sys.exit(
-            f"{CREDENCIAIS.name} não existe. Ele guarda as contas de teste e é "
-            "ignorado pelo git — recrie-o semeando a base."
+            f"{contas_de_teste.ARQUIVO.name} não existe. Ele guarda as contas de "
+            "teste e é ignorado pelo git — recrie-o semeando a base."
         )
-    texto = CREDENCIAIS.read_text(encoding="utf-8")
     contas = {}
-    atual = None
-    for linha in texto.splitlines():
-        if re.match(r"^[A-Z]", linha.strip()):
-            atual = "tutor" if "TUTOR" in linha else "equipe" if "EQUIPE" in linha else None
-            if atual:
-                contas[atual] = {}
-        elif atual and ":" in linha:
-            chave, _, valor = linha.partition(":")
-            chave = chave.strip().replace("-", "")
-            if chave in ("email", "senha"):
-                contas[atual][chave] = valor.strip()
-    faltando = [p for p in ("tutor", "equipe") if not contas.get(p, {}).get("senha")]
+    for papel, grupo in (("tutor", contas_de_teste.CLIENTES),
+                         ("equipe", contas_de_teste.EQUIPE)):
+        do_grupo = contas_de_teste.do_grupo(grupo)
+        if do_grupo:
+            contas[papel] = do_grupo[0]
+    faltando = [p for p in ("tutor", "equipe") if p not in contas]
     if faltando:
-        sys.exit(f"credenciais incompletas em {CREDENCIAIS.name}: {faltando}")
+        sys.exit(
+            f"credenciais incompletas em {contas_de_teste.ARQUIVO.name}: {faltando}"
+        )
     return contas
 
 
@@ -97,13 +96,20 @@ def entrar(email: str, senha: str) -> str:
 
 
 def chamar(metodo: str, caminho: str, token: str, corpo) -> httpx.Response:
-    return httpx.request(
-        metodo,
-        f"{BASE}{caminho}",
-        headers={"Authorization": f"Bearer {token}"},
-        json=corpo,
-        timeout=30,
-    )
+    # 429 é o limite da instância, que outros processos também gastam; não diz
+    # nada sobre a prova. Espera a janela de 20 s fechar e tenta de novo.
+    for _ in range(3):
+        r = httpx.request(
+            metodo,
+            f"{BASE}{caminho}",
+            headers={"Authorization": f"Bearer {token}"},
+            json=corpo,
+            timeout=30,
+        )
+        if r.status_code != 429:
+            break
+        time.sleep(21)
+    return r
 
 
 def main() -> int:
