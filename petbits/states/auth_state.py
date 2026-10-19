@@ -18,6 +18,7 @@ import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
 from petbits import contas_de_teste, xano
+from petbits.documentos import cpf_valido
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
 # Espelha os filtros da coluna `password` da tabela user no Xano
@@ -38,10 +39,6 @@ def _senha_fraca(senha: str) -> Optional[str]:
     if not any(c.isdigit() for c in senha):
         return "A senha precisa ter pelo menos um número."
     return None
-
-
-def _so_digitos(texto: str) -> str:
-    return "".join(c for c in texto if c.isdigit())
 
 
 class AuthState(rx.State):
@@ -371,8 +368,9 @@ class AuthState(rx.State):
         if "@" not in self.cad_email:
             self.erro = "Informe um e-mail válido."
             return
-        if len(_so_digitos(self.cad_documento)) != 11:
-            self.erro = "O documento precisa ter 11 dígitos."
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
+        if not cpf_valido(self.cad_documento):
+            self.erro = "CPF inválido. Confira os números."
             return
         motivo = _senha_fraca(self.cad_senha)
         if motivo:

@@ -26,6 +26,7 @@ import reflex as rx
 
 from petbits import agenda as regras_da_agenda
 from petbits import datas, rotulos, xano
+from petbits.documentos import cpf_valido, so_digitos
 from petbits.states.auth_state import AuthState
 from petbits.pedidos import ROTULOS_ACAO, proximas
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
@@ -710,9 +711,10 @@ class EquipeState(rx.State):
         if not self.tut_nome.strip():
             self.tut_erro = "Informe o nome do tutor."
             return
-        documento = "".join(c for c in self.tut_documento if c.isdigit())
-        if len(documento) != 11:
-            self.tut_erro = "O documento precisa ter 11 dígitos."
+        documento = so_digitos(self.tut_documento)
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
+        if not cpf_valido(documento):
+            self.tut_erro = "CPF inválido. Confira os números."
             return
 
         dados = {

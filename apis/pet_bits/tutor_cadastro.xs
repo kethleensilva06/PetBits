@@ -36,6 +36,19 @@ query "tutor/cadastro" verb=POST {
       error = "O documento precisa ter 11 digitos."
     }
 
+    // CPF valido pelos digitos verificadores (change `cpf-valido`, D2). Antes
+    // de qualquer consulta e gravacao: um CPF inventado nunca chega a olhar a
+    // tabela. A mensagem pode ser especifica -- depende so do numero
+    // digitado, e nao diz nada sobre quem e cliente.
+    function.run "PetBits/cpf_valido" {
+      input = {documento: $documento}
+    } as $cpf_ok
+
+    precondition ($cpf_ok == true) {
+      error_type = "inputerror"
+      error = "CPF invalido. Confira os numeros."
+    }
+
     db.has user {
       field_name = "email"
       field_value = $input.email
