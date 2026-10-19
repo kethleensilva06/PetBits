@@ -80,13 +80,33 @@ def barra(*conteudo) -> rx.Component:
         *conteudo,
         width="100%",
         align="center",
-        spacing="3",
+        # No celular, espaços menores: com o sol/lua, o carrinho, o avatar e o
+        # sair, a faixa tem de caber numa linha (change `tema-claro-escuro`).
+        spacing=rx.breakpoints(initial="2", sm="3"),
         wrap="wrap",
-        padding="0.75rem 1rem",
+        padding=rx.breakpoints(initial="0.6rem 0.7rem", sm="0.75rem 1rem"),
         border_radius="1rem",
         background=rx.color("gray", 1),
         border=f"1px solid {rx.color('gray', 4)}",
         box_shadow=f"0 1px 2px {rx.color('gray', 3)}",
+    )
+
+
+def botao_tema(**props) -> rx.Component:
+    """Sol/lua: alterna claro e escuro (change `tema-claro-escuro`, D1 e D2).
+
+    Usa o modo de cor do Reflex, que o tema (`appearance="inherit"`) segue e
+    que fica guardado no navegador. Sem escolha, vale o do sistema.
+    """
+    return rx.icon_button(
+        rx.color_mode_cond(rx.icon("moon", size=16), rx.icon("sun", size=16)),
+        on_click=rx.toggle_color_mode,
+        variant="soft",
+        color_scheme="gray",
+        size="2",
+        aria_label="Alternar entre claro e escuro",
+        title="Claro ou escuro",
+        **props,
     )
 
 
@@ -107,6 +127,7 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
                      radius="full", display=rx.breakpoints(initial="none", sm="inline-flex")),
+            botao_tema(),
             # O carrinho em qualquer tela do cliente (change `acabamentos-de-tela`,
             # D4): o número sai do LojaState, sem requisição.
             rx.link(

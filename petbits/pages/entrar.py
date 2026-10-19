@@ -9,7 +9,7 @@ import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
 from petbits.states.auth_state import AuthState
-from petbits.visual import marca
+from petbits.visual import botao_tema, marca
 
 
 def _campo_senha(
@@ -76,6 +76,9 @@ def _casca(
     aviso: rx.Component | None = None,
 ) -> rx.Component:
     return rx.center(
+        # As entradas não têm faixa no topo: o sol/lua fica fixo no canto
+        # (change `tema-claro-escuro`, D2).
+        botao_tema(position="fixed", top="1rem", right="1rem", z_index="5"),
         rx.vstack(
             marca("/boas-vindas"),
             rx.card(
@@ -298,6 +301,9 @@ def boas_vindas_page() -> rx.Component:
     Sem `on_load` que chame o Xano (D4): só redireciona quem já tem sessão.
     """
     return rx.center(
+        # As entradas não têm faixa no topo: o sol/lua fica fixo no canto
+        # (change `tema-claro-escuro`, D2).
+        botao_tema(position="fixed", top="1rem", right="1rem", z_index="5"),
         rx.vstack(
             marca(tamanho="8"),
             rx.text(
