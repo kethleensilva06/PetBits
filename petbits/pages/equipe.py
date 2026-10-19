@@ -16,6 +16,7 @@ import reflex as rx
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import FUNCAO_LEGIVEL, FUNCOES, EquipeState
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
+from petbits.visual import barra, marca, pilula, sair, titulo_de_pagina
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -42,27 +43,11 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 
 def _navegacao(atual: str) -> rx.Component:
     return rx.hstack(
-        *[
-            rx.link(
-                rx.hstack(
-                    rx.icon(icone, size=15),
-                    rx.text(rotulo, size="2"),
-                    spacing="2",
-                    align="center",
-                ),
-                href=rota,
-                weight="medium" if rota == atual else "regular",
-                color=rx.color("accent", 11) if rota == atual else rx.color("gray", 11),
-                text_decoration="none",
-            )
-            for rota, rotulo, icone in AREAS
-        ],
-        spacing="5",
+        *[pilula(rotulo, icone, rota, rota == atual) for rota, rotulo, icone in AREAS],
+        spacing="1",
         wrap="wrap",
         width="100%",
-        padding_y="0.75rem",
-        border_bottom=f"1px solid {rx.color('gray', 5)}",
-        margin_bottom="1.5rem",
+        padding_bottom="0.75rem",
     )
 
 
@@ -75,34 +60,17 @@ def _casca(
 ) -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
-                rx.hstack(
-                    rx.heading("PetBits", size="6"),
-                    rx.badge("Clínica", variant="soft", radius="full"),
-                    spacing="2",
-                    align="center",
-                ),
+            barra(
+                marca("/equipe"),
+                rx.badge("Clínica", variant="soft", color_scheme="orange", radius="full"),
                 rx.spacer(),
                 rx.text(AuthState.primeiro_nome, size="2", color=rx.color("gray", 11)),
                 rx.badge(AuthState.papel_exibido, variant="soft", radius="full"),
-                rx.button(
-                    "Sair",
-                    on_click=AuthState.sair,
-                    variant="soft",
-                    color_scheme="gray",
-                    size="2",
-                ),
-                width="100%",
-                align="center",
+                sair(),
             ),
             _navegacao(rota),
             rx.hstack(
-                rx.vstack(
-                    rx.heading(titulo, size="7"),
-                    rx.text(subtitulo, color=rx.color("gray", 11), size="2"),
-                    spacing="1",
-                    align_items="start",
-                ),
+                titulo_de_pagina(titulo, subtitulo),
                 rx.spacer(),
                 acao if acao is not None else rx.fragment(),
                 width="100%",
@@ -125,7 +93,7 @@ def _casca(
             *conteudo,
             spacing="4",
             align_items="start",
-            padding_y="2.5rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="4",
@@ -974,7 +942,7 @@ def _cartao_animal(a: dict) -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.heading(a["nome"], size="4"),
-                rx.badge(a["especie"], variant="soft", radius="full"),
+                rx.badge(a["especie"], variant="soft", radius="full", color_scheme="orange"),
                 # Animal sem tutor válido é registro quebrado: para o tutor
                 # ele é invisível por construção, e escondê-lo também da
                 # clínica seria esconder o problema de quem pode resolvê-lo.

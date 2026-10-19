@@ -6,29 +6,8 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 
 import reflex as rx
 
-from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
-
-
-def _topo(atual: str) -> rx.Component:
-    def link(rotulo, href):
-        return rx.link(rotulo, href=href, size="2",
-                       weight="bold" if href == atual else "regular")
-    return rx.hstack(
-        rx.link(rx.heading("PetBits", size="6"), href="/", underline="none", color="inherit"),
-        rx.spacer(),
-        link("Meus animais", "/"),
-        link("Agendar", "/agenda"),
-        link("Loja", "/loja"),
-        link("Meus pedidos", "/pedidos"),
-        rx.button("Sair", on_click=AuthState.sair, variant="soft", color_scheme="gray",
-                  size="2"),
-        width="100%",
-        align="center",
-        spacing="4",
-        wrap="wrap",
-        padding_bottom="1.5rem",
-    )
+from petbits.visual import titulo_de_pagina, topo_do_cliente
 
 
 def _avisos() -> rx.Component:
@@ -180,8 +159,8 @@ def _finalizacao() -> rx.Component:
 def loja_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            _topo("/loja"),
-            rx.heading("Loja", size="7"),
+            topo_do_cliente("/loja"),
+            titulo_de_pagina("Loja", "Rações, petiscos e cuidados para o seu animal."),
             _avisos(),
             rx.grid(
                 rx.cond(
@@ -204,7 +183,7 @@ def loja_page() -> rx.Component:
             _finalizacao(),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="4",
@@ -242,8 +221,8 @@ def _pedido(p: rx.Var) -> rx.Component:
 def pedidos_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            _topo("/pedidos"),
-            rx.heading("Meus pedidos", size="7"),
+            topo_do_cliente("/pedidos"),
+            titulo_de_pagina("Meus pedidos"),
             rx.cond(LojaState.erro,
                     rx.callout(LojaState.erro, icon="triangle_alert", color_scheme="red",
                                size="1", width="100%")),
@@ -260,7 +239,7 @@ def pedidos_page() -> rx.Component:
             ),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
         size="3",

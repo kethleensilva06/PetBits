@@ -9,7 +9,7 @@ import reflex as rx
 
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
-from petbits.states.auth_state import AuthState
+from petbits.visual import titulo_de_pagina, topo_do_cliente
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -305,19 +305,8 @@ def _meus_agendamentos() -> rx.Component:
 def agenda_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
-                rx.link(rx.heading("PetBits", size="6"), href="/", underline="none",
-                        color="inherit"),
-                rx.spacer(),
-                rx.link("Meus animais", href="/", size="2"),
-                rx.button("Sair", on_click=AuthState.sair, variant="soft",
-                          color_scheme="gray", size="2"),
-                width="100%",
-                align="center",
-                spacing="4",
-                padding_bottom="1.5rem",
-            ),
-            rx.heading("Agendar", size="7"),
+            topo_do_cliente("/agenda"),
+            titulo_de_pagina("Agendar", "Escolha o animal, o serviço e um horário livre."),
             rx.cond(
                 AgendaState.aviso,
                 rx.callout(AgendaState.aviso, icon="circle_check", color_scheme="green",
@@ -335,7 +324,7 @@ def agenda_page() -> rx.Component:
             _meus_agendamentos(),
             spacing="4",
             align_items="start",
-            padding_y="3rem",
+            padding_y="2rem",
             width="100%",
         ),
     )

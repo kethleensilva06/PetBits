@@ -8,6 +8,7 @@ animais de quem perguntou.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
+from petbits.visual import titulo_de_pagina, topo_do_cliente
 from petbits.states.pet_state import PetState
 
 
@@ -27,7 +28,8 @@ def _cartao(animal: dict) -> rx.Component:
             rx.vstack(
                 rx.hstack(
                     rx.heading(animal["nome"], size="4"),
-                    rx.badge(animal["especie"], variant="soft", radius="full"),
+                    rx.badge(animal["especie"], variant="soft", radius="full",
+                             color_scheme="orange"),
                     spacing="2",
                     align="center",
                     wrap="wrap",
@@ -154,34 +156,13 @@ def _carregando() -> rx.Component:
 def inicio_page() -> rx.Component:
     return rx.container(
         rx.vstack(
+            topo_do_cliente("/"),
             rx.hstack(
-                rx.heading("PetBits", size="6"),
+                titulo_de_pagina(rx.text.span("Olá, ", AuthState.primeiro_nome, "!"),
+                                 "Os seus animais sob cuidado da clínica."),
                 rx.spacer(),
-                rx.badge(AuthState.papel_exibido, variant="soft", radius="full"),
-                rx.button("Sair", on_click=AuthState.sair, variant="soft",
-                          color_scheme="gray", size="2"),
-                width="100%", align="center", padding_bottom="2rem",
-            ),
-            rx.hstack(
-                rx.vstack(
-                    rx.heading("Olá, ", AuthState.primeiro_nome, "!", size="7"),
-                    rx.text("Os seus animais sob cuidado da clínica.",
-                            color=rx.color("gray", 11)),
-                    spacing="1", align_items="start",
-                ),
-                rx.spacer(),
-                rx.link(
-                    rx.button(rx.icon("calendar", size=16), "Agendar", variant="soft"),
-                    href="/agenda",
-                ),
-                rx.link(
-                    rx.button(rx.icon("shopping-bag", size=16), "Loja", variant="soft"),
-                    href="/loja",
-                ),
-                rx.link(
-                    rx.button(rx.icon("receipt", size=16), "Meus pedidos", variant="soft"),
-                    href="/pedidos",
-                ),
+                # Agendar, Loja e Meus pedidos saíram daqui: estão no cabeçalho
+                # (change `identidade-visual`, D4).
                 rx.cond(
                     PetState.tem_animais,
                     rx.button(rx.icon("plus", size=16), "Novo animal",
@@ -247,6 +228,7 @@ def inicio_page() -> rx.Component:
                 ),
             ),
             _dialogo(),
-            spacing="4", align_items="start", padding_y="3rem", width="100%",
-        )
+            spacing="4", align_items="start", padding_y="2rem", width="100%",
+        ),
+        size="3",
     )

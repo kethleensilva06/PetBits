@@ -32,8 +32,9 @@ from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import EquipeState
 from petbits.states.loja_state import LojaState
 from petbits.states.pet_state import PetState
+from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 
-app = rx.App()
+app = rx.App(theme=TEMA, stylesheets=FOLHAS_DE_ESTILO)
 
 # Rota privada. O `on_load` é a guarda: `carregar_sessao` devolve um
 # redirecionamento e **retorna antes** de qualquer chamada ao Xano quando não
