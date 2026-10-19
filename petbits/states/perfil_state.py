@@ -13,7 +13,7 @@ do token — o backend nem aceita CPF, e-mail ou função neste caminho.
 
 import reflex as rx
 
-from petbits import datas, xano
+from petbits import datas, mascaras, xano
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto, url_da_foto
 from petbits.rotulos import FUNCAO_LEGIVEL
 from petbits.states import sessao
@@ -56,7 +56,8 @@ class _PerfilBase(rx.State, mixin=True):
         self.nome = v
 
     def set_telefone(self, v: str):
-        self.telefone = v
+        # Formatado a cada tecla (change `acabamentos-de-tela`, D5).
+        self.telefone = mascaras.telefone(v)
 
     def set_senha_atual(self, v: str):
         self.senha_atual = v
@@ -176,7 +177,8 @@ class _PerfilBase(rx.State, mixin=True):
         # D3 e D4); aqui é só para o topo mostrar já, sem esperar a próxima entrada.
         auth = await self.get_state(AuthState)
         auth.usuario_nome = self.nome
-        self.aviso_dados = "Dados atualizados."
+        # Notificação que some sozinha (change `acabamentos-de-tela`, D2).
+        yield rx.toast.success("Dados atualizados.")
 
     async def trocar_senha(self):
         self.aviso_senha = ""
@@ -208,7 +210,7 @@ class _PerfilBase(rx.State, mixin=True):
         self.senha_atual = ""
         self.nova_senha = ""
         self.confirmar = ""
-        self.aviso_senha = "Senha alterada. Use a nova na próxima entrada."
+        yield rx.toast.success("Senha alterada. Use a nova na próxima entrada.")
 
     async def enviar_foto(self, arquivos: list[rx.UploadFile]):
         self.erro_foto = ""
@@ -238,6 +240,7 @@ class _PerfilBase(rx.State, mixin=True):
         self.foto_url = url_da_foto(foto)
         await self._guardar_foto_no_cabecalho()
         yield rx.clear_selected_files(self._id_upload())
+        yield rx.toast.success("Foto atualizada.")
 
 
 class PerfilState(_PerfilBase, rx.State):
@@ -260,9 +263,9 @@ class PerfilState(_PerfilBase, rx.State):
 
     def _preencher(self, ficha: dict):
         self.nome = ficha.get("nome") or ""
-        self.telefone = ficha.get("telefone") or ""
+        self.telefone = mascaras.telefone(ficha.get("telefone"))
         self.endereco = ficha.get("endereco") or ""
-        self.documento = ficha.get("documento") or ""
+        self.documento = mascaras.cpf(ficha.get("documento"))
         self.email = ficha.get("email") or ""
         self.foto_url = url_da_foto(ficha.get("foto"))
 
@@ -314,7 +317,7 @@ class PerfilEquipeState(_PerfilBase, rx.State):
 
     def _preencher(self, ficha: dict):
         self.nome = ficha.get("nome") or ""
-        self.telefone = ficha.get("telefone") or ""
+        self.telefone = mascaras.telefone(ficha.get("telefone"))
         self.email = ficha.get("email") or self.email
         self.funcao = FUNCAO_LEGIVEL.get(ficha.get("funcao") or "", ficha.get("funcao") or "")
         self.data_entrada = datas.para_exibir(ficha.get("data_entrada"))

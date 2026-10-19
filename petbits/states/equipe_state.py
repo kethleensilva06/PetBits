@@ -25,7 +25,7 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, rotulos, xano
+from petbits import datas, mascaras, rotulos, xano
 from petbits.documentos import cpf_valido, so_digitos
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
 from petbits.ilustracoes import imagem_do_produto
@@ -177,10 +177,11 @@ class EquipeState(rx.State):
         self.tut_nome = v
 
     def set_tut_documento(self, v: str):
-        self.tut_documento = v
+        # Formatado a cada tecla (change `acabamentos-de-tela`, D5).
+        self.tut_documento = mascaras.cpf(v)
 
     def set_tut_telefone(self, v: str):
-        self.tut_telefone = v
+        self.tut_telefone = mascaras.telefone(v)
 
     def set_tut_email(self, v: str):
         self.tut_email = v
@@ -223,7 +224,7 @@ class EquipeState(rx.State):
         self.col_funcao = v
 
     def set_col_telefone(self, v: str):
-        self.col_telefone = v
+        self.col_telefone = mascaras.telefone(v)
 
     def set_col_email(self, v: str):
         self.col_email = v

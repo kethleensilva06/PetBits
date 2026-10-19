@@ -11,7 +11,7 @@ requisição sai (change `porta-de-entrada`, D5).
 import reflex as rx
 
 from petbits import agenda, rotulos, xano
-from petbits.ilustracoes import imagem_do_produto
+from petbits.ilustracoes import imagem_do_produto, normalizar
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -32,6 +32,17 @@ def reais(valor) -> str:
     return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def filtrar_produtos(produtos: list[dict], busca: str, categoria: str) -> list[dict]:
+    """Busca pelo nome (sem acento nem maiúscula) e filtro pelo rótulo da
+    categoria; "" é "todas" (change `acabamentos-de-tela`, D4)."""
+    termo = normalizar(busca)
+    return [
+        p for p in produtos
+        if (not categoria or p.get("categoria") == categoria)
+        and (not termo or termo in normalizar(p.get("nome")))
+    ]
+
+
 class LojaState(rx.State):
     produtos: list[dict] = []
     # produto_id (texto) -> quantidade. Chave texto porque o estado do Reflex
@@ -49,6 +60,32 @@ class LojaState(rx.State):
     # a loja já tem — abrir o detalhe não faz requisição.
     produto_aberto: dict = {}
     detalhe_aberto: bool = False
+    qtd_detalhe: int = 1
+
+    # Busca e filtro (change `acabamentos-de-tela`, D4): saem da lista que a
+    # loja já carregou, sem requisição.
+    busca: str = ""
+    categoria_filtro: str = ""
+
+    def set_busca(self, v: str):
+        self.busca = v
+
+    def set_categoria_filtro(self, v: str):
+        self.categoria_filtro = "" if v == "Todas" else v
+
+    def limpar_filtros(self):
+        self.busca = ""
+        self.categoria_filtro = ""
+
+    @rx.var
+    def produtos_visiveis(self) -> list[dict]:
+        return filtrar_produtos(self.produtos, self.busca, self.categoria_filtro)
+
+    @rx.var
+    def categorias_da_loja(self) -> list[str]:
+        """Só as categorias que têm produto à venda, na ordem dos rótulos."""
+        presentes = {p.get("categoria") for p in self.produtos}
+        return ["Todas"] + [c for c in CATEGORIAS.values() if c in presentes]
 
     carregando: bool = False
     ja_carregou: bool = False
@@ -66,7 +103,31 @@ class LojaState(rx.State):
 
     def abrir_produto(self, produto: dict):
         self.produto_aberto = produto
+        self.qtd_detalhe = 1
         self.detalhe_aberto = True
+
+    @rx.var
+    def pode_por_mais_no_aberto(self) -> int:
+        """Quantas unidades ainda cabem: o estoque menos o que já está no carrinho."""
+        estoque = int(self.produto_aberto.get("_estoque") or 0)
+        return max(estoque - self.carrinho.get(str(self.produto_aberto.get("id", "")), 0), 0)
+
+    def mais_um(self):
+        if self.qtd_detalhe < self.pode_por_mais_no_aberto:
+            self.qtd_detalhe += 1
+
+    def menos_um(self):
+        if self.qtd_detalhe > 1:
+            self.qtd_detalhe -= 1
+
+    def adicionar_do_detalhe(self):
+        pid = str(self.produto_aberto.get("id", ""))
+        quantos = min(self.qtd_detalhe, self.pode_por_mais_no_aberto)
+        if pid and quantos > 0:
+            self.carrinho = {**self.carrinho, pid: self.carrinho.get(pid, 0) + quantos}
+            self.aviso = ""
+            self.qtd_detalhe = 1
+            return rx.toast.success(f"{quantos} no carrinho.")
 
     def set_detalhe_aberto(self, value: bool):
         self.detalhe_aberto = value
@@ -114,6 +175,9 @@ class LojaState(rx.State):
         self.pedidos = []
         self.produto_aberto = {}
         self.detalhe_aberto = False
+        self.qtd_detalhe = 1
+        self.busca = ""
+        self.categoria_filtro = ""
         self.carregando = False
         self.ja_carregou = False
         self.erro = ""

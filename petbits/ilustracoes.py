@@ -27,6 +27,10 @@ def _normalizar(texto: str | None) -> str:
     return "".join(c for c in sem_acento if not unicodedata.combining(c)).strip().lower()
 
 
+# Pública para a busca da loja (change `acabamentos-de-tela`, D4).
+normalizar = _normalizar
+
+
 def imagem_da_especie(especie: str | None) -> str:
     palavra = _normalizar(especie)
     for imagem, nomes in _ESPECIES.items():

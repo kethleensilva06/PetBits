@@ -88,9 +88,36 @@ def _detalhe_do_produto() -> rx.Component:
                                  LojaState.quantidade_do_aberto, variant="soft",
                                  color_scheme="orange", radius="full"),
                     ),
-                    rx.button(rx.icon("shopping-cart", size=16), "Adicionar ao carrinho",
-                              on_click=LojaState.adicionar(p["id"]), size="3",
-                              width="100%"),
+                    # Quantidade antes de adicionar, até o que ainda cabe no estoque
+                    # (change `acabamentos-de-tela`, D4).
+                    rx.cond(
+                        LojaState.pode_por_mais_no_aberto > 0,
+                        rx.hstack(
+                            rx.hstack(
+                                rx.icon_button(rx.icon("minus", size=14),
+                                               on_click=LojaState.menos_um, variant="soft",
+                                               size="3", aria_label="Menos um",
+                                               disabled=LojaState.qtd_detalhe <= 1),
+                                rx.text(LojaState.qtd_detalhe, weight="bold", size="4",
+                                        min_width="2rem", text_align="center"),
+                                rx.icon_button(rx.icon("plus", size=14),
+                                               on_click=LojaState.mais_um, variant="soft",
+                                               size="3", aria_label="Mais um",
+                                               disabled=LojaState.qtd_detalhe
+                                               >= LojaState.pode_por_mais_no_aberto),
+                                spacing="2",
+                                align="center",
+                            ),
+                            rx.button(rx.icon("shopping-cart", size=16), "Adicionar",
+                                      on_click=LojaState.adicionar_do_detalhe, size="3",
+                                      flex="1"),
+                            spacing="3",
+                            width="100%",
+                            align="center",
+                        ),
+                        rx.text("Todo o estoque disponível já está no seu carrinho.",
+                                size="2", color=rx.color("gray", 10)),
+                    ),
                     spacing="2",
                     align_items="start",
                     height="100%",
@@ -217,18 +244,59 @@ def _finalizacao() -> rx.Component:
     )
 
 
+def _busca_e_filtro() -> rx.Component:
+    """Busca pelo nome e filtro por categoria (change `acabamentos-de-tela`, D4)."""
+    return rx.hstack(
+        rx.input(
+            rx.input.slot(rx.icon("search", size=16)),
+            placeholder="Buscar produto",
+            value=LojaState.busca,
+            on_change=LojaState.set_busca,
+            size="3",
+            flex="1",
+            min_width="12rem",
+        ),
+        rx.select(
+            LojaState.categorias_da_loja,
+            value=rx.cond(LojaState.categoria_filtro, LojaState.categoria_filtro, "Todas"),
+            on_change=LojaState.set_categoria_filtro,
+            size="3",
+        ),
+        spacing="3",
+        width="100%",
+        wrap="wrap",
+    )
+
+
 def loja_page() -> rx.Component:
     return rx.container(
         rx.vstack(
             topo_do_cliente("/loja"),
             titulo_de_pagina("Loja", "Rações, petiscos e cuidados para o seu animal."),
             _avisos(),
+            rx.cond(LojaState.produtos.length() > 0, _busca_e_filtro()),
             rx.grid(
                 rx.cond(
                     LojaState.produtos.length() > 0,
-                    rx.grid(rx.foreach(LojaState.produtos, _produto),
-                            columns=rx.breakpoints(initial="1", sm="2"), spacing="3",
-                            width="100%"),
+                    rx.cond(
+                        LojaState.produtos_visiveis.length() > 0,
+                        rx.grid(rx.foreach(LojaState.produtos_visiveis, _produto),
+                                columns=rx.breakpoints(initial="1", sm="2"), spacing="3",
+                                width="100%"),
+                        rx.card(
+                            rx.vstack(
+                                rx.icon("search-x", size=28, color=rx.color("gray", 9)),
+                                rx.text("Nenhum produto encontrado com essa busca.",
+                                        color=rx.color("gray", 11)),
+                                rx.button("Limpar a busca", on_click=LojaState.limpar_filtros,
+                                          variant="soft"),
+                                spacing="3",
+                                align="center",
+                                padding="2rem",
+                            ),
+                            width="100%",
+                        ),
+                    ),
                     rx.cond(
                         LojaState.carregando,
                         rx.hstack(rx.spinner(size="2"), rx.text("Carregando a loja...")),

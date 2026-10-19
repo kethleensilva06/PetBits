@@ -20,6 +20,8 @@ from typing import Any, Optional
 import httpx
 from dotenv import load_dotenv
 
+from petbits.mensagens import acentuar
+
 load_dotenv()
 
 TIMEOUT = httpx.Timeout(15.0)
@@ -198,7 +200,9 @@ def _detalhe(resposta: httpx.Response) -> str:
     except ValueError:
         return resposta.text[:200] or "sem detalhes"
     if isinstance(corpo, dict):
-        return str(corpo.get("message") or corpo.get("error") or corpo)[:200]
+        # O backend escreve sem acento; a tela mostra com (change
+        # `acabamentos-de-tela`, D1).
+        return acentuar(str(corpo.get("message") or corpo.get("error") or corpo)[:200])
     return str(corpo)[:200]
 
 

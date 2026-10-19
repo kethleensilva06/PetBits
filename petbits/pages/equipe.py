@@ -43,10 +43,53 @@ def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
 
 
 def _navegacao(atual: str) -> rx.Component:
-    return rx.hstack(
+    """Abas na tela larga; no celular, um botão que abre a lista (change
+    `acabamentos-de-tela`, D3). As 9 abas quebravam em 3 linhas no celular."""
+    rotulo_atual, icone_atual = next(
+        ((rotulo, icone) for rota, rotulo, icone in AREAS if rota == atual),
+        ("Menu", "menu"),
+    )
+    abas = rx.hstack(
         *[pilula(rotulo, icone, rota, rota == atual) for rota, rotulo, icone in AREAS],
         spacing="1",
         wrap="wrap",
+        width="100%",
+        display=rx.breakpoints(initial="none", md="flex"),
+    )
+    menu = rx.menu.root(
+        rx.menu.trigger(
+            rx.button(
+                rx.icon("menu", size=16),
+                rx.icon(icone_atual, size=15),
+                rotulo_atual,
+                rx.icon("chevron-down", size=14),
+                variant="soft",
+                size="3",
+                width="100%",
+                justify="start",
+            ),
+        ),
+        rx.menu.content(
+            *[
+                rx.menu.item(
+                    rx.link(
+                        rx.hstack(rx.icon(icone, size=15), rx.text(rotulo), spacing="2",
+                                  align="center"),
+                        href=rota,
+                        underline="none",
+                        color="inherit",
+                        width="100%",
+                    ),
+                    color=rx.color("teal", 11) if rota == atual else None,
+                )
+                for rota, rotulo, icone in AREAS
+            ],
+            min_width="14rem",
+        ),
+    )
+    return rx.box(
+        abas,
+        rx.box(menu, display=rx.breakpoints(initial="block", md="none"), width="100%"),
         width="100%",
         padding_bottom="0.75rem",
     )
@@ -63,9 +106,13 @@ def _casca(
         rx.vstack(
             barra(
                 marca("/equipe"),
-                rx.badge("Clínica", variant="soft", color_scheme="orange", radius="full"),
+                # No celular o topo tem de caber numa linha: os selos e o nome somem
+                # abaixo de `sm`, e ficam a marca, o avatar e o sair.
+                rx.badge("Clínica", variant="soft", color_scheme="orange", radius="full",
+                         display=rx.breakpoints(initial="none", sm="inline-flex")),
                 rx.spacer(),
-                rx.badge(AuthState.papel_exibido, variant="soft", radius="full"),
+                rx.badge(AuthState.papel_exibido, variant="soft", radius="full",
+                         display=rx.breakpoints(initial="none", sm="inline-flex")),
                 # Tocar no próprio avatar abre o perfil (change `perfil-do-colaborador`).
                 rx.link(
                     rx.hstack(
@@ -73,7 +120,8 @@ def _casca(
                                   radius="full", size="3", color_scheme="teal",
                                   variant="solid"),
                         rx.text(AuthState.primeiro_nome, size="2",
-                                color=rx.color("gray", 11)),
+                                color=rx.color("gray", 11),
+                                display=rx.breakpoints(initial="none", sm="block")),
                         spacing="2",
                         align="center",
                     ),

@@ -19,6 +19,7 @@ from reflex.utils.exec import is_prod_mode
 
 from petbits import contas_de_teste, xano
 from petbits.documentos import cpf_valido
+from petbits import mascaras
 from petbits.fotos_enviadas import url_da_foto
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
@@ -207,10 +208,11 @@ class AuthState(rx.State):
         self.cad_confirmar = value
 
     def set_cad_documento(self, value: str):
-        self.cad_documento = value
+        # Formatado a cada tecla (change `acabamentos-de-tela`, D5).
+        self.cad_documento = mascaras.cpf(value)
 
     def set_cad_telefone(self, value: str):
-        self.cad_telefone = value
+        self.cad_telefone = mascaras.telefone(value)
 
     def set_cad_endereco(self, value: str):
         self.cad_endereco = value

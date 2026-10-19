@@ -8,6 +8,7 @@ gastaria orçamento da instância do Xano a cada clique no menu.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
+from petbits.states.loja_state import LojaState
 
 TEMA = rx.theme(
     appearance="inherit",
@@ -90,8 +91,12 @@ def barra(*conteudo) -> rx.Component:
 
 
 def sair() -> rx.Component:
-    return rx.button(rx.icon("log-out", size=15), "Sair", on_click=AuthState.sair,
-                     variant="soft", color_scheme="gray", size="2")
+    # No celular fica só o ícone, para o topo caber numa linha (change
+    # `acabamentos-de-tela`, D3); o nome continua para leitor de tela.
+    return rx.button(rx.icon("log-out", size=15),
+                     rx.text("Sair", display=rx.breakpoints(initial="none", sm="inline")),
+                     on_click=AuthState.sair, variant="soft", color_scheme="gray", size="2",
+                     aria_label="Sair")
 
 
 def topo_do_cliente(atual: str) -> rx.Component:
@@ -101,7 +106,24 @@ def topo_do_cliente(atual: str) -> rx.Component:
             marca("/"),
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
-                     radius="full"),
+                     radius="full", display=rx.breakpoints(initial="none", sm="inline-flex")),
+            # O carrinho em qualquer tela do cliente (change `acabamentos-de-tela`,
+            # D4): o número sai do LojaState, sem requisição.
+            rx.link(
+                rx.box(
+                    rx.icon_button(rx.icon("shopping-cart", size=18), variant="soft",
+                                   size="2", aria_label="Carrinho"),
+                    rx.cond(
+                        LojaState.quantidade_no_carrinho > 0,
+                        rx.badge(LojaState.quantidade_no_carrinho, color_scheme="orange",
+                                 variant="solid", radius="full", position="absolute",
+                                 top="-0.4rem", right="-0.4rem", size="1"),
+                    ),
+                    position="relative",
+                ),
+                href="/loja",
+                title="Carrinho",
+            ),
             # Tocar no próprio avatar abre o perfil (change `perfil-e-fotos`, D6).
             rx.link(
                 rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
