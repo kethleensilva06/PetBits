@@ -26,7 +26,8 @@ def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
             rx.image(src=animal["imagem"], alt=animal["especie"], width="4.5rem",
-                     height="4.5rem", border_radius="1.1rem", flex_shrink="0"),
+                     height="4.5rem", border_radius="1.1rem", flex_shrink="0",
+                     object_fit="cover"),
             rx.vstack(
                 rx.hstack(
                     rx.heading(animal["nome"], size="4"),
@@ -129,7 +130,7 @@ def _dialogo() -> rx.Component:
 
 def _vazio() -> rx.Component:
     return tela_vazia(
-        "/ilustracoes/vazio-animais.svg",
+        "/fotos/vazio-animais.webp",
         "A casinha ainda está vazia",
         "Cadastre o seu primeiro animal para a clínica poder acompanhá-lo de perto.",
         rx.button(rx.icon("plus", size=16), "Cadastrar animal", on_click=PetState.novo,
@@ -163,8 +164,9 @@ def _banner() -> rx.Component:
                 align_items="start",
                 flex="1",
             ),
-            rx.image(src="/ilustracoes/banner.svg", alt="", width="17rem",
-                     height="auto", flex_shrink="0",
+            rx.image(src="/fotos/banner.webp", alt="Um cão e um gato abraçados",
+                     width="17rem", height="11.5rem", object_fit="cover",
+                     border_radius="1.25rem", flex_shrink="0",
                      display=rx.breakpoints(initial="none", sm="block")),
             align="center",
             spacing="4",

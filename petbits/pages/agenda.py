@@ -295,7 +295,7 @@ def _meus_agendamentos() -> rx.Component:
                 rx.hstack(rx.spinner(size="1"), rx.text("Carregando...", size="2"), spacing="2"),
                 # Falhou não é vazio: o erro já está no callout acima.
                 rx.cond(AgendaState.erro_lista, rx.fragment(), tela_vazia(
-                    "/ilustracoes/vazio-agenda.svg",
+                    "/fotos/vazio-agenda.webp",
                     "Nenhum agendamento ainda",
                     "Consulta, vacina ou banho e tosa: escolha o serviço, o animal e um "
                     "horário livre aqui em cima.",

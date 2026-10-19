@@ -11,7 +11,7 @@ requisição sai (change `porta-de-entrada`, D5).
 import reflex as rx
 
 from petbits import agenda, rotulos, xano
-from petbits.ilustracoes import imagem_da_categoria
+from petbits.ilustracoes import imagem_do_produto
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -45,6 +45,11 @@ class LojaState(rx.State):
 
     pedidos: list[dict] = []
 
+    # Detalhe do produto (change `fotos-realistas`): o item vem da lista que
+    # a loja já tem — abrir o detalhe não faz requisição.
+    produto_aberto: dict = {}
+    detalhe_aberto: bool = False
+
     carregando: bool = False
     ja_carregou: bool = False
     erro: str = ""
@@ -58,6 +63,13 @@ class LojaState(rx.State):
 
     def set_finalizando(self, value: bool):
         self.finalizando = value
+
+    def abrir_produto(self, produto: dict):
+        self.produto_aberto = produto
+        self.detalhe_aberto = True
+
+    def set_detalhe_aberto(self, value: bool):
+        self.detalhe_aberto = value
 
     # --- derivados -------------------------------------------------------
 
@@ -87,6 +99,10 @@ class LojaState(rx.State):
     def quantidade_no_carrinho(self) -> int:
         return sum(self.carrinho.values())
 
+    @rx.var
+    def quantidade_do_aberto(self) -> int:
+        return self.carrinho.get(str(self.produto_aberto.get("id", "")), 0)
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
         self.produtos = []
@@ -96,6 +112,8 @@ class LojaState(rx.State):
         self.finalizando = False
         self.enviando = False
         self.pedidos = []
+        self.produto_aberto = {}
+        self.detalhe_aberto = False
         self.carregando = False
         self.ja_carregou = False
         self.erro = ""
@@ -132,7 +150,7 @@ class LojaState(rx.State):
                 "nome": p.get("nome") or "-",
                 "descricao": p.get("descricao") or "",
                 "categoria": CATEGORIAS.get(p.get("categoria") or "", "-"),
-                "imagem": imagem_da_categoria(p.get("categoria")),
+                "imagem": imagem_do_produto(p.get("nome"), p.get("categoria")),
                 "marca": p.get("marca") or "",
                 "unidade": p.get("unidade") or "",
                 "preco": reais(p.get("preco")),

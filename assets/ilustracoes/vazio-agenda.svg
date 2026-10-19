@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Calendário com patinha"><title>Calendário com patinha</title><ellipse cx="120" cy="168" rx="84" ry="8" fill="#2D2A26" opacity=".08"/>
-<rect x="60" y="38" width="120" height="120" rx="18" fill="#fff" stroke="#12A594" stroke-width="5"/><path d="M60 72 h120 v-16 a18 18 0 0 0 -18 -18 h-84 a18 18 0 0 0 -18 18 z" fill="#12A594"/>
-<path d="M88 28 v20 M152 28 v20" stroke="#0B6E63" stroke-width="8" stroke-linecap="round"/><g transform="translate(120 116) scale(0.55)" fill="#F76B15">
-<ellipse cx="0" cy="14" rx="22" ry="18"/><ellipse cx="-24" cy="-10" rx="9" ry="12"/><ellipse cx="-8" cy="-24" rx="9" ry="12"/>
-<ellipse cx="8" cy="-24" rx="9" ry="12"/><ellipse cx="24" cy="-10" rx="9" ry="12"/></g>
-<g transform="translate(206 60) scale(0.22)" fill="#12A594">
-<ellipse cx="0" cy="14" rx="22" ry="18"/><ellipse cx="-24" cy="-10" rx="9" ry="12"/><ellipse cx="-8" cy="-24" rx="9" ry="12"/>
-<ellipse cx="8" cy="-24" rx="9" ry="12"/><ellipse cx="24" cy="-10" rx="9" ry="12"/></g></svg>
