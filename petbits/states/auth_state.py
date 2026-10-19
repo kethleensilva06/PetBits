@@ -377,6 +377,13 @@ class AuthState(rx.State):
                 self.usuario_foto = url_da_foto((ficha or {}).get("foto"))
             except XanoError:
                 self.usuario_foto = ""
+        elif xano.eh_equipe(self.usuario_papel):
+            # O mesmo para a equipe (change `perfil-do-colaborador`, D6).
+            try:
+                perfil_equipe = await xano.meu_perfil_de_equipe(token=self.token)
+                self.usuario_foto = url_da_foto((perfil_equipe.get("ficha") or {}).get("foto"))
+            except XanoError:
+                self.usuario_foto = ""
         # O destino vem do papel que o servidor devolveu, não da aba: a aba só
         # decidiu se a entrada era permitida, e a área é consequência do papel.
         yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
@@ -443,11 +450,14 @@ class AuthState(rx.State):
         from petbits.states.agenda_state import AgendaState
         from petbits.states.equipe_state import EquipeState
         from petbits.states.loja_state import LojaState
-        from petbits.states.perfil_state import PerfilState
+        from petbits.states.perfil_state import PerfilEquipeState, PerfilState
         from petbits.states.pet_state import PetState
 
         perfil = await self.get_state(PerfilState)
         perfil.limpar_dados()
+
+        perfil_equipe = await self.get_state(PerfilEquipeState)
+        perfil_equipe.limpar_dados()
 
         pet = await self.get_state(PetState)
         pet.limpar_dados()

@@ -1,31 +1,40 @@
-"""Meu perfil: os dados do tutor, a troca de senha e a foto (change `perfil-e-fotos`).
+"""Meu perfil: os dados, a troca de senha e a foto — do tutor e de quem é da equipe.
 
-Mesma guarda da área de cliente (`sessao.token_de_cliente`): sem sessão, ou
-com conta de equipe, levanta antes de qualquer requisição. A ficha alterada é
-sempre a do token — o backend nem aceita CPF ou e-mail neste caminho.
+O tutor veio na change `perfil-e-fotos`; a equipe, na `perfil-do-colaborador`.
+As duas telas fazem a mesma coisa sobre fichas diferentes, então o que é comum
+mora em `_PerfilBase` (um mixin: cada State concreto tem as suas variáveis, e
+um não enxerga o que o outro carregou). Cada um diz só de onde lê, onde grava
+e para onde manda a foto.
+
+A guarda é a de cada área (`sessao.token_de_cliente` ou a de equipe): sem a
+conta certa, levanta antes de qualquer requisição. A ficha alterada é sempre a
+do token — o backend nem aceita CPF, e-mail ou função neste caminho.
 """
 
 import reflex as rx
 
-from petbits import xano
+from petbits import datas, xano
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto, url_da_foto
+from petbits.rotulos import FUNCAO_LEGIVEL
 from petbits.states import sessao
 from petbits.states.auth_state import AuthState
 from petbits.states.sessao import SemSessao
 from petbits.xano import FalhaDeComunicacao, SessaoExpirada, XanoError
 
 ID_UPLOAD = "foto_de_perfil"
+ID_UPLOAD_EQUIPE = "foto_de_perfil_equipe"
 
 
-class PerfilState(rx.State):
+class _PerfilBase(rx.State, mixin=True):
     carregando: bool = False
     ja_carregou: bool = False
     erro: str = ""
+    # Conta de equipe sem ficha com o mesmo e-mail: a tela mostra só a senha
+    # e o aviso (change `perfil-do-colaborador`, D1).
+    tem_ficha: bool = True
 
     nome: str = ""
     telefone: str = ""
-    endereco: str = ""
-    documento: str = ""
     email: str = ""
     foto_url: str = ""
 
@@ -49,9 +58,6 @@ class PerfilState(rx.State):
     def set_telefone(self, v: str):
         self.telefone = v
 
-    def set_endereco(self, v: str):
-        self.endereco = v
-
     def set_senha_atual(self, v: str):
         self.senha_atual = v
 
@@ -63,31 +69,57 @@ class PerfilState(rx.State):
 
     @rx.var
     def iniciais(self) -> str:
-        partes = [p for p in self.nome.split() if p[:1].isalpha()]
+        partes = [p for p in self.nome.split()
+                  if p[:1].isalpha() and p.lower().rstrip(".") not in ("dr", "dra", "sr", "sra")]
         return "".join(p[0] for p in partes[:2]).upper() or "?"
+
+    # Textos que pertencem a uma pessoa; cada área acrescenta os seus.
+    _TEXTOS = ("erro", "nome", "telefone", "email", "foto_url", "aviso_dados", "erro_dados",
+               "senha_atual", "nova_senha", "confirmar", "aviso_senha", "erro_senha",
+               "erro_foto")
+
+    def _textos_da_area(self) -> tuple:
+        return ()
 
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
-        for campo in ("erro", "nome", "telefone", "endereco", "documento", "email",
-                      "foto_url", "aviso_dados", "erro_dados", "senha_atual", "nova_senha",
-                      "confirmar", "aviso_senha", "erro_senha", "erro_foto"):
+        for campo in self._TEXTOS + self._textos_da_area():
             setattr(self, campo, "")
         self.carregando = False
         self.ja_carregou = False
+        self.tem_ficha = True
         self.salvando = False
         self.trocando = False
         self.enviando_foto = False
 
+    # --- o que cada área diz ---------------------------------------------
+
     async def _token(self) -> str:
-        return await sessao.token_de_cliente(self)
+        raise NotImplementedError
+
+    async def _ler(self, token: str) -> dict | None:
+        """A ficha, ou None quando a conta não tem ficha."""
+        raise NotImplementedError
 
     def _preencher(self, ficha: dict):
-        self.nome = ficha.get("nome") or ""
-        self.telefone = ficha.get("telefone") or ""
-        self.endereco = ficha.get("endereco") or ""
-        self.documento = ficha.get("documento") or ""
-        self.email = ficha.get("email") or ""
-        self.foto_url = url_da_foto(ficha.get("foto"))
+        raise NotImplementedError
+
+    def _dados_para_gravar(self) -> dict:
+        raise NotImplementedError
+
+    async def _gravar(self, dados: dict, token: str) -> dict:
+        raise NotImplementedError
+
+    async def _gravar_foto(self, conteudo: bytes, extensao: str, token: str) -> dict:
+        raise NotImplementedError
+
+    def _id_upload(self) -> str:
+        raise NotImplementedError
+
+    def _sem_ficha(self):
+        raise NotImplementedError
+
+    # --- comum ------------------------------------------------------------
 
     async def _guardar_foto_no_cabecalho(self):
         auth = await self.get_state(AuthState)
@@ -102,7 +134,7 @@ class PerfilState(rx.State):
         self.carregando = True
         try:
             token = await self._token()
-            ficha = await xano.minha_ficha(token)
+            ficha = await self._ler(token)
         except (SemSessao, SessaoExpirada) as erro:
             self.carregando = False
             return await sessao.encerrar(self, erro)
@@ -113,8 +145,9 @@ class PerfilState(rx.State):
         self.carregando = False
         self.ja_carregou = True
         if not ficha:
-            self.erro = "Esta conta não tem ficha de tutor. Procure a clínica."
+            self._sem_ficha()
             return
+        self.tem_ficha = True
         self._preencher(ficha)
         await self._guardar_foto_no_cabecalho()
 
@@ -128,11 +161,7 @@ class PerfilState(rx.State):
         yield
         try:
             token = await self._token()
-            ficha = await xano.alterar_minha_ficha(
-                {"nome": self.nome.strip(), "telefone": self.telefone.strip(),
-                 "endereco": self.endereco.strip()},
-                token=token,
-            )
+            ficha = await self._gravar(self._dados_para_gravar(), token)
         except (SemSessao, SessaoExpirada) as erro:
             self.salvando = False
             yield await sessao.encerrar(self, erro)
@@ -143,8 +172,8 @@ class PerfilState(rx.State):
             return
         self.salvando = False
         self._preencher(ficha)
-        # O nome do cabeçalho ("Olá, Ana!") vem do AuthState; sem isto ele
-        # ficaria com o nome antigo até a próxima entrada.
+        # O backend também muda o nome da conta (change `perfil-do-colaborador`,
+        # D3 e D4); aqui é só para o topo mostrar já, sem esperar a próxima entrada.
         auth = await self.get_state(AuthState)
         auth.usuario_nome = self.nome
         self.aviso_dados = "Dados atualizados."
@@ -196,7 +225,7 @@ class PerfilState(rx.State):
         yield
         try:
             token = await self._token()
-            foto = await xano.enviar_foto_de_perfil(conteudo, extensao, token=token)
+            foto = await self._gravar_foto(conteudo, extensao, token)
         except (SemSessao, SessaoExpirada) as erro:
             self.enviando_foto = False
             yield await sessao.encerrar(self, erro)
@@ -208,4 +237,102 @@ class PerfilState(rx.State):
         self.enviando_foto = False
         self.foto_url = url_da_foto(foto)
         await self._guardar_foto_no_cabecalho()
-        yield rx.clear_selected_files(ID_UPLOAD)
+        yield rx.clear_selected_files(self._id_upload())
+
+
+class PerfilState(_PerfilBase, rx.State):
+    """O perfil do tutor (change `perfil-e-fotos`)."""
+
+    endereco: str = ""
+    documento: str = ""
+
+    def set_endereco(self, v: str):
+        self.endereco = v
+
+    def _textos_da_area(self) -> tuple:
+        return ("endereco", "documento")
+
+    async def _token(self) -> str:
+        return await sessao.token_de_cliente(self)
+
+    async def _ler(self, token: str) -> dict | None:
+        return await xano.minha_ficha(token)
+
+    def _preencher(self, ficha: dict):
+        self.nome = ficha.get("nome") or ""
+        self.telefone = ficha.get("telefone") or ""
+        self.endereco = ficha.get("endereco") or ""
+        self.documento = ficha.get("documento") or ""
+        self.email = ficha.get("email") or ""
+        self.foto_url = url_da_foto(ficha.get("foto"))
+
+    def _dados_para_gravar(self) -> dict:
+        return {"nome": self.nome.strip(), "telefone": self.telefone.strip(),
+                "endereco": self.endereco.strip()}
+
+    async def _gravar(self, dados: dict, token: str) -> dict:
+        return await xano.alterar_minha_ficha(dados, token=token)
+
+    async def _gravar_foto(self, conteudo: bytes, extensao: str, token: str) -> dict:
+        return await xano.enviar_foto_de_perfil(conteudo, extensao, token=token)
+
+    def _id_upload(self) -> str:
+        return ID_UPLOAD
+
+    def _sem_ficha(self):
+        self.erro = "Esta conta não tem ficha de tutor. Procure a clínica."
+
+
+class PerfilEquipeState(_PerfilBase, rx.State):
+    """O perfil de quem é da equipe (change `perfil-do-colaborador`).
+
+    A ficha é a de colaborador com o mesmo e-mail da conta (D1). Função, e-mail
+    e data de entrada aparecem travados: quem define é a gerência.
+    """
+
+    funcao: str = ""
+    data_entrada: str = ""
+
+    def _textos_da_area(self) -> tuple:
+        return ("funcao", "data_entrada")
+
+    async def _token(self) -> str:
+        auth = await self.get_state(AuthState)
+        if not auth.token:
+            raise SemSessao("/entrar")
+        if not xano.eh_equipe(auth.usuario_papel):
+            raise SemSessao("/")
+        return auth.token
+
+    async def _ler(self, token: str) -> dict | None:
+        resposta = await xano.meu_perfil_de_equipe(token=token)
+        conta = resposta.get("conta") or {}
+        # Sem ficha, o nome e o e-mail da conta ainda servem ao avatar e à tela.
+        self.nome = conta.get("nome") or ""
+        self.email = conta.get("email") or ""
+        return resposta.get("ficha")
+
+    def _preencher(self, ficha: dict):
+        self.nome = ficha.get("nome") or ""
+        self.telefone = ficha.get("telefone") or ""
+        self.email = ficha.get("email") or self.email
+        self.funcao = FUNCAO_LEGIVEL.get(ficha.get("funcao") or "", ficha.get("funcao") or "")
+        self.data_entrada = datas.para_exibir(ficha.get("data_entrada"))
+        self.foto_url = url_da_foto(ficha.get("foto"))
+
+    def _dados_para_gravar(self) -> dict:
+        return {"nome": self.nome.strip(), "telefone": self.telefone.strip()}
+
+    async def _gravar(self, dados: dict, token: str) -> dict:
+        return await xano.alterar_meu_perfil_de_equipe(dados, token=token)
+
+    async def _gravar_foto(self, conteudo: bytes, extensao: str, token: str) -> dict:
+        return await xano.enviar_minha_foto_de_equipe(conteudo, extensao, token=token)
+
+    def _id_upload(self) -> str:
+        return ID_UPLOAD_EQUIPE
+
+    def _sem_ficha(self):
+        self.tem_ficha = False
+        self.foto_url = ""
+

@@ -223,7 +223,8 @@ pontuação (pontos, traço, espaço) SHALL ser ignorada.
 Um tutor autenticado SHALL alterar nome, telefone e endereço da própria
 ficha. A ficha alterada MUST ser a do token, nunca uma indicada na
 requisição. Nome MUST NOT ficar em branco. CPF e e-mail MUST NOT ser
-alterados por este caminho.
+alterados por este caminho. Alterar o nome SHALL alterar também o nome da
+conta de acesso, de onde vem a saudação.
 
 #### Scenario: Troca de telefone
 
@@ -244,6 +245,11 @@ alterados por este caminho.
 
 - **WHEN** uma conta de equipe chama a alteração de perfil de tutor
 - **THEN** é recusada, sem alterar ficha nenhuma
+
+#### Scenario: Nome novo depois de sair e entrar
+
+- **WHEN** a tutora muda o nome no perfil, sai e entra de novo
+- **THEN** a saudação usa o nome novo
 
 ### Requirement: Foto de perfil do tutor
 

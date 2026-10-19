@@ -27,12 +27,12 @@ from petbits.pages.equipe import (
 )
 from petbits.pages.inicio import inicio_page
 from petbits.pages.loja import loja_page, pedidos_page
-from petbits.pages.perfil import perfil_page
+from petbits.pages.perfil import perfil_equipe_page, perfil_page
 from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import EquipeState
 from petbits.states.loja_state import LojaState
-from petbits.states.perfil_state import PerfilState
+from petbits.states.perfil_state import PerfilEquipeState, PerfilState
 from petbits.states.pet_state import PetState
 from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 
@@ -90,6 +90,9 @@ for rota, pagina, titulo, carregar in (
     ("/equipe/balcao", balcao_page, "Balcão", EquipeState.carregar_balcao),
     ("/equipe/tutores", tutores_page, "Tutores", EquipeState.carregar_tutores),
     ("/equipe/animais", animais_page, "Animais", EquipeState.carregar_animais),
+    # Meu perfil da equipe (change `perfil-do-colaborador`): a mesma guarda —
+    # `PerfilEquipeState._token` levanta antes de qualquer requisição.
+    ("/equipe/perfil", perfil_equipe_page, "Meu perfil", PerfilEquipeState.carregar),
 ):
     app.add_page(
         pagina,

@@ -66,6 +66,19 @@ query "me/tutor" verb=PATCH {
           field_value = $minha.id
           data = $dados
         } as $atualizada
+
+        // A saudacao vem do nome da CONTA (`auth/me`), nao da ficha. Sem isto,
+        // o nome novo valia so ate sair, e o antigo voltava na entrada
+        // seguinte (change `perfil-do-colaborador`, D4).
+        conditional {
+          if (($dados|has:"nome") == true) {
+            db.edit user {
+              field_name = "id"
+              field_value = $auth.id
+              data = {name: $dados|get:"nome"}
+            } as $conta_editada
+          }
+        }
       }
     }
   }

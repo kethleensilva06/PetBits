@@ -785,3 +785,27 @@ async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> d
     if feita is None:
         raise XanoError("O Xano não confirmou a venda.")
     return feita
+
+
+# --- perfil de quem é da equipe (change `perfil-do-colaborador`) -------------
+
+
+async def meu_perfil_de_equipe(*, token: str) -> dict:
+    """`{conta: {nome, email}, ficha: {...} | None}`: a ficha de colaborador
+    com o mesmo e-mail da conta do token, quando há uma."""
+    return await _requisitar("GET", "/equipe/meu-perfil", token=token) or {}
+
+
+async def alterar_meu_perfil_de_equipe(dados: dict, *, token: str) -> dict:
+    """Nome e telefone. Função, e-mail, entrada e ativo nem estão no `input`."""
+    ficha = await _requisitar("PATCH", "/equipe/meu-perfil", token=token, json=dados)
+    if ficha is None:
+        raise XanoError("O Xano nao confirmou a alteracao do perfil.")
+    return ficha
+
+
+async def enviar_minha_foto_de_equipe(conteudo: bytes, extensao: str, *, token: str) -> dict:
+    files, data = _arquivo_de_foto(conteudo, extensao)
+    resposta = await _requisitar("POST", "/equipe/meu-perfil/foto", token=token,
+                                 files=files, data=data)
+    return (resposta or {}).get("foto") or {}
