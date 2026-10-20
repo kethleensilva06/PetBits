@@ -363,6 +363,52 @@ def _item(a: rx.Var) -> rx.Component:
     )
 
 
+def _proximos_e_anteriores() -> rx.Component:
+    """Próximos abertos; anteriores fechados, com a quantidade (change
+    `proximos-e-anteriores`)."""
+    return rx.vstack(
+        rx.text("Próximos", size="3", weight="bold"),
+        rx.cond(
+            AgendaState.proximos.length() > 0,
+            rx.vstack(rx.foreach(AgendaState.proximos, _item), spacing="2", width="100%"),
+            rx.hstack(
+                rx.text("Nada marcado pela frente.", size="2", color=rx.color("gray", 11)),
+                rx.button("Marcar agora", variant="soft", size="1",
+                          on_click=rx.scroll_to("marcar")),
+                spacing="3",
+                align="center",
+            ),
+        ),
+        rx.cond(
+            AgendaState.anteriores.length() > 0,
+            rx.vstack(
+                rx.button(
+                    rx.cond(AgendaState.mostrar_anteriores, rx.icon("chevron-up", size=14),
+                            rx.icon("chevron-down", size=14)),
+                    rx.cond(AgendaState.mostrar_anteriores, "Esconder anteriores",
+                            "Mostrar anteriores"),
+                    " (", AgendaState.anteriores.length(), ")",
+                    variant="ghost",
+                    size="2",
+                    on_click=AgendaState.alternar_anteriores,
+                ),
+                rx.cond(
+                    AgendaState.mostrar_anteriores,
+                    rx.vstack(rx.foreach(AgendaState.anteriores, _item), spacing="2",
+                              width="100%"),
+                ),
+                spacing="2",
+                width="100%",
+                align_items="start",
+                padding_top="0.5rem",
+            ),
+        ),
+        spacing="2",
+        width="100%",
+        align_items="start",
+    )
+
+
 def _meus_agendamentos() -> rx.Component:
     return rx.vstack(
         rx.heading("Meus agendamentos", size="5"),
@@ -373,7 +419,7 @@ def _meus_agendamentos() -> rx.Component:
         ),
         rx.cond(
             AgendaState.tem_agendamentos,
-            rx.vstack(rx.foreach(AgendaState.agendamentos, _item), spacing="2", width="100%"),
+            _proximos_e_anteriores(),
             rx.cond(
                 AgendaState.mostrar_carregando,
                 esqueletos.linhas("Carregando os seus agendamentos..."),

@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 
 from petbits import agenda
-from petbits.proximo import dia_legivel, proximo_agendamento
+from petbits.proximo import dia_legivel, proximo_agendamento, separar_agendamentos
 
 HORA = 3600 * 1000
 # Agora: terça, 20/10/2026, 14h em São Paulo.
@@ -44,6 +44,20 @@ class ProximoTest(unittest.TestCase):
 class DiaLegivelTest(unittest.TestCase):
     def test_depois_de_amanha(self):
         self.assertEqual(dia_legivel(AMANHA_10 + 24 * HORA, AGORA), "Qui, 22 de outubro, 10:00")
+
+
+
+class SepararTest(unittest.TestCase):
+    """Próximos e anteriores (change `proximos-e-anteriores`)."""
+
+    def test_separa_e_ordena(self):
+        registros = [ag(AMANHA_10 + 48 * HORA, servico="Banho"), ag(AMANHA_10),
+                     ag(AGORA - 24 * HORA, "concluido"), ag(AMANHA_10, "cancelado"),
+                     ag(AGORA - 48 * HORA), ag(AGORA - 3 * 24 * HORA, "faltou")]
+        proximos, anteriores = separar_agendamentos(registros, AGORA)
+        self.assertEqual([p["servico_nome"] for p in proximos], ["Consulta clínica", "Banho"])
+        self.assertEqual([a["situacao"] for a in anteriores],
+                         ["cancelado", "concluido", "marcado", "faltou"])
 
 
 if __name__ == "__main__":

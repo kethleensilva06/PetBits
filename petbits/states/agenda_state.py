@@ -18,7 +18,7 @@ from typing import Any
 
 import reflex as rx
 
-from petbits import agenda, agenda_guiada, calendario, rotulos, xano
+from petbits import agenda, agenda_guiada, calendario, proximo, rotulos, xano
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -40,6 +40,11 @@ class AgendaState(rx.State):
     servicos: list[dict] = []
     animais: list[dict] = []
     agendamentos: list[dict] = []
+    # Próximos e anteriores (change `proximos-e-anteriores`); os anteriores
+    # começam fechados.
+    proximos: list[dict] = []
+    anteriores: list[dict] = []
+    mostrar_anteriores: bool = False
 
     categoria: str = "clinica"
     servico_id: str = ""
@@ -162,6 +167,9 @@ class AgendaState(rx.State):
         return agenda_guiada.linhas_do_resumo(self.servico_escolhido, animal,
                                               self.horario_ms, self.dia_por_extenso)
 
+    def alternar_anteriores(self):
+        self.mostrar_anteriores = not self.mostrar_anteriores
+
     @rx.var
     def tem_agendamentos(self) -> bool:
         return len(self.agendamentos) > 0
@@ -186,6 +194,9 @@ class AgendaState(rx.State):
         self.servicos = []
         self.animais = []
         self.agendamentos = []
+        self.proximos = []
+        self.anteriores = []
+        self.mostrar_anteriores = False
         self.categoria = "clinica"
         self.servico_id = ""
         self.pet_id = ""
@@ -221,6 +232,8 @@ class AgendaState(rx.State):
         self.servicos = []
         self.animais = []
         self.agendamentos = []
+        self.proximos = []
+        self.anteriores = []
         if not self.mes:
             atual = agenda.hoje()
             self.ano, self.mes = atual.year, atual.month
@@ -258,30 +271,35 @@ class AgendaState(rx.State):
 
     def _guardar_agendamentos(self, registros: list[dict]):
         agora = agenda.agora_ms()
-        self.agendamentos = [
-            {
-                "id": a.get("id"),
-                "quando": f"{agenda.data_curta(a.get('inicio'))}, "
-                          f"{agenda.hora(a.get('inicio'))}–{agenda.hora(a.get('fim'))}",
-                "animal": a.get("pet_nome") or "-",
-                "servico": a.get("servico_nome") or "-",
-                "categoria": CATEGORIAS.get(a.get("servico_categoria") or "", ""),
-                "profissional": " · ".join(filter(None, [
-                    a.get("profissional_nome") or "",
-                    FUNCOES.get(a.get("profissional_funcao") or "", ""),
-                ])) or "-",
-                "situacao": SITUACOES.get(a.get("situacao") or "", "-"),
-                "cancelado": a.get("situacao") == "cancelado",
-                # O botão só aparece quando o backend aceitaria. Se o relógio
-                # da máquina divergir do Xano, a recusa dele aparece na tela.
-                "pode_cancelar": a.get("situacao") == "marcado"
-                                 and agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
-                "dentro_do_prazo": a.get("situacao") == "marcado"
-                                   and int(a.get("inicio") or 0) > agora
-                                   and not agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
-            }
-            for a in registros
-        ]
+        # Próximos e anteriores (change `proximos-e-anteriores`).
+        proximos, anteriores = proximo.separar_agendamentos(registros, agora)
+        self.proximos = [self._linha_de_agendamento(a, agora) for a in proximos]
+        self.anteriores = [self._linha_de_agendamento(a, agora) for a in anteriores]
+        self.agendamentos = self.proximos + self.anteriores
+
+    @staticmethod
+    def _linha_de_agendamento(a: dict, agora: int) -> dict:
+        return {
+            "id": a.get("id"),
+            "quando": f"{agenda.data_curta(a.get('inicio'))}, "
+                      f"{agenda.hora(a.get('inicio'))}–{agenda.hora(a.get('fim'))}",
+            "animal": a.get("pet_nome") or "-",
+            "servico": a.get("servico_nome") or "-",
+            "categoria": CATEGORIAS.get(a.get("servico_categoria") or "", ""),
+            "profissional": " · ".join(filter(None, [
+                a.get("profissional_nome") or "",
+                FUNCOES.get(a.get("profissional_funcao") or "", ""),
+            ])) or "-",
+            "situacao": SITUACOES.get(a.get("situacao") or "", "-"),
+            "cancelado": a.get("situacao") == "cancelado",
+            # O botão só aparece quando o backend aceitaria. Se o relógio
+            # da máquina divergir do Xano, a recusa dele aparece na tela.
+            "pode_cancelar": a.get("situacao") == "marcado"
+                             and agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
+            "dentro_do_prazo": a.get("situacao") == "marcado"
+                               and int(a.get("inicio") or 0) > agora
+                               and not agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
+        }
 
     # --- calendário --------------------------------------------------------
 

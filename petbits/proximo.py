@@ -28,11 +28,8 @@ def proximo_agendamento(registros, agora_ms: int) -> dict:
     """O de início mais cedo entre os que ainda não terminaram; {} se nenhum."""
     if not isinstance(registros, list):
         return {}
-    futuros = sorted(
-        (a for a in registros
-         if a.get("situacao") in _AINDA_VEM and int(a.get("fim") or 0) > agora_ms),
-        key=lambda a: int(a.get("inicio") or 0),
-    )
+    futuros = sorted((a for a in registros if ainda_vem(a, agora_ms)),
+                     key=lambda a: int(a.get("inicio") or 0))
     if not futuros:
         return {}
     a = futuros[0]
@@ -49,3 +46,18 @@ def proximo_agendamento(registros, agora_ms: int) -> dict:
         "outros": "" if outros == 0 else (
             "mais 1 agendamento" if outros == 1 else f"mais {outros} agendamentos"),
     }
+
+
+def ainda_vem(registro: dict, agora_ms: int) -> bool:
+    """Marcado ou em andamento, e ainda não terminou (D2)."""
+    return registro.get("situacao") in _AINDA_VEM and int(registro.get("fim") or 0) > agora_ms
+
+
+def separar_agendamentos(registros: list[dict], agora_ms: int) -> tuple[list, list]:
+    """Próximos (do mais perto ao mais longe) e anteriores (do mais recente ao
+    mais antigo) (change `proximos-e-anteriores`)."""
+    proximos = sorted((r for r in registros if ainda_vem(r, agora_ms)),
+                      key=lambda r: int(r.get("inicio") or 0))
+    anteriores = sorted((r for r in registros if not ainda_vem(r, agora_ms)),
+                        key=lambda r: int(r.get("inicio") or 0), reverse=True)
+    return proximos, anteriores
