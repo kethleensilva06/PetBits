@@ -60,7 +60,8 @@ app.add_page(
     inicio_page,
     route="/",
     title="PetBits",
-    on_load=[PetState.preparar_carga, AuthState.carregar_sessao_da_casa, PetState.carregar],
+    on_load=[PetState.preparar_carga, AuthState.carregar_sessao_da_casa, PetState.carregar,
+             PetState.carregar_proximo],
 )
 
 # Loja do cliente (change `loja`). Mesma guarda da área de cliente: sem sessão,

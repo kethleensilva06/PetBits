@@ -16,7 +16,7 @@ from typing import Optional
 
 import reflex as rx
 
-from petbits import datas, xano
+from petbits import agenda, datas, proximo, xano
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto, url_da_foto
 from petbits.ilustracoes import imagem_da_especie
 from petbits.states.auth_state import AuthState
@@ -40,6 +40,10 @@ ID_UPLOAD_ANIMAL = "foto_do_animal"
 class PetState(rx.State):
     animais: list[dict] = []
     load_error: str = ""
+    # O próximo agendamento (change `proximo-agendamento-na-casa`). Sem cartão
+    # enquanto não chega ou se a lista falhar (D1).
+    proximo: dict = {}
+    proximo_carregado: bool = False
     carregando: bool = False
     ja_carregou: bool = False
 
@@ -125,6 +129,8 @@ class PetState(rx.State):
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado ao sair."""
         self.animais = []
+        self.proximo = {}
+        self.proximo_carregado = False
         self.load_error = ""
         self.carregando = False
         self.ja_carregou = False
@@ -157,6 +163,22 @@ class PetState(rx.State):
         return await sessao.encerrar(self, erro)
 
     # --- carregar ---------------------------------------------------------
+
+    async def carregar_proximo(self):
+        """Uma requisição, em evento próprio (D1): os animais aparecem sem
+        esperar a agenda, e a falha dela não vira erro na casa."""
+        self.proximo_carregado = False
+        try:
+            token = await self._token()
+            registros = await xano.listar_agendamentos(token=token)
+        except (SemSessao, SessaoExpirada):
+            # Quem trata a sessão é o `carregar`, que roda antes.
+            return
+        except XanoError:
+            self.proximo = {}
+            return
+        self.proximo = proximo.proximo_agendamento(registros, agenda.agora_ms())
+        self.proximo_carregado = True
 
     async def carregar(self):
         self.load_error = ""

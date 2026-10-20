@@ -206,6 +206,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `carrinho-guardado` ✓ | O carrinho da loja fica no navegador e sobrevive ao F5; sair da conta o esvazia |
 | `busca-na-clinica` ✓ | Colaboradores, Tutores e Animais têm busca na própria tela, sem requisição; CPF e telefone pelos números |
 | `pagina-nao-encontrada` ✓ | Endereço inexistente mostra uma página do PetBits, em português, com Ir ao início e Voltar |
+| `proximo-agendamento-na-casa` ✓ | A casa do cliente mostra o próximo agendamento, com dia, hora e profissional |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

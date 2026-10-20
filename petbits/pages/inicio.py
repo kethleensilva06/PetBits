@@ -191,6 +191,57 @@ def _vazio() -> rx.Component:
     )
 
 
+def _proximo() -> rx.Component:
+    """O próximo agendamento (change `proximo-agendamento-na-casa`). Nada
+    enquanto a agenda não chega ou se ela falhou (D1)."""
+    P = PetState.proximo
+    return rx.cond(
+        PetState.proximo_carregado,
+        rx.card(
+            rx.hstack(
+                rx.center(rx.icon("calendar-clock", size=22, color=rx.color("teal", 11)),
+                          width="2.75rem", height="2.75rem", border_radius="30%",
+                          background=rx.color("teal", 3), flex_shrink="0"),
+                rx.cond(
+                    P.contains("titulo"),
+                    rx.vstack(
+                        rx.hstack(
+                            rx.text("Próximo agendamento", size="1", weight="bold",
+                                    color=rx.color("teal", 11)),
+                            rx.cond(P["em_andamento"].to(bool),
+                                    rx.badge("Em andamento", radius="full", size="1")),
+                            spacing="2", align="center",
+                        ),
+                        rx.text(P["titulo"].to(str), size="3", weight="bold"),
+                        rx.text(
+                            P["quando"].to(str),
+                            rx.cond(P["profissional"].to(str) != "",
+                                    rx.text.span(" · com ", P["profissional"].to(str))),
+                            size="2",
+                            color=rx.color("gray", 11),
+                        ),
+                        rx.cond(P["outros"].to(str) != "",
+                                rx.text("E ", P["outros"].to(str), " depois.", size="1",
+                                        color=rx.color("gray", 11))),
+                        spacing="1", align_items="start", flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text("Nenhum agendamento marcado", size="3", weight="bold"),
+                        rx.text("Consulta, vacina ou banho e tosa: escolha um horário livre.",
+                                size="2", color=rx.color("gray", 11)),
+                        spacing="1", align_items="start", flex="1",
+                    ),
+                ),
+                rx.link(rx.button(rx.cond(P.contains("titulo"), "Ver na agenda", "Agendar"),
+                                  variant="soft", size="2"),
+                        href="/agenda"),
+                spacing="4", align="center", width="100%", wrap="wrap",
+            ),
+            width="100%",
+        ),
+    )
+
+
 def _banner() -> rx.Component:
     """Boas-vindas da casa (D3): saudação, atalhos e a ilustração."""
     return rx.card(
@@ -241,6 +292,7 @@ def inicio_page() -> rx.Component:
         rx.vstack(
             topo_do_cliente("/"),
             _banner(),
+            _proximo(),
             rx.hstack(
                 titulo_de_pagina("Seus animais", "Os seus animais sob cuidado da clínica."),
                 rx.spacer(),
