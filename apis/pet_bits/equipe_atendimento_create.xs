@@ -138,9 +138,11 @@ query "equipe/atendimentos" verb=POST {
           error = "Este agendamento nao e deste animal."
         }
 
-        precondition (($marcado.situacao != "cancelado") && ($marcado.situacao != "concluido")) {
+        // Por igualdade (change `nao-compareceu`, D4): antes era "nem cancelado
+        // nem concluido", e uma falta passaria.
+        precondition (($marcado.situacao == "marcado") || ($marcado.situacao == "em_andamento")) {
           error_type = "inputerror"
-          error = "Este agendamento ja foi cancelado ou concluido."
+          error = "Este agendamento ja foi cancelado, concluido ou teve falta."
         }
       }
     }

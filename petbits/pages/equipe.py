@@ -1054,6 +1054,30 @@ def balcao_page() -> rx.Component:
 # --- agenda do dia (change `agendamento`) -----------------------------------------
 
 
+def _nao_compareceu(a: dict) -> rx.Component:
+    return rx.alert_dialog.root(
+        rx.alert_dialog.trigger(
+            rx.button(rx.icon("user-x", size=14), "Não compareceu", variant="soft",
+                      color_scheme="gray", size="1"),
+        ),
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Registrar falta?"),
+            rx.alert_dialog.description(
+                a["animal"], " · ", a["servico"], " · ", a["horario"],
+                ". A falta não se desfaz por aqui.",
+            ),
+            rx.hstack(
+                rx.alert_dialog.cancel(rx.button("Voltar", variant="soft", color_scheme="gray")),
+                rx.alert_dialog.action(rx.button("Registrar falta",
+                                                 on_click=EquipeState.marcar_falta(a["id"]))),
+                spacing="3",
+                justify="end",
+                padding_top="1rem",
+            ),
+        ),
+    )
+
+
 def _item_da_agenda(a: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
@@ -1062,7 +1086,8 @@ def _item_da_agenda(a: dict) -> rx.Component:
                 rx.hstack(
                     rx.text(a["servico"], weight="medium"),
                     rx.badge(a["situacao"], radius="full",
-                             color_scheme=rx.cond(a["cancelado"], "gray", "teal")),
+                             color_scheme=rx.cond(a["cancelado"], "gray",
+                                                  rx.cond(a["faltou"], "amber", "teal"))),
                     spacing="2", align="center", wrap="wrap",
                 ),
                 rx.text(a["animal"], " — ", a["tutor"], size="2",
@@ -1073,11 +1098,17 @@ def _item_da_agenda(a: dict) -> rx.Component:
                 spacing="1", align_items="start",
             ),
             rx.spacer(),
-            # Registrar daqui conclui o agendamento (change `historico-clinico`, D4).
-            rx.cond(a["marcado"],
-                    rx.button(rx.icon("stethoscope", size=14), "Registrar atendimento",
-                              on_click=HistoricoEquipeState.da_agenda(a), variant="soft",
-                              size="1")),
+            rx.hstack(
+                # Registrar daqui conclui o agendamento (change `historico-clinico`, D4).
+                rx.cond(a["marcado"],
+                        rx.button(rx.icon("stethoscope", size=14), "Registrar atendimento",
+                                  on_click=HistoricoEquipeState.da_agenda(a), variant="soft",
+                                  size="1")),
+                # Só depois que o horário começou (change `nao-compareceu`).
+                rx.cond(a["pode_faltar"], _nao_compareceu(a)),
+                spacing="2",
+                wrap="wrap",
+            ),
             spacing="4", align="start", width="100%", wrap="wrap",
             opacity=rx.cond(a["cancelado"], "0.55", "1"),
         ),

@@ -1334,6 +1334,11 @@ class EquipeState(rx.State):
                 # não tem diagnóstico, e a tosadora não pode registrar.
                 "marcado": (a.get("situacao") or "marcado") == "marcado"
                            and a.get("servico_categoria") == "clinica",
+                # Falta só depois que o horário começou (change `nao-compareceu`,
+                # D2). Conveniência: quem decide é o Xano, pelo relógio dele.
+                "pode_faltar": a.get("situacao") == "marcado"
+                               and int(a.get("inicio") or 0) <= regras_da_agenda.agora_ms(),
+                "faltou": a.get("situacao") == "faltou",
                 "pet_nome": a.get("pet_nome") or "-",
                 "_id_pet": a.get("id_pet") or 0,
                 "_id_colaborador": a.get("id_colaborador") or 0,
@@ -1342,6 +1347,18 @@ class EquipeState(rx.State):
         ]
         self.carregando = False
         self.ja_carregou = True
+
+    async def marcar_falta(self, agendamento_id: int):
+        """O animal não veio (change `nao-compareceu`)."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.marcar_falta(agendamento_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return rx.toast.error(str(erro))
+        await self.carregar_agenda()
+        return rx.toast.success("Falta registrada.")
 
     async def mudar_dia_da_agenda(self, passo: int):
         dia = date.fromisoformat(self.agenda_dia_iso or regras_da_agenda.hoje().isoformat())

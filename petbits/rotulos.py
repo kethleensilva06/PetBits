@@ -22,6 +22,8 @@ SITUACOES_AGENDAMENTO = {
     "em_andamento": "Em andamento",
     "concluido": "Concluído",
     "cancelado": "Cancelado",
+    # O animal não veio (change `nao-compareceu`).
+    "faltou": "Não compareceu",
 }
 
 # Loja.

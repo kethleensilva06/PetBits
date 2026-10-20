@@ -35,6 +35,12 @@ class AcentuarTest(unittest.TestCase):
                 "Esta mudança de situação não é permitida para o pedido.",
             "A nova senha e a confirmacao nao conferem.":
                 "A nova senha e a confirmação não conferem.",
+            "So um agendamento marcado pode ter falta registrada.":
+                "Só um agendamento marcado pode ter falta registrada.",
+            "Este agendamento ja foi cancelado, concluido ou teve falta.":
+                "Este agendamento já foi cancelado, concluído ou teve falta.",
+            "O horario deste agendamento ainda nao chegou.":
+                "O horário deste agendamento ainda não chegou.",
             "Nao ha uma ficha de colaborador com o seu e-mail. Procure a gerencia.":
                 "Não há uma ficha de colaborador com o seu e-mail. Procure a gerência.",
             "Ha mais de uma ficha com o seu e-mail. Procure a gerencia.":

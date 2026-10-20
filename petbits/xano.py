@@ -682,6 +682,16 @@ async def cancelar_agendamento(agendamento_id: int, *, token: str) -> dict:
     return cancelado
 
 
+async def marcar_falta(agendamento_id: int, *, token: str) -> dict:
+    """Registra que o animal não compareceu (change `nao-compareceu`). O 404
+    vira `NaoEncontrado`, como em `cancelar_agendamento`."""
+    marcado = await _requisitar("POST", f"/equipe/agendamentos/{agendamento_id}/falta",
+                                token=token)
+    if marcado is None:
+        raise NaoEncontrado("Este agendamento não está mais disponível.", status=404)
+    return marcado
+
+
 async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
     """A agenda de um dia, para a equipe. Só leitura."""
     dados = await _requisitar(

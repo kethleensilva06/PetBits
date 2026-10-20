@@ -37,10 +37,10 @@ table agendamento {
     timestamp inicio
     timestamp fim
 
-    // D7: so `marcado` e `cancelado` sao usados nesta change; os outros dois
-    // ficam para a change de historico clinico.
+    // `faltou` e o animal que nao compareceu (change `nao-compareceu`, D1):
+    // so a equipe marca, e so depois que o horario comecou.
     enum situacao?=marcado {
-      values = ["marcado", "em_andamento", "concluido", "cancelado"]
+      values = ["marcado", "em_andamento", "concluido", "cancelado", "faltou"]
     }
 
     // Observacoes do tutor para a clinica
