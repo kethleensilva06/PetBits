@@ -813,3 +813,26 @@ async def enviar_minha_foto_de_equipe(conteudo: bytes, extensao: str, *, token: 
     resposta = await _requisitar("POST", "/equipe/meu-perfil/foto", token=token,
                                  files=files, data=data)
     return (resposta or {}).get("foto") or {}
+
+
+# --- histórico clínico (change `historico-clinico`) ---------------------------
+
+
+async def registrar_atendimento(dados: dict, *, token: str) -> dict:
+    """Cria um atendimento — ou uma retificação, com `retifica`. Não existe
+    alterar nem remover: o histórico não se apaga (D2)."""
+    criado = await _requisitar("POST", "/equipe/atendimentos", token=token, json=dados)
+    if criado is None:
+        raise NaoEncontrado("Animal nao encontrado.", status=404)
+    return criado
+
+
+async def historico_na_clinica(pet_id: int, *, token: str) -> list[dict]:
+    dados = await _requisitar("GET", f"/equipe/animais/{pet_id}/historico", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def historico_do_meu_animal(pet_id: int, *, token: str) -> list[dict]:
+    """Do animal do token; animal alheio dá o mesmo vazio de inexistente."""
+    dados = await _requisitar("GET", f"/pet/{pet_id}/historico", token=token)
+    return dados if isinstance(dados, list) else []

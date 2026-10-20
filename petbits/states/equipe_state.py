@@ -1241,6 +1241,15 @@ class EquipeState(rx.State):
                 "situacao": regras_da_agenda.SITUACOES.get(a.get("situacao") or "", "-"),
                 "cancelado": a.get("situacao") == "cancelado",
                 "observacoes": a.get("observacoes") or "",
+                # Para registrar o atendimento a partir daqui (change
+                # `historico-clinico`, D5): só o marcado pode ser concluído.
+                # Só o atendimento clínico vai para o histórico: banho e tosa
+                # não tem diagnóstico, e a tosadora não pode registrar.
+                "marcado": (a.get("situacao") or "marcado") == "marcado"
+                           and a.get("servico_categoria") == "clinica",
+                "pet_nome": a.get("pet_nome") or "-",
+                "_id_pet": a.get("id_pet") or 0,
+                "_id_colaborador": a.get("id_colaborador") or 0,
             }
             for a in registros
         ]

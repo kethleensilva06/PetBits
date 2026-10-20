@@ -195,6 +195,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `ferramentas-de-verificacao` ✓ | Testes locais, guarda de endpoints públicos e verificação de ponta a ponta |
 | `publicacao-por-script` ✓ | `scripts/publicar.py` publica só os arquivos pedidos, com prévia, e confere o repositório contra o Xano |
 | `acabamentos` ✓ | Sem as duplicações de guarda, rótulos e regra da categoria; saudação sem título |
+| `historico-clinico` ✓ | A equipe registra e retifica atendimentos (pela lista de animais ou pela agenda, concluindo o agendamento); o tutor lê a linha do tempo de cada animal; nada se apaga |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

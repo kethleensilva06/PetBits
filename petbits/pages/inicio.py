@@ -7,7 +7,9 @@ animais de quem perguntou.
 
 import reflex as rx
 
+from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
+from petbits.states.historico_state import HistoricoTutorState
 from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
 from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
@@ -57,11 +59,24 @@ def _cartao(animal: dict) -> rx.Component:
                 width="100%",
             ),
             rx.spacer(),
-            rx.button(
-                "Editar",
-                on_click=lambda: PetState.editar(animal),
-                variant="soft",
-                size="1",
+            rx.vstack(
+                rx.button(
+                    "Editar",
+                    on_click=lambda: PetState.editar(animal),
+                    variant="soft",
+                    size="1",
+                    width="100%",
+                ),
+                # A linha do tempo clínica, só de leitura (change `historico-clinico`).
+                rx.button(
+                    rx.icon("clipboard-list", size=14), "Histórico",
+                    on_click=HistoricoTutorState.abrir(animal),
+                    variant="soft",
+                    color_scheme="gray",
+                    size="1",
+                    width="100%",
+                ),
+                spacing="1",
             ),
             spacing="3",
             align="start",
@@ -310,6 +325,7 @@ def inicio_page() -> rx.Component:
                 ),
             ),
             _dialogo(),
+            dialogo_historico_tutor(),
             spacing="4", align_items="start", padding_y="2rem", width="100%",
         ),
         size="3",

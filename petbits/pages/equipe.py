@@ -14,6 +14,8 @@ tutor e animal não foi desenhada nesta change.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
+from petbits.pages.historico import dialogo_form_atendimento, dialogo_historico_equipe
+from petbits.states.historico_state import HistoricoEquipeState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
                                          EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
@@ -913,7 +915,13 @@ def _item_da_agenda(a: dict) -> rx.Component:
                         rx.text(a["observacoes"], size="1", color=rx.color("gray", 11))),
                 spacing="1", align_items="start",
             ),
-            spacing="4", align="start", width="100%",
+            rx.spacer(),
+            # Registrar daqui conclui o agendamento (change `historico-clinico`, D4).
+            rx.cond(a["marcado"],
+                    rx.button(rx.icon("stethoscope", size=14), "Registrar atendimento",
+                              on_click=HistoricoEquipeState.da_agenda(a), variant="soft",
+                              size="1")),
+            spacing="4", align="start", width="100%", wrap="wrap",
             opacity=rx.cond(a["cancelado"], "0.55", "1"),
         ),
         width="100%",
@@ -941,9 +949,11 @@ def agenda_equipe_page() -> rx.Component:
                    "Os agendamentos marcados pelos tutores aparecem aqui."),
             "a agenda",
         ),
+        dialogo_form_atendimento(),
         rota="/equipe/agenda",
         titulo="Agenda",
-        subtitulo="Os agendamentos do dia, de todos os profissionais. Só leitura.",
+        subtitulo="Os agendamentos do dia, de todos os profissionais. Registre o "
+                  "atendimento direto do agendamento.",
     )
 
 
@@ -1084,6 +1094,10 @@ def _cartao_animal(a: dict) -> rx.Component:
                         color=rx.color("gray", 10)),
                 spacing="4", wrap="wrap",
             ),
+            # O histórico clínico (change `historico-clinico`, D5).
+            rx.button(rx.icon("clipboard-list", size=14), "Histórico",
+                      on_click=HistoricoEquipeState.abrir(a), variant="soft", size="1",
+                      margin_top="0.25rem"),
             spacing="1", align_items="start", width="100%",
         ),
         width="100%",
@@ -1171,6 +1185,8 @@ def animais_page() -> rx.Component:
             "os animais",
         ),
         _dialogo_animal(),
+        dialogo_historico_equipe(),
+        dialogo_form_atendimento(),
         rota="/equipe/animais",
         titulo="Animais",
         subtitulo="Todos os animais atendidos, com o tutor responsável por cada um.",
