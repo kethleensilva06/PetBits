@@ -55,6 +55,54 @@ def _atendimento(item, *, com_retificar: bool) -> rx.Component:
     )
 
 
+def _barra_do_peso(ponto: rx.Var) -> rx.Component:
+    return rx.tooltip(
+        rx.box(height=ponto["altura"].to(str), width="100%", min_width="0.9rem",
+               border_radius="0.35rem 0.35rem 0 0", background=rx.color("teal", 8)),
+        content=ponto["data"].to(str) + " · " + ponto["peso"].to(str),
+    )
+
+
+def _quadro_do_peso(S) -> rx.Component:
+    """O último peso, a diferença e as últimas pesagens (change `evolucao-do-peso`)."""
+    P = S.peso
+    return rx.cond(
+        P.contains("atual"),
+        rx.card(
+            rx.hstack(
+                rx.vstack(
+                    rx.text("Peso", size="1", weight="bold", color=rx.color("teal", 11)),
+                    rx.heading(P["atual"].to(str), size="6"),
+                    rx.text("Em ", P["data"].to(str), size="1", color=rx.color("gray", 11)),
+                    rx.cond(P["variacao"].to(str) != "",
+                            rx.text(P["variacao"].to(str), size="1", weight="medium")),
+                    spacing="0",
+                    align_items="start",
+                    min_width="9rem",
+                ),
+                # Barras só a partir de duas pesagens: uma barra só não compara nada.
+                rx.cond(
+                    P["pontos"].to(list[dict]).length() > 1,
+                    rx.hstack(
+                        rx.foreach(P["pontos"].to(list[dict]), _barra_do_peso),
+                        spacing="1",
+                        align="end",
+                        height="3.5rem",
+                        flex="1",
+                        max_width="14rem",
+                        aria_label="Últimas pesagens",
+                    ),
+                ),
+                spacing="4",
+                align="center",
+                width="100%",
+            ),
+            width="100%",
+            margin_bottom="0.75rem",
+        ),
+    )
+
+
 def _linha_do_tempo(S, *, com_retificar: bool, vazio: str) -> rx.Component:
     return rx.cond(
         S.carregando,
@@ -64,7 +112,8 @@ def _linha_do_tempo(S, *, com_retificar: bool, vazio: str) -> rx.Component:
             rx.callout(S.erro, icon="triangle_alert", color_scheme="red", size="1", width="100%"),
             rx.cond(
                 S.itens.length() > 0,
-                rx.vstack(rx.foreach(S.itens, lambda i: _atendimento(i, com_retificar=com_retificar)),
+                rx.vstack(_quadro_do_peso(S),
+                          rx.foreach(S.itens, lambda i: _atendimento(i, com_retificar=com_retificar)),
                           spacing="2", width="100%"),
                 rx.vstack(
                     rx.icon("clipboard-list", size=28, color=rx.color("gray", 11)),

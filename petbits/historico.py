@@ -77,3 +77,46 @@ def linha_do_tempo(registros: list[dict]) -> list[dict]:
             "_peso": "" if r.get("peso") in (None, 0, 0.0) else str(r.get("peso")),
         })
     return itens
+
+
+def _kg(valor: float) -> str:
+    return f"{valor:.1f}".replace(".", ",").replace(",0", "") + " kg"
+
+
+def evolucao_do_peso(registros: list[dict], ultimas: int = 6) -> dict:
+    """O último peso, a diferença para a pesagem anterior e as últimas
+    pesagens, para o quadro do histórico (change `evolucao-do-peso`).
+
+    Retificado não conta: vale a correção. Sem pesagem, devolve {}.
+    """
+    corrigidos = {r.get("retifica") for r in registros if r.get("retifica")}
+    pesagens = sorted(
+        (r for r in registros
+         if r.get("id") not in corrigidos and r.get("peso") not in (None, "", 0, 0.0)),
+        key=lambda r: (r.get("data_atendimento") or 0, r.get("id") or 0),
+    )
+    if not pesagens:
+        return {}
+    ultimo = pesagens[-1]
+    atual = float(ultimo["peso"])
+    variacao = ""
+    if len(pesagens) > 1:
+        anterior = pesagens[-2]
+        diferenca = round(atual - float(anterior["peso"]), 1)
+        desde = data_local(anterior.get("data_atendimento"))
+        if diferenca == 0:
+            variacao = f"igual à pesagem de {desde}"
+        else:
+            sinal = "+" if diferenca > 0 else "−"
+            variacao = f"{sinal}{_kg(abs(diferenca))} desde {desde}"
+    recentes = pesagens[-ultimas:]
+    valores = [float(r["peso"]) for r in recentes]
+    menor, maior = min(valores), max(valores)
+    pontos = [
+        {"data": data_local(r.get("data_atendimento")), "peso": _kg(v),
+         # Altura da barra: de 35% (o menor) a 100% (o maior).
+         "altura": "100%" if maior == menor else f"{35 + 65 * (v - menor) / (maior - menor):.0f}%"}
+        for r, v in zip(recentes, valores)
+    ]
+    return {"atual": _kg(atual), "data": data_local(ultimo.get("data_atendimento")),
+            "variacao": variacao, "pontos": pontos}

@@ -9,7 +9,7 @@ de um animal: nenhuma a mais no carregamento das listas.
 import reflex as rx
 
 from petbits import xano
-from petbits.historico import dia_em_ms, linha_do_tempo
+from petbits.historico import dia_em_ms, evolucao_do_peso, linha_do_tempo
 from petbits.rotulos import FUNCAO_LEGIVEL
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -24,6 +24,8 @@ class HistoricoEquipeState(rx.State):
     pet_id: int = 0
     pet_nome: str = ""
     itens: list[dict] = []
+    # O quadro do peso (change `evolucao-do-peso`); {} sem pesagem.
+    peso: dict = {}
     carregando: bool = False
     erro: str = ""
 
@@ -80,6 +82,7 @@ class HistoricoEquipeState(rx.State):
         self.pet_id = 0
         self.pet_nome = ""
         self.itens = []
+        self.peso = {}
         self.profissionais = []
         self.erro = ""
         self.form_erro = ""
@@ -133,6 +136,7 @@ class HistoricoEquipeState(rx.State):
             self.carregando = False
             return
         self.itens = linha_do_tempo(registros)
+        self.peso = evolucao_do_peso(registros)
         self.carregando = False
 
     # --- o formulário -------------------------------------------------------
@@ -255,6 +259,8 @@ class HistoricoTutorState(rx.State):
     aberto: bool = False
     pet_nome: str = ""
     itens: list[dict] = []
+    # O quadro do peso (change `evolucao-do-peso`); {} sem pesagem.
+    peso: dict = {}
     carregando: bool = False
     erro: str = ""
 
@@ -265,12 +271,14 @@ class HistoricoTutorState(rx.State):
         self.aberto = False
         self.pet_nome = ""
         self.itens = []
+        self.peso = {}
         self.carregando = False
         self.erro = ""
 
     async def abrir(self, animal: dict):
         self.pet_nome = animal.get("nome") or "-"
         self.itens = []
+        self.peso = {}
         self.erro = ""
         self.aberto = True
         self.carregando = True
@@ -288,4 +296,5 @@ class HistoricoTutorState(rx.State):
             self.carregando = False
             return
         self.itens = linha_do_tempo(registros)
+        self.peso = evolucao_do_peso(registros)
         self.carregando = False

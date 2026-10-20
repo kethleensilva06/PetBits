@@ -213,6 +213,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `loja-organizada` ✓ | Cartões da loja com a mesma altura e o preço no mesmo lugar; carrinho em duas linhas, sem valor cortado |
 | `estoque-baixo` ✓ | O painel conta os produtos esgotados e acabando; Produtos filtra o estoque baixo |
 | `busca-nos-pedidos` ✓ | Pedidos da clínica têm busca por número, cliente, telefone e produto |
+| `evolucao-do-peso` ✓ | O histórico mostra o último peso, a diferença para a pesagem anterior e as últimas seis |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
