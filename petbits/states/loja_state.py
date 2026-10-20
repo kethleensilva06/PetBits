@@ -307,6 +307,20 @@ class LojaState(rx.State):
         return [rx.redirect("/loja"),
                 rx.toast.success(f"Itens do pedido nº {pedido_id} no carrinho.")]
 
+    async def cancelar_pedido(self, pedido_id: int):
+        """Cancela o próprio pedido; quem decide se pode é o backend."""
+        self.erro = ""
+        try:
+            token = await self._token()
+            await xano.cancelar_pedido(pedido_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            self.erro = str(erro)
+            return
+        await self.carregar_pedidos()
+        return rx.toast.success(f"Pedido nº {pedido_id} cancelado. Os itens voltaram ao estoque.")
+
     def tirar(self, produto_id: str):
         atual = self.carrinho.get(produto_id, 0)
         resto = {k: v for k, v in self.carrinho.items() if k != produto_id}
@@ -392,6 +406,9 @@ class LojaState(rx.State):
                 "total": reais(p.get("total")),
                 "itens": itens_por_pedido.get(p.get("id"), []),
                 "_repetir": repetir.get(p.get("id"), []),
+                # O botão só quando o backend aceitaria (change
+                # `cliente-cancela-pedido`, D4): aguardando e sem pagamento.
+                "pode_cancelar": p.get("situacao") == "pendente" and not p.get("pago_em"),
                 # As etapas do caminho (change `linha-do-tempo-do-pedido`).
                 "etapas": etapas_do_pedido.etapas(p.get("situacao") or "",
                                                   p.get("entrega") or "",

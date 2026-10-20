@@ -373,6 +373,30 @@ def _etapas(p: rx.Var) -> rx.Component:
     )
 
 
+def _cancelar_pedido(p: rx.Var) -> rx.Component:
+    return rx.alert_dialog.root(
+        rx.alert_dialog.trigger(
+            rx.button("Cancelar pedido", variant="soft", color_scheme="red", size="1"),
+        ),
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Cancelar o pedido nº ", p["id"], "?"),
+            rx.alert_dialog.description(
+                "Os itens voltam ao estoque da loja. Para comprar depois, use Comprar de novo.",
+            ),
+            rx.hstack(
+                rx.alert_dialog.cancel(rx.button("Voltar", variant="soft", color_scheme="gray")),
+                rx.alert_dialog.action(rx.button(
+                    "Cancelar pedido", color_scheme="red",
+                    on_click=LojaState.cancelar_pedido(p["id"]),
+                )),
+                spacing="3",
+                justify="end",
+                padding_top="1rem",
+            ),
+        ),
+    )
+
+
 def _pedido(p: rx.Var) -> rx.Component:
     return rx.card(
         rx.vstack(
@@ -395,9 +419,15 @@ def _pedido(p: rx.Var) -> rx.Component:
                 rx.text(i["texto"], size="2"), rx.spacer(), rx.text(i["linha"], size="2"),
                 width="100%")),
             # Os itens de volta ao carrinho (change `comprar-de-novo`).
-            rx.button(rx.icon("rotate-ccw", size=14), "Comprar de novo", variant="soft",
-                      size="1", margin_top="0.25rem",
-                      on_click=LojaState.comprar_de_novo(p["id"])),
+            rx.hstack(
+                rx.button(rx.icon("rotate-ccw", size=14), "Comprar de novo", variant="soft",
+                          size="1", on_click=LojaState.comprar_de_novo(p["id"])),
+                # Só enquanto aguarda pagamento (change `cliente-cancela-pedido`).
+                rx.cond(p["pode_cancelar"].to(bool), _cancelar_pedido(p)),
+                spacing="2",
+                wrap="wrap",
+                margin_top="0.25rem",
+            ),
             spacing="1",
             width="100%",
             align_items="start",

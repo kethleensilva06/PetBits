@@ -702,6 +702,16 @@ async def produtos_da_loja(*, token: str) -> list[dict]:
     return dados if isinstance(dados, list) else []
 
 
+async def cancelar_pedido(pedido_id: int, *, token: str) -> dict:
+    """Cancela um pedido do tutor enquanto aguarda pagamento (change
+    `cliente-cancela-pedido`). Alheio e inexistente chegam como 404, que vira
+    `NaoEncontrado`, como em `cancelar_agendamento`."""
+    cancelado = await _requisitar("POST", f"/pedido/{pedido_id}/cancelar", token=token)
+    if cancelado is None:
+        raise NaoEncontrado("Este pedido não está mais disponível.", status=404)
+    return cancelado
+
+
 async def fazer_pedido(
     itens: list[dict], entrega: str, forma_pagamento: str, *, token: str
 ) -> dict:
