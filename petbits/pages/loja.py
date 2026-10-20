@@ -6,6 +6,7 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.states.loja_state import LojaState
 from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
 
@@ -298,8 +299,9 @@ def loja_page() -> rx.Component:
                         ),
                     ),
                     rx.cond(
-                        LojaState.carregando,
-                        rx.hstack(rx.spinner(size="2"), rx.text("Carregando a loja...")),
+                        LojaState.mostrar_carregando,
+                        esqueletos.cartoes("Carregando a loja...",
+                                           colunas=rx.breakpoints(initial="1", sm="2")),
                         rx.text("Nenhum produto à venda no momento.", color=rx.color("gray", 10)),
                     ),
                 ),
@@ -397,8 +399,8 @@ def pedidos_page() -> rx.Component:
                 LojaState.pedidos.length() > 0,
                 rx.vstack(rx.foreach(LojaState.pedidos, _pedido), spacing="2", width="100%"),
                 rx.cond(
-                    LojaState.carregando,
-                    rx.hstack(rx.spinner(size="2"), rx.text("Carregando...")),
+                    LojaState.mostrar_carregando,
+                    esqueletos.linhas("Carregando os seus pedidos..."),
                     # Falhou não é vazio: o erro já está no callout acima.
                     rx.cond(LojaState.erro, rx.fragment(), tela_vazia(
                         "/fotos/vazio-pedidos.webp",

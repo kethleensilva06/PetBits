@@ -111,6 +111,17 @@ class PetState(rx.State):
         """
         return self.carregando or (not self.ja_carregou and not self.load_error)
 
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self.load_error = ""
+        self.carregando = True
+        self.ja_carregou = False
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado ao sair."""
         self.animais = []

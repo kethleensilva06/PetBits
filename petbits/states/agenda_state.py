@@ -152,6 +152,21 @@ class AgendaState(rx.State):
     def tem_agendamentos(self) -> bool:
         return len(self.agendamentos) > 0
 
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self.erro_lista = ""
+        self.carregando = True
+        self.ja_carregou = False
+
+    @rx.var
+    def mostrar_carregando(self) -> bool:
+        return self.carregando or (not self.ja_carregou and not self.erro_lista)
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
         self.servicos = []

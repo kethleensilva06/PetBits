@@ -7,6 +7,7 @@ tudo de novo (design.md da change `agendamento`, D2).
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
 from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
@@ -169,8 +170,7 @@ def _calendario() -> rx.Component:
                 rx.text(AgendaState.dia_por_extenso, size="2", weight="medium"),
                 rx.cond(
                     AgendaState.buscando_horarios,
-                    rx.hstack(rx.spinner(size="1"),
-                              rx.text("Buscando horários...", size="2"), spacing="2"),
+                    esqueletos.fichas("Buscando horários..."),
                     rx.cond(
                         AgendaState.horarios.length() > 0,
                         rx.flex(
@@ -291,8 +291,8 @@ def _meus_agendamentos() -> rx.Component:
             AgendaState.tem_agendamentos,
             rx.vstack(rx.foreach(AgendaState.agendamentos, _item), spacing="2", width="100%"),
             rx.cond(
-                AgendaState.carregando,
-                rx.hstack(rx.spinner(size="1"), rx.text("Carregando...", size="2"), spacing="2"),
+                AgendaState.mostrar_carregando,
+                esqueletos.linhas("Carregando os seus agendamentos..."),
                 # Falhou não é vazio: o erro já está no callout acima.
                 rx.cond(AgendaState.erro_lista, rx.fragment(), tela_vazia(
                     "/fotos/vazio-agenda.webp",

@@ -7,6 +7,7 @@ nem de apagar em lugar nenhum: o histórico não se apaga.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.states.historico_state import HistoricoEquipeState, HistoricoTutorState
 
 
@@ -56,7 +57,7 @@ def _atendimento(item, *, com_retificar: bool) -> rx.Component:
 def _linha_do_tempo(S, *, com_retificar: bool, vazio: str) -> rx.Component:
     return rx.cond(
         S.carregando,
-        rx.hstack(rx.spinner(size="2"), rx.text("Carregando o histórico..."), spacing="2"),
+        esqueletos.linhas("Carregando o histórico..."),
         rx.cond(
             S.erro,
             rx.callout(S.erro, icon="triangle_alert", color_scheme="red", size="1", width="100%"),

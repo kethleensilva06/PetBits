@@ -13,6 +13,7 @@ tutor e animal não foi desenhada nesta change.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.states.auth_state import AuthState
 from petbits.painel import PEDIDOS_ESPERANDO
 from petbits.pages.historico import dialogo_form_atendimento, dialogo_historico_equipe
@@ -169,16 +170,7 @@ def _casca(
 
 def _carregando(oque: str) -> rx.Component:
     """Enquanto a lista não chegou, não dizer que ela está vazia."""
-    return rx.center(
-        rx.hstack(
-            rx.spinner(size="2"),
-            rx.text(f"Carregando {oque}...", size="2", color=rx.color("gray", 10)),
-            spacing="2",
-            align="center",
-        ),
-        padding="3rem",
-        width="100%",
-    )
+    return esqueletos.linhas(f"Carregando {oque}...")
 
 
 def _vazio(titulo: str, recado: str, acao: rx.Component | None = None) -> rx.Component:

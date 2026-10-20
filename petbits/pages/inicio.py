@@ -7,6 +7,7 @@ animais de quem perguntou.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
 from petbits.states.historico_state import HistoricoTutorState
@@ -239,15 +240,7 @@ def _banner() -> rx.Component:
 
 def _carregando() -> rx.Component:
     """Enquanto a lista não chegou, não dizer que ela está vazia."""
-    return rx.center(
-        rx.hstack(
-            rx.spinner(size="2"),
-            rx.text("Carregando os seus animais...", size="2",
-                    color=rx.color("gray", 10)),
-            spacing="2", align="center",
-        ),
-        padding="3rem", width="100%",
-    )
+    return esqueletos.cartoes("Carregando os seus animais...", n=2, com_imagem=False)
 
 
 def inicio_page() -> rx.Component:

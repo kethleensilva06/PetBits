@@ -9,6 +9,7 @@ recebe o seu State.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.pages.equipe import _casca
 from petbits.states.perfil_state import (ID_UPLOAD, ID_UPLOAD_EQUIPE, PerfilEquipeState,
                                          PerfilState)
@@ -127,9 +128,8 @@ def _carregado(S, conteudo: rx.Component) -> rx.Component:
     return rx.cond(
         S.ja_carregou & ~S.erro.bool(),
         conteudo,
-        rx.cond(S.carregando,
-                rx.hstack(rx.spinner(size="2"), rx.text("Carregando o perfil..."),
-                          spacing="2")),
+        # Sem dado e sem erro é carga (change `esqueletos-de-carregamento`).
+        rx.cond(~S.erro.bool(), esqueletos.perfil("Carregando o perfil...")),
     )
 
 

@@ -56,20 +56,23 @@ app.add_page(
     inicio_page,
     route="/",
     title="PetBits",
-    on_load=[AuthState.carregar_sessao_da_casa, PetState.carregar],
+    on_load=[PetState.preparar_carga, AuthState.carregar_sessao_da_casa, PetState.carregar],
 )
 
 # Loja do cliente (change `loja`). Mesma guarda da área de cliente: sem sessão,
 # ou com conta de equipe, `LojaState._token` levanta antes de qualquer requisição.
 app.add_page(loja_page, route="/loja", title="PetBits | Loja",
-             on_load=[AuthState.carregar_sessao, LojaState.carregar_loja])
+             on_load=[LojaState.preparar_carga, AuthState.carregar_sessao,
+                      LojaState.carregar_loja])
 app.add_page(pedidos_page, route="/pedidos", title="PetBits | Meus pedidos",
-             on_load=[AuthState.carregar_sessao, LojaState.carregar_pedidos])
+             on_load=[LojaState.preparar_carga, AuthState.carregar_sessao,
+                      LojaState.carregar_pedidos])
 
 # Meu perfil (change `perfil-e-fotos`). Mesma guarda: `PerfilState._token`
 # levanta antes de qualquer requisição sem sessão ou com conta de equipe.
 app.add_page(perfil_page, route="/perfil", title="PetBits | Meu perfil",
-             on_load=[AuthState.carregar_sessao, PerfilState.carregar])
+             on_load=[PerfilState.preparar_carga, AuthState.carregar_sessao,
+                      PerfilState.carregar])
 
 # Agenda do tutor (change `agendamento`). Mesma guarda da casa: sem sessão,
 # `AgendaState._token` levanta antes de qualquer requisição.
@@ -77,7 +80,7 @@ app.add_page(
     agenda_page,
     route="/agenda",
     title="PetBits | Agendar",
-    on_load=[AuthState.carregar_sessao, AgendaState.carregar],
+    on_load=[AgendaState.preparar_carga, AuthState.carregar_sessao, AgendaState.carregar],
 )
 
 # Área da clínica. Cada tela tem o seu próprio carregamento, e nenhuma
@@ -108,7 +111,10 @@ for rota, pagina, titulo, carregar in (
         pagina,
         route=rota,
         title=f"PetBits | {titulo}",
-        on_load=[AuthState.carregar_sessao, carregar],
+        # `preparar_carga` primeiro: a tela mostra o esqueleto já, e não o
+        # vazio, enquanto a sessão e a lista vêm (change `esqueletos-de-carregamento`).
+        on_load=[(PerfilEquipeState if rota == "/equipe/perfil" else EquipeState).preparar_carga,
+                 AuthState.carregar_sessao, carregar],
     )
 
 # Portas de entrada. `redirecionar_se_logado` evita mostrar o formulário a

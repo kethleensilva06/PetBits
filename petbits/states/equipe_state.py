@@ -328,6 +328,15 @@ class EquipeState(rx.State):
     def titulo_srv(self) -> str:
         return "Editar serviço" if self.srv_editando is not None else "Novo serviço"
 
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self._comecar()
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`.
 
