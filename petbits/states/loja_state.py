@@ -1,6 +1,7 @@
 """Estado da loja do cliente (change `loja`).
 
-O carrinho mora só no estado do Reflex: produto e quantidade. Preço, linha e
+O carrinho guarda só produto e quantidade, no navegador, para sobreviver ao F5
+(change `carrinho-guardado`). Preço, linha e
 total que a tela mostra são **estimativas** a partir do catálogo carregado; o
 valor que vale é o que o `POST pedidos` calcula no servidor e devolve.
 
@@ -10,7 +11,7 @@ requisição sai (change `porta-de-entrada`, D5).
 
 import reflex as rx
 
-from petbits import agenda, etapas_do_pedido, rotulos, xano
+from petbits import agenda, carrinho as carrinho_guardado, etapas_do_pedido, rotulos, xano
 from petbits.ilustracoes import imagem_do_produto, normalizar
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
@@ -47,7 +48,9 @@ class LojaState(rx.State):
     produtos: list[dict] = []
     # produto_id (texto) -> quantidade. Chave texto porque o estado do Reflex
     # vai ao navegador como JSON.
-    carrinho: dict[str, int] = {}
+    # No navegador, como a sessão (change `carrinho-guardado`, D1): sobrevive
+    # ao F5, à aba nova e ao reinício do servidor. `carrinho` é derivado daqui.
+    carrinho_salvo: str = rx.LocalStorage("", name="petbits_carrinho", sync=True)
 
     entrega: str = "retirada"
     forma_pagamento: str = "na_loja"
@@ -124,7 +127,7 @@ class LojaState(rx.State):
         pid = str(self.produto_aberto.get("id", ""))
         quantos = min(self.qtd_detalhe, self.pode_por_mais_no_aberto)
         if pid and quantos > 0:
-            self.carrinho = {**self.carrinho, pid: self.carrinho.get(pid, 0) + quantos}
+            self._gravar({**self.carrinho, pid: self.carrinho.get(pid, 0) + quantos})
             self.aviso = ""
             self.qtd_detalhe = 1
             return rx.toast.success(f"{quantos} no carrinho.")
@@ -133,6 +136,15 @@ class LojaState(rx.State):
         self.detalhe_aberto = value
 
     # --- derivados -------------------------------------------------------
+
+    @rx.var
+    def carrinho(self) -> dict[str, int]:
+        """{id do produto: quantidade}, lido com desconfiança do navegador (D2)."""
+        return carrinho_guardado.ler(self.carrinho_salvo)
+
+    def _gravar(self, novo: dict[str, int]):
+        """Toda mudança do carrinho passa por aqui (D1)."""
+        self.carrinho_salvo = carrinho_guardado.escrever(novo)
 
     @rx.var
     def itens_do_carrinho(self) -> list[dict]:
@@ -184,7 +196,7 @@ class LojaState(rx.State):
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
         self.produtos = []
-        self.carrinho = {}
+        self._gravar({})
         self.entrega = "retirada"
         self.forma_pagamento = "na_loja"
         self.finalizando = False
@@ -244,8 +256,9 @@ class LojaState(rx.State):
         # O carrinho não pode apontar para produto que saiu da loja nem pedir
         # mais do que o estoque que acabou de chegar.
         estoque = {str(p["id"]): p["_estoque"] for p in self.produtos}
-        self.carrinho = {pid: min(q, estoque[pid]) for pid, q in self.carrinho.items()
-                         if estoque.get(pid, 0) > 0}
+        # Vale também para o carrinho guardado, que pode ter dias (D3).
+        self._gravar({pid: min(q, estoque[pid]) for pid, q in self.carrinho.items()
+                      if estoque.get(pid, 0) > 0})
         self.carregando = False
         self.ja_carregou = True
 
@@ -254,7 +267,7 @@ class LojaState(rx.State):
         estoque = next((p["_estoque"] for p in self.produtos if str(p["id"]) == pid), 0)
         atual = self.carrinho.get(pid, 0)
         if atual < estoque:
-            self.carrinho = {**self.carrinho, pid: atual + 1}
+            self._gravar({**self.carrinho, pid: atual + 1})
         self.aviso = ""
 
     def tirar(self, produto_id: str):
@@ -262,7 +275,7 @@ class LojaState(rx.State):
         resto = {k: v for k, v in self.carrinho.items() if k != produto_id}
         if atual > 1:
             resto[produto_id] = atual - 1
-        self.carrinho = resto
+        self._gravar(resto)
 
     def abrir_finalizacao(self):
         if self.carrinho:
@@ -291,7 +304,7 @@ class LojaState(rx.State):
             # Mesmo motivo da change `entrada-sem-trava`.
             self.enviando = False
 
-        self.carrinho = {}
+        self._gravar({})
         self.finalizando = False
         self.aviso = (
             f"Pedido nº {pedido.get('id')} feito: {reais(pedido.get('total'))} — "
