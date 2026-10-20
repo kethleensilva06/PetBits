@@ -51,3 +51,13 @@ em 4 s e sem mensagem. Causa: o `reflex-hosting-cli` 0.2.0 saiu entre as duas
 publicações, e o CLI se recusa a publicar desatualizado — a linha "Warning:
 ... newer version" é o erro. Pendente: atualizar o pacote (precisa da
 autorização da usuária para baixar) e publicar de novo.
+
+Com a autorização da usuária, o `reflex-hosting-cli` foi para 0.2.0 (com o
+`reflex-build-sdk` 0.1.0 que ele traz; `requirements.txt` atualizado) e o site
+foi publicado de novo. No site publicado: `/boas-vindas`, `/loja` e `/entrar`
+abertos direto respondem 200; `/loja` sem sessão leva a `/entrar` (a guarda
+funciona em produção); endereço inexistente mostra a página "Página não
+encontrada" do PetBits. O login não foi testado no site publicado: digitar senha
+fora do ambiente local fica com a usuária.
+- [x] 2.5 `reflex login` (conta petbitsgroup@gmail.com)
+- [x] 2.6 Publicado com a autorização da usuária: https://petbits-blue-grass.reflex.run
