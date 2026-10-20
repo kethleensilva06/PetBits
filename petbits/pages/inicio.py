@@ -10,7 +10,7 @@ import reflex as rx
 from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
 from petbits.states.historico_state import HistoricoTutorState
-from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
 from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
 
@@ -328,5 +328,5 @@ def inicio_page() -> rx.Component:
             dialogo_historico_tutor(),
             spacing="4", align_items="start", padding_y="2rem", width="100%",
         ),
-        size="3",
+        size=LARGURA_DO_CLIENTE,
     )

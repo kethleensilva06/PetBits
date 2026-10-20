@@ -9,7 +9,7 @@ import reflex as rx
 
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
-from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -337,4 +337,5 @@ def agenda_page() -> rx.Component:
             padding_y="2rem",
             width="100%",
         ),
+        size=LARGURA_DO_CLIENTE,
     )

@@ -7,7 +7,7 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 import reflex as rx
 
 from petbits.states.loja_state import LojaState
-from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
 def _avisos() -> rx.Component:
@@ -316,7 +316,7 @@ def loja_page() -> rx.Component:
             padding_y="2rem",
             width="100%",
         ),
-        size="4",
+        size=LARGURA_DO_CLIENTE,
     )
 
 
@@ -378,5 +378,5 @@ def pedidos_page() -> rx.Component:
             padding_y="2rem",
             width="100%",
         ),
-        size="3",
+        size=LARGURA_DO_CLIENTE,
     )

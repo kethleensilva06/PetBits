@@ -12,7 +12,7 @@ import reflex as rx
 from petbits.pages.equipe import _casca
 from petbits.states.perfil_state import (ID_UPLOAD, ID_UPLOAD_EQUIPE, PerfilEquipeState,
                                          PerfilState)
-from petbits.visual import titulo_de_pagina, topo_do_cliente
+from petbits.visual import LARGURA_DO_CLIENTE, titulo_de_pagina, topo_do_cliente
 
 
 def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
@@ -168,7 +168,7 @@ def perfil_page() -> rx.Component:
             padding_y="2rem",
             width="100%",
         ),
-        size="3",
+        size=LARGURA_DO_CLIENTE,
     )
 
 

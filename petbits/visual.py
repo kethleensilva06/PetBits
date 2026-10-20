@@ -23,6 +23,10 @@ FOLHAS_DE_ESTILO = [
     "/estilo.css",
 ]
 
+# Toda aba do cliente tem a mesma largura (change `mesma-largura-no-cliente`):
+# a loja usava a largura 4 e as outras a 3, e o cabeçalho "pulava" ao trocar de aba.
+LARGURA_DO_CLIENTE = "3"
+
 AREAS_DO_CLIENTE = [
     ("/", "Meus animais", "paw-print"),
     ("/agenda", "Agendar", "calendar"),
