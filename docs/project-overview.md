@@ -218,6 +218,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `nao-compareceu` ✓ | A equipe registra a falta de um agendamento que já começou; falta não vira atendimento |
 | `resumo-dos-pedidos` ✓ | Pedidos da clínica mostram quantos e o total do filtro, e baixam o CSV para planilha |
 | `proximos-e-anteriores` ✓ | Meus agendamentos separa os próximos dos anteriores, que começam fechados |
+| `pedidos-em-andamento` ✓ | Meus pedidos separa os em andamento dos finalizados, que começam fechados |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

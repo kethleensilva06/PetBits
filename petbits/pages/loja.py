@@ -460,6 +460,51 @@ def _pedido(p: rx.Var) -> rx.Component:
     )
 
 
+def _em_andamento_e_finalizados() -> rx.Component:
+    """Em andamento abertos; finalizados fechados (change `pedidos-em-andamento`)."""
+    return rx.vstack(
+        rx.text("Em andamento", size="3", weight="bold"),
+        rx.cond(
+            LojaState.pedidos_em_andamento.length() > 0,
+            rx.vstack(rx.foreach(LojaState.pedidos_em_andamento, _pedido), spacing="2",
+                      width="100%"),
+            rx.hstack(
+                rx.text("Nenhum pedido em andamento.", size="2", color=rx.color("gray", 11)),
+                rx.link(rx.button("Ir à loja", variant="soft", size="1"), href="/loja"),
+                spacing="3",
+                align="center",
+            ),
+        ),
+        rx.cond(
+            LojaState.pedidos_finalizados.length() > 0,
+            rx.vstack(
+                rx.button(
+                    rx.cond(LojaState.mostrar_finalizados, rx.icon("chevron-up", size=14),
+                            rx.icon("chevron-down", size=14)),
+                    rx.cond(LojaState.mostrar_finalizados, "Esconder finalizados",
+                            "Mostrar finalizados"),
+                    " (", LojaState.pedidos_finalizados.length(), ")",
+                    variant="ghost",
+                    size="2",
+                    on_click=LojaState.alternar_finalizados,
+                ),
+                rx.cond(
+                    LojaState.mostrar_finalizados,
+                    rx.vstack(rx.foreach(LojaState.pedidos_finalizados, _pedido), spacing="2",
+                              width="100%"),
+                ),
+                spacing="2",
+                width="100%",
+                align_items="start",
+                padding_top="0.5rem",
+            ),
+        ),
+        spacing="2",
+        width="100%",
+        align_items="start",
+    )
+
+
 def pedidos_page() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -470,7 +515,7 @@ def pedidos_page() -> rx.Component:
                                size="1", width="100%")),
             rx.cond(
                 LojaState.pedidos.length() > 0,
-                rx.vstack(rx.foreach(LojaState.pedidos, _pedido), spacing="2", width="100%"),
+                _em_andamento_e_finalizados(),
                 rx.cond(
                     LojaState.mostrar_carregando,
                     esqueletos.linhas("Carregando os seus pedidos..."),

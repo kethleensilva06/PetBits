@@ -34,3 +34,8 @@ def etapas(situacao: str, entrega: str, forma_pagamento: str, pago_em) -> list[d
     atual = ultima + 1 if ultima < 3 else None
     return [{"rotulo": r, "feita": f, "atual": i == atual}
             for i, (r, f) in enumerate(zip(rotulos, feitas))]
+
+
+def finalizado(situacao: str) -> bool:
+    """Entregue ou cancelado: não muda mais (change `pedidos-em-andamento`)."""
+    return situacao in ("entregue", "cancelado")

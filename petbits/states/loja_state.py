@@ -75,6 +75,8 @@ class LojaState(rx.State):
     enviando: bool = False
 
     pedidos: list[dict] = []
+    # Os finalizados começam fechados (change `pedidos-em-andamento`).
+    mostrar_finalizados: bool = False
 
     # Detalhe do produto (change `fotos-realistas`): o item vem da lista que
     # a loja já tem — abrir o detalhe não faz requisição.
@@ -309,6 +311,17 @@ class LojaState(rx.State):
         return [rx.redirect("/loja"),
                 rx.toast.success(f"Itens do pedido nº {pedido_id} no carrinho.")]
 
+    @rx.var
+    def pedidos_em_andamento(self) -> list[dict]:
+        return [p for p in self.pedidos if not p["finalizado"]]
+
+    @rx.var
+    def pedidos_finalizados(self) -> list[dict]:
+        return [p for p in self.pedidos if p["finalizado"]]
+
+    def alternar_finalizados(self):
+        self.mostrar_finalizados = not self.mostrar_finalizados
+
     async def cancelar_pedido(self, pedido_id: int):
         """Cancela o próprio pedido; quem decide se pode é o backend."""
         self.erro = ""
@@ -411,6 +424,7 @@ class LojaState(rx.State):
                 # O botão só quando o backend aceitaria (change
                 # `cliente-cancela-pedido`, D4): aguardando e sem pagamento.
                 "pode_cancelar": p.get("situacao") == "pendente" and not p.get("pago_em"),
+                "finalizado": etapas_do_pedido.finalizado(p.get("situacao") or ""),
                 # As etapas do caminho (change `linha-do-tempo-do-pedido`).
                 "etapas": etapas_do_pedido.etapas(p.get("situacao") or "",
                                                   p.get("entrega") or "",

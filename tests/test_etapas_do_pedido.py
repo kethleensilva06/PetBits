@@ -2,7 +2,7 @@
 
 import unittest
 
-from petbits.etapas_do_pedido import etapas
+from petbits.etapas_do_pedido import etapas, finalizado
 
 
 def resumo(lista):
@@ -34,6 +34,14 @@ class EtapasTest(unittest.TestCase):
     def test_cancelado_e_desconhecido(self):
         self.assertEqual(etapas("cancelado", "retirada", "na_loja", None), [])
         self.assertEqual(etapas("", "retirada", "na_loja", None), [])
+
+
+
+class FinalizadoTest(unittest.TestCase):
+    def test_so_entregue_e_cancelado(self):
+        self.assertEqual([s for s in ("pendente", "pago", "pronto_retirada", "enviado",
+                                      "entregue", "cancelado") if finalizado(s)],
+                         ["entregue", "cancelado"])
 
 
 if __name__ == "__main__":
