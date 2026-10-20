@@ -175,6 +175,10 @@ def _carrinho() -> rx.Component:
                 ),
                 rx.text("Seu carrinho está vazio.", size="2", color=rx.color("gray", 11)),
             ),
+            # O que a conferência com o estoque mudou (change `comprar-de-novo`).
+            rx.cond(LojaState.ajuste_carrinho,
+                    rx.callout(LojaState.ajuste_carrinho, icon="info", color_scheme="amber",
+                               size="1", width="100%")),
             spacing="3",
             width="100%",
         ),
@@ -382,6 +386,10 @@ def _pedido(p: rx.Var) -> rx.Component:
             rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(
                 rx.text(i["texto"], size="2"), rx.spacer(), rx.text(i["linha"], size="2"),
                 width="100%")),
+            # Os itens de volta ao carrinho (change `comprar-de-novo`).
+            rx.button(rx.icon("rotate-ccw", size=14), "Comprar de novo", variant="soft",
+                      size="1", margin_top="0.25rem",
+                      on_click=LojaState.comprar_de_novo(p["id"])),
             spacing="1",
             width="100%",
             align_items="start",

@@ -51,6 +51,9 @@ class LojaState(rx.State):
     # No navegador, como a sessão (change `carrinho-guardado`, D1): sobrevive
     # ao F5, à aba nova e ao reinício do servidor. `carrinho` é derivado daqui.
     carrinho_salvo: str = rx.LocalStorage("", name="petbits_carrinho", sync=True)
+    # O que a conferência com o estoque mudou no carrinho (change
+    # `comprar-de-novo`, D2). Some na próxima mudança do carrinho.
+    ajuste_carrinho: str = ""
 
     entrega: str = "retirada"
     forma_pagamento: str = "na_loja"
@@ -145,6 +148,7 @@ class LojaState(rx.State):
     def _gravar(self, novo: dict[str, int]):
         """Toda mudança do carrinho passa por aqui (D1)."""
         self.carrinho_salvo = carrinho_guardado.escrever(novo)
+        self.ajuste_carrinho = ""
 
     @rx.var
     def itens_do_carrinho(self) -> list[dict]:
@@ -256,9 +260,12 @@ class LojaState(rx.State):
         # O carrinho não pode apontar para produto que saiu da loja nem pedir
         # mais do que o estoque que acabou de chegar.
         estoque = {str(p["id"]): p["_estoque"] for p in self.produtos}
-        # Vale também para o carrinho guardado, que pode ter dias (D3).
-        self._gravar({pid: min(q, estoque[pid]) for pid, q in self.carrinho.items()
-                      if estoque.get(pid, 0) > 0})
+        # Vale também para o carrinho guardado, que pode ter dias (D3), e para
+        # o pedido repetido, que pode ser antigo (change `comprar-de-novo`, D2).
+        ajustado, aviso = carrinho_guardado.ajustar_ao_estoque(self.carrinho, estoque)
+        if ajustado != self.carrinho:
+            self._gravar(ajustado)
+        self.ajuste_carrinho = aviso
         self.carregando = False
         self.ja_carregou = True
 
@@ -269,6 +276,16 @@ class LojaState(rx.State):
         if atual < estoque:
             self._gravar({**self.carrinho, pid: atual + 1})
         self.aviso = ""
+
+    def comprar_de_novo(self, pedido_id: int):
+        """Os itens do pedido somados ao carrinho, e a loja (change
+        `comprar-de-novo`). A loja confere o estoque ao abrir."""
+        pedido = next((p for p in self.pedidos if p["id"] == pedido_id), None)
+        if not pedido:
+            return
+        self._gravar(carrinho_guardado.somar(self.carrinho, pedido["_repetir"]))
+        return [rx.redirect("/loja"),
+                rx.toast.success(f"Itens do pedido nº {pedido_id} no carrinho.")]
 
     def tirar(self, produto_id: str):
         atual = self.carrinho.get(produto_id, 0)
@@ -333,7 +350,11 @@ class LojaState(rx.State):
             self.ja_carregou = True
             return
         itens_por_pedido: dict[int, list[dict]] = {}
+        # Produto e quantidade de cada item, para o Comprar de novo.
+        repetir: dict[int, list[dict]] = {}
         for i in dados.get("itens") or []:
+            repetir.setdefault(i.get("id_pedido"), []).append(
+                {"id_produto": i.get("id_produto") or 0, "quantidade": i.get("quantidade") or 0})
             itens_por_pedido.setdefault(i.get("id_pedido"), []).append({
                 "texto": f"{int(i.get('quantidade') or 0)} × {i.get('produto_nome') or '-'}",
                 "linha": reais(i.get("valor_linha")),
@@ -350,6 +371,7 @@ class LojaState(rx.State):
                 "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "total": reais(p.get("total")),
                 "itens": itens_por_pedido.get(p.get("id"), []),
+                "_repetir": repetir.get(p.get("id"), []),
                 # As etapas do caminho (change `linha-do-tempo-do-pedido`).
                 "etapas": etapas_do_pedido.etapas(p.get("situacao") or "",
                                                   p.get("entrega") or "",
