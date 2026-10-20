@@ -482,8 +482,10 @@ async def enviar_foto_do_animal(animal_id: int, conteudo: bytes, extensao: str, 
 # é o backend, lendo o papel do banco a cada requisição.
 
 
-async def painel_equipe(*, token: str) -> dict:
-    """Os contadores do painel, numa requisição só.
+async def painel_equipe(dia_ms: int, *, token: str) -> dict:
+    """O painel numa requisição só: contadores, a agenda do dia e os pedidos
+    que esperam a equipe (change `painel-do-dia`). `dia_ms` é a meia-noite em
+    São Paulo, como em `agenda_da_clinica`.
 
     Existe por causa do limite de 10 requisições a cada 20 segundos, **por
     instância**: as quatro listas soltas no carregamento custariam metade do
@@ -494,7 +496,7 @@ async def painel_equipe(*, token: str) -> dict:
     pouparia requisição nenhuma, porque o painel faria as mesmas quatro
     chamadas de qualquer jeito.
     """
-    dados = await _requisitar("GET", "/equipe/painel", token=token)
+    dados = await _requisitar("GET", "/equipe/painel", token=token, params={"dia": dia_ms})
     return dados if isinstance(dados, dict) else {}
 
 

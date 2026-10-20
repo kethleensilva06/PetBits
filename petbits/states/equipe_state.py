@@ -25,7 +25,7 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, mascaras, rotulos, xano
+from petbits import datas, mascaras, painel, rotulos, xano
 from petbits.documentos import cpf_valido, so_digitos
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
 from petbits.ilustracoes import imagem_do_produto
@@ -83,6 +83,9 @@ class EquipeState(rx.State):
     total_tutores: int = 0
     total_animais: int = 0
     painel_carregado: bool = False
+    # O dia e os pedidos esperando (change `painel-do-dia`).
+    painel_agenda: list[dict] = []
+    painel_pedidos: dict[str, int] = {}
 
     # --- listas ---
     colaboradores: list[dict] = []
@@ -338,6 +341,8 @@ class EquipeState(rx.State):
         self.total_tutores = 0
         self.total_animais = 0
         self.painel_carregado = False
+        self.painel_agenda = []
+        self.painel_pedidos = {}
         self.colaboradores = []
         self.servicos = []
         self.tutores = []
@@ -423,7 +428,9 @@ class EquipeState(rx.State):
         self._comecar()
         try:
             token = await self._token_de_equipe()
-            dados = await xano.painel_equipe(token=token)
+            dados = await xano.painel_equipe(
+                regras_da_agenda.inicio_do_dia_ms(regras_da_agenda.hoje()), token=token
+            )
         except (SemSessao, SessaoExpirada) as erro:
             self.carregando = False
             return await self._encerrar(erro)
@@ -434,6 +441,8 @@ class EquipeState(rx.State):
         self.total_servicos = int(dados.get("servicos") or 0)
         self.total_tutores = int(dados.get("tutores") or 0)
         self.total_animais = int(dados.get("animais") or 0)
+        self.painel_agenda = painel.agenda_do_dia(dados.get("agenda"))
+        self.painel_pedidos = painel.pedidos_esperando(dados)
         self.painel_carregado = True
         self.carregando = False
         self.ja_carregou = True
@@ -1057,6 +1066,12 @@ class EquipeState(rx.State):
     def tem_pedidos_clinica(self) -> bool:
         return len(self.pedidos_clinica) > 0
 
+    def abrir_pedidos(self, situacao: str):
+        """Do painel para Pedidos já filtrado (change `painel-do-dia`, D4). O
+        `on_load` de Pedidos carrega com este filtro."""
+        self.filtro_pedidos = situacao
+        return rx.redirect("/equipe/pedidos")
+
     async def set_filtro_pedidos(self, valor: str):
         self.filtro_pedidos = valor
         return await self.carregar_pedidos_clinica()
@@ -1205,6 +1220,10 @@ class EquipeState(rx.State):
         if not self.agenda_dia_iso:
             return ""
         return regras_da_agenda.data_por_extenso(date.fromisoformat(self.agenda_dia_iso))
+
+    @rx.var
+    def tem_painel_agenda(self) -> bool:
+        return len(self.painel_agenda) > 0
 
     @rx.var
     def tem_agenda(self) -> bool:

@@ -14,6 +14,7 @@ tutor e animal não foi desenhada nesta change.
 import reflex as rx
 
 from petbits.states.auth_state import AuthState
+from petbits.painel import PEDIDOS_ESPERANDO
 from petbits.pages.historico import dialogo_form_atendimento, dialogo_historico_equipe
 from petbits.states.historico_state import HistoricoEquipeState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
@@ -240,33 +241,124 @@ def _contador(rotulo: str, valor, icone: str, rota: str) -> rx.Component:
     )
 
 
-def painel_page() -> rx.Component:
-    return _casca(
-        rx.grid(
-            _contador("Colaboradores", EquipeState.total_colaboradores, "users",
-                      "/equipe/colaboradores"),
-            _contador("Serviços", EquipeState.total_servicos, "scissors",
-                      "/equipe/servicos"),
-            _contador("Tutores", EquipeState.total_tutores, "contact",
-                      "/equipe/tutores"),
-            _contador("Animais", EquipeState.total_animais, "paw-print",
-                      "/equipe/animais"),
-            columns=rx.breakpoints(initial="1", sm="2", lg="4"),
-            spacing="3",
+def _linha_de_hoje(a: dict) -> rx.Component:
+    """Um agendamento de hoje no painel (change `painel-do-dia`): sem o
+    telefone do tutor, que fica na Agenda (D3)."""
+    return rx.hstack(
+        rx.text(a["horario"], weight="bold", min_width="3.5rem"),
+        rx.vstack(
+            rx.text(a["animal"], " — ", a["servico"], weight="medium", size="2"),
+            rx.text(a["tutor"], " · com ", a["profissional"], size="1",
+                    color=rx.color("gray", 11)),
+            spacing="0",
+            align_items="start",
+        ),
+        rx.spacer(),
+        rx.badge(a["situacao"], radius="full",
+                 color_scheme=rx.cond(a["concluido"], "gray", "teal")),
+        width="100%",
+        align="center",
+        padding_y="0.55rem",
+        border_bottom=f"1px solid {rx.color('gray', 4)}",
+        opacity=rx.cond(a["concluido"], "0.6", "1"),
+    )
+
+
+def _hoje() -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.icon("calendar-check", size=18, color=rx.color("accent", 10)),
+                rx.heading("Hoje", size="4"),
+                rx.spacer(),
+                rx.link(rx.button("Abrir a agenda", variant="soft", size="1"),
+                        href="/equipe/agenda"),
+                width="100%",
+                align="center",
+            ),
+            rx.cond(
+                EquipeState.tem_painel_agenda,
+                rx.vstack(rx.foreach(EquipeState.painel_agenda, _linha_de_hoje),
+                          spacing="0", width="100%"),
+                rx.text("Ninguém marcado para hoje.", size="2",
+                        color=rx.color("gray", 11), padding_y="0.5rem"),
+            ),
+            spacing="2",
             width="100%",
         ),
-        # Por que só contadores: as quatro listas no carregamento custariam
-        # metade do orçamento de requisições da instância numa abertura de
-        # tela. Clicar num contador abre a lista — uma requisição, quando a
-        # pessoa de fato quer aquilo.
-        rx.text(
-            "Clique num número para abrir a lista.",
-            size="1",
-            color=rx.color("gray", 10),
+        width="100%",
+    )
+
+
+def _pedido_esperando(situacao: str, rotulo: str, icone: str) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.icon(icone, size=20, color=rx.color("orange", 10)),
+            rx.vstack(
+                rx.heading(EquipeState.painel_pedidos[situacao], size="6"),
+                rx.text(rotulo, size="2", color=rx.color("gray", 11)),
+                spacing="0",
+                align_items="start",
+            ),
+            spacing="3",
+            align="center",
         ),
+        on_click=EquipeState.abrir_pedidos(situacao),
+        cursor="pointer",
+        width="100%",
+        _hover={"background": rx.color("gray", 2)},
+    )
+
+
+def _pedidos_esperando() -> rx.Component:
+    return rx.vstack(
+        rx.heading("Pedidos esperando a equipe", size="4"),
+        *[_pedido_esperando(situacao, rotulo, icone)
+          for _chave, situacao, rotulo, icone in PEDIDOS_ESPERANDO],
+        spacing="2",
+        width="100%",
+    )
+
+
+def painel_page() -> rx.Component:
+    return _casca(
+        rx.cond(
+            EquipeState.painel_carregado,
+            rx.vstack(
+                rx.grid(
+                    _hoje(),
+                    _pedidos_esperando(),
+                    columns=rx.breakpoints(initial="1", md="2fr 1fr"),
+                    spacing="4",
+                    width="100%",
+                    align_items="start",
+                ),
+                rx.grid(
+                    _contador("Colaboradores", EquipeState.total_colaboradores, "users",
+                              "/equipe/colaboradores"),
+                    _contador("Serviços", EquipeState.total_servicos, "scissors",
+                              "/equipe/servicos"),
+                    _contador("Tutores", EquipeState.total_tutores, "contact",
+                              "/equipe/tutores"),
+                    _contador("Animais", EquipeState.total_animais, "paw-print",
+                              "/equipe/animais"),
+                    columns=rx.breakpoints(initial="1", sm="2", lg="4"),
+                    spacing="3",
+                    width="100%",
+                ),
+                rx.button(rx.icon("refresh-cw", size=14), "Atualizar", variant="ghost",
+                          size="1", on_click=EquipeState.carregar_painel,
+                          disabled=EquipeState.carregando),
+                spacing="4",
+                width="100%",
+            ),
+            rx.cond(EquipeState.carregando, _carregando("o painel")),
+        ),
+        # Tudo numa requisição só (change `painel-do-dia`, D1): o painel é a
+        # tela inicial da equipe, e cada chamada a mais sairia de toda abertura.
         rota="/equipe",
         titulo="Painel da clínica",
-        subtitulo="O resumo de hoje, numa requisição só.",
+        subtitulo="Quem vem hoje e o que espera a equipe.",
     )
 
 

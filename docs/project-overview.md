@@ -196,6 +196,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `publicacao-por-script` ✓ | `scripts/publicar.py` publica só os arquivos pedidos, com prévia, e confere o repositório contra o Xano |
 | `acabamentos` ✓ | Sem as duplicações de guarda, rótulos e regra da categoria; saudação sem título |
 | `historico-clinico` ✓ | A equipe registra e retifica atendimentos (pela lista de animais ou pela agenda, concluindo o agendamento); o tutor lê a linha do tempo de cada animal; nada se apaga |
+| `painel-do-dia` ✓ | O painel da clínica abre com quem vem hoje e os pedidos que esperam a equipe, ainda numa requisição só |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
