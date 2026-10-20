@@ -180,6 +180,36 @@ def _vazio(titulo: str, recado: str, acao: rx.Component | None = None) -> rx.Com
     )
 
 
+def _busca(placeholder: str) -> rx.Component:
+    """O campo de busca das listas (change `busca-na-clinica`): filtra o que já
+    está na tela, sem requisição."""
+    return rx.input(
+        rx.input.slot(rx.icon("search", size=16)),
+        placeholder=placeholder,
+        custom_attrs={"aria-label": placeholder},
+        value=EquipeState.busca,
+        on_change=EquipeState.set_busca,
+        size="3",
+        width="100%",
+    )
+
+
+def _lista_com_busca(tem, visiveis, cartao, vazio, oque: str, placeholder: str) -> rx.Component:
+    """A lista com busca. "Nada encontrado" é diferente de "lista vazia": a
+    clínica tem registros, a busca é que não achou."""
+    return rx.vstack(
+        rx.cond(tem, _busca(placeholder)),
+        _lista(tem, visiveis, cartao, vazio, oque),
+        rx.cond(
+            tem & (visiveis.length() == 0),
+            rx.text("Nada encontrado para “", EquipeState.busca, "”.", size="2",
+                    color=rx.color("gray", 11)),
+        ),
+        spacing="3",
+        width="100%",
+    )
+
+
 def _lista(tem, itens, cartao, vazio, oque: str) -> rx.Component:
     """QUATRO estados, e eles têm de ser disjuntos: tem dado, está vindo,
     está mesmo vazio, e falhou.
@@ -479,9 +509,9 @@ def _dialogo_colaborador() -> rx.Component:
 
 def colaboradores_page() -> rx.Component:
     return _casca(
-        _lista(
+        _lista_com_busca(
             EquipeState.tem_colaboradores,
-            EquipeState.colaboradores,
+            EquipeState.colaboradores_visiveis,
             _cartao_colaborador,
             _vazio(
                 "Nenhum colaborador cadastrado",
@@ -495,6 +525,7 @@ def colaboradores_page() -> rx.Component:
                 ),
             ),
             "os colaboradores",
+            "Buscar por nome, função, e-mail ou telefone",
         ),
         _dialogo_colaborador(),
         rota="/equipe/colaboradores",
@@ -1120,9 +1151,9 @@ def _dialogo_tutor() -> rx.Component:
 
 def tutores_page() -> rx.Component:
     return _casca(
-        _lista(
+        _lista_com_busca(
             EquipeState.tem_tutores,
-            EquipeState.tutores,
+            EquipeState.tutores_visiveis,
             _cartao_tutor,
             _vazio("Nenhum tutor cadastrado",
                    "Cadastre quem chega no balcao, ou espere os tutores criarem "
@@ -1130,6 +1161,7 @@ def tutores_page() -> rx.Component:
                    rx.button("Cadastrar tutor", on_click=EquipeState.novo_tutor,
                              size="3")),
             "os tutores",
+            "Buscar por nome, CPF, telefone ou e-mail",
         ),
         _dialogo_tutor(),
         rota="/equipe/tutores",
@@ -1249,9 +1281,9 @@ def _dialogo_animal() -> rx.Component:
 
 def animais_page() -> rx.Component:
     return _casca(
-        _lista(
+        _lista_com_busca(
             EquipeState.tem_animais,
-            EquipeState.animais,
+            EquipeState.animais_visiveis,
             _cartao_animal,
             _vazio("Nenhum animal cadastrado",
                    "Cadastre o animal de quem chega, ou espere os tutores "
@@ -1259,6 +1291,7 @@ def animais_page() -> rx.Component:
                    rx.button("Cadastrar animal", on_click=EquipeState.novo_animal,
                              size="3")),
             "os animais",
+            "Buscar por nome, espécie, raça ou tutor",
         ),
         _dialogo_animal(),
         dialogo_historico_equipe(),

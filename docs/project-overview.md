@@ -204,6 +204,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `agenda-guiada` ✓ | Agendar mostra os passos e um resumo fixo; depois de marcar, o compromisso vai para a agenda do celular (.ics) |
 | `acessibilidade` ✓ | Contraste do WCAG AA em todo texto e botão, campos com nome para leitor de tela, foco visível e página em pt-BR |
 | `carrinho-guardado` ✓ | O carrinho da loja fica no navegador e sobrevive ao F5; sair da conta o esvazia |
+| `busca-na-clinica` ✓ | Colaboradores, Tutores e Animais têm busca na própria tela, sem requisição; CPF e telefone pelos números |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

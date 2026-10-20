@@ -25,7 +25,7 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, mascaras, painel, rotulos, xano
+from petbits import busca as busca_da_lista, datas, mascaras, painel, rotulos, xano
 from petbits.documentos import cpf_valido, so_digitos
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
 from petbits.ilustracoes import imagem_do_produto
@@ -92,6 +92,10 @@ class EquipeState(rx.State):
     servicos: list[dict] = []
     tutores: list[dict] = []
     animais: list[dict] = []
+
+    # A busca da tela atual (change `busca-na-clinica`): filtra a lista que
+    # já chegou, sem requisição. Zerada ao trocar de tela.
+    busca: str = ""
 
     # --- estado de carga, por tela ---
     carregando: bool = False
@@ -279,6 +283,25 @@ class EquipeState(rx.State):
 
     # --- vars de tela ---
 
+    def set_busca(self, valor: str):
+        self.busca = valor
+
+    @rx.var
+    def colaboradores_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.colaboradores, self.busca,
+                                      ("nome", "funcao", "email", "telefone"), ("telefone",))
+
+    @rx.var
+    def tutores_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.tutores, self.busca,
+                                      ("nome", "documento", "telefone", "email"),
+                                      ("documento", "telefone"))
+
+    @rx.var
+    def animais_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.animais, self.busca,
+                                      ("nome", "especie", "raca", "tutor"))
+
     @rx.var
     def tem_colaboradores(self) -> bool:
         return len(self.colaboradores) > 0
@@ -336,6 +359,8 @@ class EquipeState(rx.State):
         virem. Sem requisição: só avisa a tela de que a carga começou.
         """
         self._comecar()
+        # Cada tela começa sem busca (change `busca-na-clinica`).
+        self.busca = ""
 
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`.
