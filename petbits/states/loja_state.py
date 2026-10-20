@@ -33,6 +33,20 @@ def reais(valor) -> str:
     return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+# A ordem da loja (change `ordenar-a-loja`). "Em destaque" é a do catálogo.
+ORDENS = ["Em destaque", "Menor preço", "Maior preço", "Nome (A–Z)"]
+
+
+def ordenar_produtos(produtos: list[dict], ordem: str) -> list[dict]:
+    if ordem == "Menor preço":
+        return sorted(produtos, key=lambda p: p.get("_preco") or 0)
+    if ordem == "Maior preço":
+        return sorted(produtos, key=lambda p: p.get("_preco") or 0, reverse=True)
+    if ordem == "Nome (A–Z)":
+        return sorted(produtos, key=lambda p: normalizar(p.get("nome")))
+    return list(produtos)
+
+
 def filtrar_produtos(produtos: list[dict], busca: str, categoria: str) -> list[dict]:
     """Busca pelo nome (sem acento nem maiúscula) e filtro pelo rótulo da
     categoria; "" é "todas" (change `acabamentos-de-tela`, D4)."""
@@ -72,6 +86,7 @@ class LojaState(rx.State):
     # loja já carregou, sem requisição.
     busca: str = ""
     categoria_filtro: str = ""
+    ordem: str = ORDENS[0]
 
     def set_busca(self, v: str):
         self.busca = v
@@ -79,13 +94,18 @@ class LojaState(rx.State):
     def set_categoria_filtro(self, v: str):
         self.categoria_filtro = "" if v == "Todas" else v
 
+    def set_ordem(self, v: str):
+        self.ordem = v if v in ORDENS else ORDENS[0]
+
     def limpar_filtros(self):
         self.busca = ""
         self.categoria_filtro = ""
+        self.ordem = ORDENS[0]
 
     @rx.var
     def produtos_visiveis(self) -> list[dict]:
-        return filtrar_produtos(self.produtos, self.busca, self.categoria_filtro)
+        return ordenar_produtos(
+            filtrar_produtos(self.produtos, self.busca, self.categoria_filtro), self.ordem)
 
     @rx.var
     def categorias_da_loja(self) -> list[str]:

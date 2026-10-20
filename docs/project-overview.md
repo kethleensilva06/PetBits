@@ -208,6 +208,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `pagina-nao-encontrada` ✓ | Endereço inexistente mostra uma página do PetBits, em português, com Ir ao início e Voltar |
 | `proximo-agendamento-na-casa` ✓ | A casa do cliente mostra o próximo agendamento, com dia, hora e profissional |
 | `comprar-de-novo` ✓ | Meus pedidos repete um pedido no carrinho; a loja ajusta ao estoque e avisa o que mudou |
+| `ordenar-a-loja` ✓ | A loja ordena por destaque, menor e maior preço e nome, junto com a busca e a categoria |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

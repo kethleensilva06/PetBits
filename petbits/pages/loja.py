@@ -7,7 +7,7 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 import reflex as rx
 
 from petbits import esqueletos
-from petbits.states.loja_state import LojaState
+from petbits.states.loja_state import ORDENS, LojaState
 from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
 
 
@@ -269,6 +269,14 @@ def _busca_e_filtro() -> rx.Component:
             value=rx.cond(LojaState.categoria_filtro, LojaState.categoria_filtro, "Todas"),
             on_change=LojaState.set_categoria_filtro,
             size="3",
+        ),
+        # A ordem (change `ordenar-a-loja`).
+        rx.select(
+            ORDENS,
+            value=LojaState.ordem,
+            on_change=LojaState.set_ordem,
+            size="3",
+            aria_label="Ordenar",
         ),
         spacing="3",
         width="100%",

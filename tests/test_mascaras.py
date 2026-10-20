@@ -4,7 +4,7 @@ import unittest
 
 from petbits import mascaras
 from petbits.documentos import cpf_valido, so_digitos
-from petbits.states.loja_state import filtrar_produtos
+from petbits.states.loja_state import filtrar_produtos, ordenar_produtos
 
 
 class CpfTest(unittest.TestCase):
@@ -48,6 +48,25 @@ class FiltroDaLojaTest(unittest.TestCase):
         self.assertEqual(len(filtrar_produtos(self.PRODUTOS, "corda", "Brinquedo")), 1)
         self.assertEqual(filtrar_produtos(self.PRODUTOS, "xyz", ""), [])
         self.assertEqual(len(filtrar_produtos(self.PRODUTOS, "", "")), 3)
+
+
+class OrdenarTest(unittest.TestCase):
+    """A ordem da loja (change `ordenar-a-loja`)."""
+
+    PRODUTOS = [{"nome": "Bolinha", "_preco": 12.5}, {"nome": "Água fresca", "_preco": 3.0},
+                {"nome": "Ração", "_preco": 149.9}]
+
+    def nomes(self, ordem):
+        return [p["nome"] for p in ordenar_produtos(self.PRODUTOS, ordem)]
+
+    def test_ordens(self):
+        self.assertEqual(self.nomes("Em destaque"), ["Bolinha", "Água fresca", "Ração"])
+        self.assertEqual(self.nomes("Menor preço"), ["Água fresca", "Bolinha", "Ração"])
+        self.assertEqual(self.nomes("Maior preço"), ["Ração", "Bolinha", "Água fresca"])
+        self.assertEqual(self.nomes("Nome (A–Z)"), ["Água fresca", "Bolinha", "Ração"])
+
+    def test_ordem_desconhecida_e_a_do_catalogo(self):
+        self.assertEqual(self.nomes("qualquer"), ["Bolinha", "Água fresca", "Ração"])
 
 
 if __name__ == "__main__":
