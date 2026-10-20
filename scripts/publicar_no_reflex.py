@@ -49,6 +49,17 @@ LIMITE_ORIGINAL = "maxRedirects = 0, timeout = 1e4"
 LIMITE_NOVO = "maxRedirects = 0, timeout = 6e4"
 
 
+def tem_login() -> bool:
+    """Há login no Reflex Cloud: o token no ambiente ou no arquivo do CLI."""
+    if os.environ.get("REFLEX_ACCESS_TOKEN"):
+        return True
+    try:
+        from reflex_cli.constants.hosting import Hosting
+    except ImportError:
+        return False
+    return Path(Hosting.HOSTING_JSON).exists()
+
+
 def ajustar_limite_do_prerender(arquivo: Path = VITE_DO_REACT_ROUTER) -> str:
     """Sobe o limite do prerender para 60 s (D6). Devolve o que foi feito."""
     if not arquivo.exists():
@@ -156,6 +167,14 @@ def main(argv: list[str]) -> int:
     if "--publicar" not in argv:
         print("\nNada foi enviado. Para publicar: acrescente --publicar.")
         return 0
+
+    # Sem login, o `reflex deploy` sai com erro e sem mensagem (medido). O login
+    # tem de ser o do Reflex do projeto, que guarda o token em hosting_v1.json.
+    if not tem_login():
+        print("\nSem login no Reflex Cloud neste computador. Rode, na raiz do projeto:\n"
+              "   .venv\\Scripts\\reflex login\n"
+              "e depois este script de novo. Nada foi enviado.")
+        return 1
 
     print(f"Limite do prerender: {ajustar_limite_do_prerender()}")
 

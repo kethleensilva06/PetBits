@@ -30,3 +30,9 @@ Pendente, nesta ordem:
   em 60 s no `.web/` (D6), o build passou e gerou o `index.html`
 - [ ] 2.5 `reflex login` da usuária, no navegador
 - [ ] 2.6 Prévia revisada com ela e `--publicar` só com a autorização dela
+
+Primeira tentativa de publicar, autorizada pela usuária: o `reflex deploy` saiu
+com erro e sem mensagem, porque não havia login no Reflex do projeto
+(`AppData/Local/reflex/hosting_v1.json` não existe). Nada foi enviado. O script
+passou a conferir o login antes e a dizer o comando
+(`.venv\Scriptseflex login`).
