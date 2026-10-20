@@ -1,7 +1,7 @@
 /* Identidade visual do PetBits (change `identidade-visual`, D2).
  *
- * Só usa variáveis do próprio tema do Radix, para o degradê e a fonte
- * acompanharem o modo escuro sem uma segunda regra. */
+ * Só usa variáveis do próprio tema do Radix. O tema é sempre claro e o fundo,
+ * branco (change `tema-claro-fixo`). */
 
 /* A fonte vale para todo `.radix-themes`, inclusive os menus e as janelas que o
  * Radix abre fora da página. */
@@ -16,11 +16,8 @@
  * `acabamentos-de-tela`). */
 body > .radix-themes {
   min-height: 100vh;
-  background:
-    radial-gradient(60rem 30rem at 0% 0%, var(--accent-a3), transparent 70%),
-    radial-gradient(50rem 28rem at 100% 0%, var(--orange-a2), transparent 70%),
-    var(--color-background);
-  background-attachment: fixed;
+  /* Branco liso (change `tema-claro-fixo`, D3): saiu o degradê do fundo. */
+  background: var(--color-background);
 }
 
 .rt-Heading {

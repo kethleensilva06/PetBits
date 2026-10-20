@@ -17,7 +17,7 @@ from petbits.states.auth_state import AuthState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
                                          EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
-from petbits.visual import barra, botao_tema, marca, pilula, sair, titulo_de_pagina
+from petbits.visual import barra, marca, pilula, sair, titulo_de_pagina
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -113,7 +113,6 @@ def _casca(
                 rx.spacer(),
                 rx.badge(AuthState.papel_exibido, variant="soft", radius="full",
                          display=rx.breakpoints(initial="none", sm="inline-flex")),
-                botao_tema(),
                 # Tocar no próprio avatar abre o perfil (change `perfil-do-colaborador`).
                 rx.link(
                     rx.hstack(

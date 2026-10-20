@@ -11,7 +11,8 @@ from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
 
 TEMA = rx.theme(
-    appearance="inherit",
+    # Sempre claro, com fundo branco (change `tema-claro-fixo`, D1).
+    appearance="light",
     accent_color="teal",
     gray_color="sand",
     radius="large",
@@ -92,24 +93,6 @@ def barra(*conteudo) -> rx.Component:
     )
 
 
-def botao_tema(**props) -> rx.Component:
-    """Sol/lua: alterna claro e escuro (change `tema-claro-escuro`, D1 e D2).
-
-    Usa o modo de cor do Reflex, que o tema (`appearance="inherit"`) segue e
-    que fica guardado no navegador. Sem escolha, vale o do sistema.
-    """
-    return rx.icon_button(
-        rx.color_mode_cond(rx.icon("moon", size=16), rx.icon("sun", size=16)),
-        on_click=rx.toggle_color_mode,
-        variant="soft",
-        color_scheme="gray",
-        size="2",
-        aria_label="Alternar entre claro e escuro",
-        title="Claro ou escuro",
-        **props,
-    )
-
-
 def sair() -> rx.Component:
     # No celular fica só o ícone, para o topo caber numa linha (change
     # `acabamentos-de-tela`, D3); o nome continua para leitor de tela.
@@ -127,7 +110,6 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
                      radius="full", display=rx.breakpoints(initial="none", sm="inline-flex")),
-            botao_tema(),
             # O carrinho em qualquer tela do cliente (change `acabamentos-de-tela`,
             # D4): o número sai do LojaState, sem requisição.
             rx.link(

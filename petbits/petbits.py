@@ -36,7 +36,17 @@ from petbits.states.perfil_state import PerfilEquipeState, PerfilState
 from petbits.states.pet_state import PetState
 from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 
-app = rx.App(theme=TEMA, stylesheets=FOLHAS_DE_ESTILO)
+# Sempre claro (change `tema-claro-fixo`, D1). O Reflex ignora o `appearance`
+# do tema e segue o modo de cor guardado no navegador, e o ícone de sol/lua
+# que existiu deixou "dark" guardado em quem o usou. Este script roda no
+# <head>, antes de a página montar, e grava "light" antes de ser lido.
+app = rx.App(
+    theme=TEMA,
+    stylesheets=FOLHAS_DE_ESTILO,
+    head_components=[
+        rx.script("try { localStorage.setItem('theme', 'light'); } catch (e) {}"),
+    ],
+)
 
 # Rota privada. O `on_load` é a guarda: `carregar_sessao` devolve um
 # redirecionamento e **retorna antes** de qualquer chamada ao Xano quando não
