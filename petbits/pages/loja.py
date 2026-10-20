@@ -35,18 +35,23 @@ def _produto(p: rx.Var) -> rx.Component:
                 spacing="2",
                 align="center",
             ),
-            rx.heading(p["nome"], size="3", cursor="pointer",
-                       on_click=LojaState.abrir_produto(p)),
-            rx.cond(p["unidade"], rx.text(p["unidade"], size="1", color=rx.color("gray", 11))),
-            rx.cond(p["descricao"], rx.text(p["descricao"], size="2", color=rx.color("gray", 11))),
+            # Nome e descrição em até duas linhas (change `loja-organizada`): com
+            # texto de tamanhos diferentes, o preço ficava em alturas diferentes.
+            rx.heading(p["nome"], size="3", cursor="pointer", trim="start",
+                       on_click=LojaState.abrir_produto(p), class_name="duas-linhas"),
+            # Sempre presente, mesmo vazia: o espaço das duas linhas fica reservado.
+            rx.text(p["descricao"], size="2", color=rx.color("gray", 11),
+                    class_name="duas-linhas"),
             rx.spacer(),
             rx.hstack(
-                rx.text(p["preco"], weight="bold", size="4"),
-                rx.spacer(),
-                rx.text(p["disponivel"], size="1", color=rx.color("gray", 11)),
+                rx.text(p["preco"], weight="bold", size="5", color=rx.color("teal", 11)),
+                rx.cond(p["unidade"], rx.text("/ ", p["unidade"], size="1",
+                                              color=rx.color("gray", 11))),
+                spacing="1",
+                align="baseline",
                 width="100%",
-                align="center",
             ),
+            rx.text(p["disponivel"], size="1", color=rx.color("gray", 11)),
             rx.button(rx.icon("shopping-cart", size=16), "Adicionar",
                       on_click=LojaState.adicionar(p["id"]), width="100%"),
             spacing="2",
@@ -141,18 +146,35 @@ def _detalhe_do_produto() -> rx.Component:
 
 
 def _item_do_carrinho(i: rx.Var) -> rx.Component:
-    return rx.hstack(
-        rx.text(i["nome"], size="2", flex="1"),
-        rx.icon_button(rx.icon("minus", size=14), size="1", variant="soft",
-                       on_click=LojaState.tirar(i["id"]), aria_label="Tirar um"),
-        rx.text(i["quantidade"], size="2", min_width="1.5rem", text_align="center"),
-        rx.icon_button(rx.icon("plus", size=14), size="1", variant="soft",
-                       on_click=LojaState.adicionar(i["id"].to(int)),
-                       disabled=~i["pode_mais"].to(bool), aria_label="Mais um"),
-        rx.text(i["linha"], size="2", min_width="6rem", text_align="right"),
+    """Duas linhas (change `loja-organizada`): o nome inteiro com o total da
+    linha, e embaixo o preço de cada um com a quantidade. Numa linha só, o
+    nome quebrava em três e o valor era cortado."""
+    return rx.vstack(
+        rx.hstack(
+            rx.text(i["nome"], size="2", weight="medium", flex="1"),
+            rx.text(i["linha"], size="2", weight="bold", white_space="nowrap"),
+            width="100%",
+            align="start",
+            spacing="3",
+        ),
+        rx.hstack(
+            rx.text(i["preco"], " cada", size="1", color=rx.color("gray", 11)),
+            rx.spacer(),
+            rx.icon_button(rx.icon("minus", size=14), size="1", variant="soft",
+                           on_click=LojaState.tirar(i["id"]), aria_label="Tirar um"),
+            rx.text(i["quantidade"], size="2", weight="bold", min_width="1.5rem",
+                    text_align="center"),
+            rx.icon_button(rx.icon("plus", size=14), size="1", variant="soft",
+                           on_click=LojaState.adicionar(i["id"].to(int)),
+                           disabled=~i["pode_mais"].to(bool), aria_label="Mais um"),
+            width="100%",
+            align="center",
+            spacing="2",
+        ),
+        spacing="1",
         width="100%",
-        align="center",
-        spacing="2",
+        padding_bottom="0.5rem",
+        border_bottom=f"1px solid {rx.color('gray', 3)}",
     )
 
 

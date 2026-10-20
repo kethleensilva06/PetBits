@@ -181,6 +181,7 @@ class LojaState(rx.State):
                     "id": pid,
                     "nome": p["nome"],
                     "quantidade": qtd,
+                    "preco": reais(p["_preco"]),
                     "linha": reais(p["_preco"] * qtd),
                     "pode_mais": qtd < p["_estoque"],
                 })
@@ -271,7 +272,8 @@ class LojaState(rx.State):
                 "marca": p.get("marca") or "",
                 "unidade": p.get("unidade") or "",
                 "preco": reais(p.get("preco")),
-                "disponivel": f"{int(p.get('estoque') or 0)} disponível(is)",
+                # "28 em estoque", e não "28 disponível(is)" (change `loja-organizada`).
+                "disponivel": f"{int(p.get('estoque') or 0)} em estoque",
                 "_preco": float(p.get("preco") or 0),
                 "_estoque": int(p.get("estoque") or 0),
             }

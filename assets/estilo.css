@@ -53,3 +53,14 @@ html {
   outline: 2px solid var(--teal-11);
   outline-offset: 2px;
 }
+
+/* Texto em até duas linhas, com reticências (change `loja-organizada`): os
+ * cartões da loja ficam da mesma altura e o preço no mesmo lugar. */
+.duas-linhas {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* O espaço de duas linhas fica reservado mesmo com uma. */
+  min-height: 2lh;
+}

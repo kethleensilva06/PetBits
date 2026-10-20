@@ -210,6 +210,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `comprar-de-novo` ✓ | Meus pedidos repete um pedido no carrinho; a loja ajusta ao estoque e avisa o que mudou |
 | `ordenar-a-loja` ✓ | A loja ordena por destaque, menor e maior preço e nome, junto com a busca e a categoria |
 | `cliente-cancela-pedido` ✓ | O cliente cancela o próprio pedido enquanto aguarda pagamento; o estoque volta |
+| `loja-organizada` ✓ | Cartões da loja com a mesma altura e o preço no mesmo lugar; carrinho em duas linhas, sem valor cortado |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
