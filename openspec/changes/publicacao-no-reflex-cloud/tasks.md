@@ -1,0 +1,30 @@
+## 1. Script
+
+- [x] 1.1 `scripts/publicar_no_reflex.py`: permitidos, prévia, duas variáveis, trava, `--publicar`
+- [x] 1.2 `tests/test_publicar_no_reflex.py`
+- [x] 1.3 README: como publicar
+
+## 2. Verificação
+
+- [x] 2.1 Testes locais passam
+- [ ] 2.2 Prévia rodada e revisada; compilação de produção local (`reflex export --frontend-only --no-zip`)
+- [ ] 2.3 Publicar só com a autorização da usuária, depois do `reflex login` dela
+
+Medido: a prévia listou só `assets` (33), `petbits` (43), `requirements.txt` e
+`rxconfig.py`, e as variáveis XANO_BASE_URL e XANO_AUTH_BASE_URL sem valores.
+O `reflex export --backend-only --zip` com as mesmas exclusões, rodado
+localmente, gerou 80 arquivos: esses e 2 de `.web/` gerados pelo Reflex;
+nenhum `.env`, `contas-de-teste.local.txt`, `xano/` nem o token.
+
+Achado na compilação de produção do frontend (`reflex export --frontend-only`):
+o build do Vite termina, mas o prerender da página `/` estoura o tempo
+("Prerender: Request failed for /: The operation was aborted due to timeout"),
+nesta máquina Windows — a mesma lentidão do Vite que trava o servidor de
+desenvolvimento na subida. Rodar o export com o servidor de desenvolvimento
+ligado derrubou o site local (os dois usam `.web/`).
+
+Pendente, nesta ordem:
+- [ ] 2.4 Compilar o frontend com o servidor de desenvolvimento parado, tentando
+  `--no-ssr`; se o prerender continuar estourando, desligar o prerender
+- [ ] 2.5 `reflex login` da usuária, no navegador
+- [ ] 2.6 Prévia revisada com ela e `--publicar` só com a autorização dela
