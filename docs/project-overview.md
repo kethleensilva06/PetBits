@@ -199,6 +199,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `painel-do-dia` ✓ | O painel da clínica abre com quem vem hoje e os pedidos que esperam a equipe, ainda numa requisição só |
 | `linha-do-tempo-do-pedido` ✓ | Meus pedidos mostra as etapas de cada pedido, com o pagamento seguindo o registro do pagamento |
 | `esqueletos-de-carregamento` ✓ | Blocos no formato do conteúdo no lugar do "Carregando..."; a tela não mostra mais o vazio enquanto carrega |
+| `boas-vindas-com-fotos` ✓ | A página inicial pública tem capa com foto e os serviços da clínica com fotos, sem download novo |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

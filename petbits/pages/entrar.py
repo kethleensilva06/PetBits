@@ -292,43 +292,134 @@ def _caminho(icone: str, titulo: str, texto: str, rotulo: str, href: str,
     )
 
 
-def boas_vindas_page() -> rx.Component:
-    """Página inicial pública (change `porta-de-entrada`).
+# As fotos da página inicial (change `boas-vindas-com-fotos`, D1): todas já
+# acompanham o app e têm crédito em `assets/fotos/CREDITOS.md`.
+FOTO_DA_CAPA = ("/fotos/banner.webp", "Um cão e um gato deitados juntos na grama")
+SERVICOS_DA_CLINICA = (
+    ("/fotos/vazio-agenda.webp", "Um chihuahua no colo da veterinária, em consulta",
+     "stethoscope", "Clínica",
+     "Consultas, vacinas e o histórico de cada atendimento, que você acompanha pelo site."),
+    ("/fotos/produto-higiene.webp", "Um cão na banheira, ao lado de um xampu",
+     "bath", "Banho e tosa",
+     "Marque o horário pelo site e veja os horários livres de cada dia."),
+    ("/fotos/vazio-pedidos.webp", "Um dachshund dentro de uma caixa de papelão",
+     "shopping-bag", "Petshop",
+     "Ração, petiscos, brinquedos e higiene, para retirar na clínica ou receber em casa."),
+)
 
-    Sem `on_load` que chame o Xano (D4): só redireciona quem já tem sessão.
+
+def _capa() -> rx.Component:
+    """Texto e atalhos à esquerda, a foto à direita; no celular a foto vem
+    primeiro, mais baixa (D3)."""
+    texto = rx.vstack(
+        marca(tamanho="7"),
+        rx.heading("Cuidado de verdade para quem faz parte da família", size="8",
+                   weight="bold", line_height="1.15"),
+        rx.text(
+            "Clínica veterinária e petshop. Acompanhe seus animais, marque consultas e "
+            "banho e tosa, e compre o que eles precisam.",
+            size="4",
+            color=rx.color("gray", 11),
+        ),
+        rx.hstack(
+            rx.link(rx.button(rx.icon("log-in", size=16), "Entrar", size="3"),
+                    href="/entrar"),
+            rx.link(rx.button(rx.icon("user-plus", size=16), "Criar conta", size="3",
+                              variant="outline"),
+                    href="/cadastro"),
+            spacing="3",
+            wrap="wrap",
+        ),
+        spacing="4",
+        align_items="start",
+        justify="center",
+        height="100%",
+    )
+    foto = rx.image(
+        src=FOTO_DA_CAPA[0],
+        alt=FOTO_DA_CAPA[1],
+        width="100%",
+        height=rx.breakpoints(initial="13rem", md="24rem"),
+        object_fit="cover",
+        border_radius="1.5rem",
+        box_shadow=f"0 18px 40px -20px {rx.color('teal', 9)}",
+    )
+    return rx.grid(
+        rx.box(texto, order=rx.breakpoints(initial="2", md="1")),
+        rx.box(foto, order=rx.breakpoints(initial="1", md="2")),
+        columns=rx.breakpoints(initial="1", md="1.1fr 1fr"),
+        spacing="6",
+        width="100%",
+        align_items="center",
+    )
+
+
+def _servico(foto: str, alt: str, icone: str, titulo: str, texto: str) -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.image(src=foto, alt=alt, width="100%", height="11rem", object_fit="cover",
+                     border_radius="0.9rem"),
+            rx.hstack(
+                rx.icon(icone, size=18, color=rx.color("teal", 10)),
+                rx.heading(titulo, size="4", weight="bold"),
+                spacing="2",
+                align="center",
+            ),
+            rx.text(texto, size="2", color=rx.color("gray", 11)),
+            spacing="2",
+            align_items="start",
+        ),
+        width="100%",
+    )
+
+
+def boas_vindas_page() -> rx.Component:
+    """Página inicial pública (changes `porta-de-entrada` e `boas-vindas-com-fotos`).
+
+    Sem `on_load` que chame o Xano (D2): só redireciona quem já tem sessão.
     """
     return rx.center(
         rx.vstack(
-            marca(tamanho="8"),
-            rx.text(
-                "Clínica veterinária e petshop. Acompanhe seus animais, marque "
-                "consultas e banho e tosa.",
-                size="4",
-                color=rx.color("gray", 11),
-                text_align="center",
-                max_width="36rem",
-            ),
-            rx.grid(
-                _caminho("heart", "Sou cliente",
-                         "Veja seus animais e marque atendimentos.",
-                         "Entrar", "/entrar"),
-                _caminho("stethoscope", "Sou da equipe",
-                         "Agenda do dia, serviços, colaboradores e clientes.",
-                         "Entrada da equipe", "/entrar/equipe", "soft"),
-                _caminho("user-plus", "Primeira vez?",
-                         "Crie sua conta de cliente em um minuto.",
-                         "Criar conta", "/cadastro", "outline"),
-                columns=rx.breakpoints(initial="1", md="3"),
-                spacing="4",
+            _capa(),
+            rx.vstack(
+                rx.heading("O que você encontra", size="6", weight="bold"),
+                rx.grid(
+                    *[_servico(*s) for s in SERVICOS_DA_CLINICA],
+                    columns=rx.breakpoints(initial="1", md="3"),
+                    spacing="4",
+                    width="100%",
+                ),
+                spacing="3",
                 width="100%",
+                align_items="start",
             ),
-            spacing="6",
-            align="center",
+            # Os caminhos continuam (D4): é por eles que a equipe chega à sua entrada.
+            rx.vstack(
+                rx.heading("Por onde começar", size="6", weight="bold"),
+                rx.grid(
+                    _caminho("heart", "Sou cliente",
+                             "Veja seus animais e marque atendimentos.",
+                             "Entrar", "/entrar"),
+                    _caminho("stethoscope", "Sou da equipe",
+                             "Agenda do dia, serviços, colaboradores e clientes.",
+                             "Entrada da equipe", "/entrar/equipe", "soft"),
+                    _caminho("user-plus", "Primeira vez?",
+                             "Crie sua conta de cliente em um minuto.",
+                             "Criar conta", "/cadastro", "outline"),
+                    columns=rx.breakpoints(initial="1", md="3"),
+                    spacing="4",
+                    width="100%",
+                ),
+                spacing="3",
+                width="100%",
+                align_items="start",
+            ),
+            spacing="8",
             width="100%",
-            max_width="60rem",
+            max_width="64rem",
         ),
         min_height="100vh",
-        padding="2rem 1.5rem",
+        padding=rx.breakpoints(initial="1.5rem 1rem", md="3rem 1.5rem"),
         width="100%",
     )
 
