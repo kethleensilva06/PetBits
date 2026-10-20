@@ -128,7 +128,9 @@ def ler_variaveis(arquivo: Path = PROJETO / ".env") -> dict[str, str]:
 
 def comando(variaveis: dict[str, str], raiz: Path = PROJETO) -> list[str]:
     """O `reflex deploy`, com as exclusões e só as duas variáveis."""
-    cmd = ["reflex", "deploy", "--app-name", NOME_DO_APP, "--no-interactive", "--no-ssr"]
+    # Sem `--no-ssr` (D7): com ele só o `index.html` é gerado, e abrir um
+    # endereço direto (/loja, ou F5 numa tela) dava 404 no site publicado.
+    cmd = ["reflex", "deploy", "--app-name", NOME_DO_APP, "--no-interactive"]
     for nome in VARIAVEIS:
         cmd += ["--env", f"{nome}={variaveis[nome]}"]
     for item in excluidos(raiz):
@@ -177,6 +179,10 @@ def main(argv: list[str]) -> int:
         return 1
 
     print(f"Limite do prerender: {ajustar_limite_do_prerender()}")
+    # `--loglevel debug` passa para o reflex deploy: sem ele, uma falha sai sem
+    # mensagem nenhuma (medido duas vezes).
+    if "--debug" in argv:
+        cmd += ["--loglevel", "debug"]
 
     executavel = PROJETO / ".venv" / ("Scripts" if os.name == "nt" else "bin") / "reflex"
     if executavel.with_suffix(".exe").exists():

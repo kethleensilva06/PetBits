@@ -42,3 +42,9 @@ sobe o limite para 60 s em `.web/node_modules/@react-router/dev/dist/vite.js`
 antes de publicar, e passa `--no-ssr`. O `.web/` é gerado e não versionado,
 então o ajuste é refeito a cada publicação; se o trecho mudar numa versão nova
 do React Router, o script avisa e não mexe.
+
+### D7. Com o prerender das páginas
+
+Com `--no-ssr`, só o `index.html` sai, e o site publicado dava 404 ao abrir um
+endereço direto. Com o limite em 60 s (D6), o prerender de todas as páginas
+cabe, e o script não passa mais `--no-ssr`.

@@ -35,4 +35,19 @@ Primeira tentativa de publicar, autorizada pela usuária: o `reflex deploy` saiu
 com erro e sem mensagem, porque não havia login no Reflex do projeto
 (`AppData/Local/reflex/hosting_v1.json` não existe). Nada foi enviado. O script
 passou a conferir o login antes e a dizer o comando
-(`.venv\Scriptseflex login`).
+(`.venv\Scripts
+eflex login`).
+
+Publicado em 20/10/2026, com a autorização da usuária, na conta
+petbitsgroup@gmail.com: https://petbits-blue-grass.reflex.run (servidor em
+`8429d463-9a17-4b75-9643-2e4c6811247b.fly.dev`, que respondeu ao /ping). A raiz
+abriu e levou à página inicial, o que prova a ligação com o servidor. Achado:
+abrir um endereço direto (`/boas-vindas`, ou F5 em `/loja`) dava 404, porque
+com `--no-ssr` só o `index.html` é gerado (D7); o script deixou de usar
+`--no-ssr`.
+
+Segunda publicação, para corrigir o 404: o `reflex deploy` saiu com código 1
+em 4 s e sem mensagem. Causa: o `reflex-hosting-cli` 0.2.0 saiu entre as duas
+publicações, e o CLI se recusa a publicar desatualizado — a linha "Warning:
+... newer version" é o erro. Pendente: atualizar o pacote (precisa da
+autorização da usuária para baixar) e publicar de novo.

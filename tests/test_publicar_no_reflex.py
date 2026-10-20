@@ -85,8 +85,9 @@ class LimiteDoPrerenderTest(unittest.TestCase):
             self.assertIn("nada alterado", p.ajustar_limite_do_prerender(arquivo))
             self.assertEqual(arquivo.read_text(encoding="utf-8"), "outra coisa")
 
-    def test_sem_ssr(self):
-        self.assertIn("--no-ssr", p.comando({v: "x" for v in p.VARIAVEIS}))
+    def test_com_prerender_das_paginas(self):
+        """Com --no-ssr só o index.html saía, e endereço direto dava 404 (D7)."""
+        self.assertNotIn("--no-ssr", p.comando({v: "x" for v in p.VARIAVEIS}))
 
 
 if __name__ == "__main__":
