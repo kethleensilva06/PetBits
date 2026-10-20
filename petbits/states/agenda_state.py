@@ -18,7 +18,7 @@ from typing import Any
 
 import reflex as rx
 
-from petbits import agenda, rotulos, xano
+from petbits import agenda, agenda_guiada, calendario, rotulos, xano
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -59,6 +59,8 @@ class AgendaState(rx.State):
     erro: str = ""
     erro_lista: str = ""
     aviso: str = ""
+    # O último agendamento marcado, como .ics (change `agenda-guiada`, D4).
+    ultimo_ics: str = ""
 
     # --- campos ---------------------------------------------------------
 
@@ -149,6 +151,18 @@ class AgendaState(rx.State):
         )
 
     @rx.var
+    def passos(self) -> list[dict]:
+        """A faixa de progresso (change `agenda-guiada`, D1)."""
+        return agenda_guiada.passos(self.servico_id, self.pet_id, self.horario_ms)
+
+    @rx.var
+    def linhas_do_resumo(self) -> list[dict]:
+        """O resumo ao lado (change `agenda-guiada`, D2)."""
+        animal = next((a["nome"] for a in self.animais if str(a["id"]) == self.pet_id), "")
+        return agenda_guiada.linhas_do_resumo(self.servico_escolhido, animal,
+                                              self.horario_ms, self.dia_por_extenso)
+
+    @rx.var
     def tem_agendamentos(self) -> bool:
         return len(self.agendamentos) > 0
 
@@ -185,6 +199,7 @@ class AgendaState(rx.State):
         self.enviando = False
         self.erro_lista = ""
         self.aviso = ""
+        self.ultimo_ics = ""
 
     # --- sessão -----------------------------------------------------------
 
@@ -347,7 +362,7 @@ class AgendaState(rx.State):
             }
             if self.observacoes.strip():
                 dados["observacoes"] = self.observacoes.strip()
-            await xano.criar_agendamento(dados, token=token)
+            criado = await xano.criar_agendamento(dados, token=token)
             registros = await xano.listar_agendamentos(token=token)
         except (SemSessao, SessaoExpirada) as erro:
             yield await self._encerrar(erro)
@@ -361,9 +376,34 @@ class AgendaState(rx.State):
             self.enviando = False
 
         self.aviso = f"Agendado: {self.resumo}."
+        self.ultimo_ics = self._ics_do_marcado(criado)
         self.observacoes = ""
         self._limpar_escolha_de_horario()
         self._guardar_agendamentos(registros)
+
+    def _ics_do_marcado(self, criado) -> str:
+        """O compromisso que acabou de ser marcado, para a agenda do celular.
+        O fim vem da duração do serviço; só dado do próprio tutor."""
+        servico = self.servico_escolhido
+        animal = next((a["nome"] for a in self.animais if str(a["id"]) == self.pet_id), "")
+        inicio = self.horario_ms
+        fim = inicio + int(servico.get("duracao") or 30) * 60 * 1000
+        ident = criado.get("id") if isinstance(criado, dict) else None
+        return calendario.ics(
+            uid=f"agendamento-{ident or inicio}@petbits",
+            titulo=f"{servico.get('nome', 'Atendimento')} · {animal}",
+            inicio_ms=inicio,
+            fim_ms=fim,
+            descricao=self.observacoes.strip(),
+            agora_ms=agenda.agora_ms(),
+        )
+
+    def baixar_ics(self):
+        """Baixa o .ics montado ao marcar (D4). Sem requisição."""
+        if not self.ultimo_ics:
+            return
+        return rx.download(data=self.ultimo_ics, filename="agendamento-petbits.ics",
+                           mime_type="text/calendar")
 
     async def cancelar(self, agendamento_id: int):
         self.aviso = ""

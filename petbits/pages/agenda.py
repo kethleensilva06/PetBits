@@ -95,15 +95,54 @@ def _escolhas() -> rx.Component:
 
 
 def _observacoes() -> rx.Component:
-    return _passo(
-        "4",
-        "Observações para a clínica (opcional)",
+    return rx.vstack(
+        rx.text("Observações para a clínica (opcional)", size="2", weight="medium"),
         rx.text_area(
             placeholder="Ex.: ele fica nervoso com secador",
             value=AgendaState.observacoes,
             on_change=AgendaState.set_observacoes,
             width="100%",
         ),
+        spacing="1",
+        width="100%",
+    )
+
+
+def _etapa(p: rx.Var) -> rx.Component:
+    """Um passo da faixa de progresso (change `agenda-guiada`, D1)."""
+    return rx.hstack(
+        rx.center(
+            rx.cond(p["feito"].to(bool), rx.icon("check", size=14), rx.text(p["numero"], size="1",
+                                                                            weight="bold")),
+            width="1.6rem",
+            height="1.6rem",
+            border_radius="9999px",
+            flex_shrink="0",
+            color=rx.cond(p["feito"].to(bool) | p["atual"].to(bool), "white",
+                          rx.color("gray", 10)),
+            background=rx.cond(p["feito"].to(bool), rx.color("teal", 9),
+                               rx.cond(p["atual"].to(bool), rx.color("teal", 11),
+                                       rx.color("gray", 4))),
+        ),
+        rx.text(p["rotulo"], size="2",
+                weight=rx.cond(p["atual"].to(bool), "bold", "regular"),
+                color=rx.cond(p["feito"].to(bool) | p["atual"].to(bool),
+                              rx.color("gray", 12), rx.color("gray", 10))),
+        spacing="2",
+        align="center",
+    )
+
+
+def _progresso() -> rx.Component:
+    return rx.grid(
+        rx.foreach(AgendaState.passos, _etapa),
+        columns=rx.breakpoints(initial="2", sm="4"),
+        spacing="3",
+        width="100%",
+        padding="0.75rem 1rem",
+        border_radius="1rem",
+        background=rx.color("teal", 2),
+        border=f"1px solid {rx.color('teal', 4)}",
     )
 
 
@@ -199,26 +238,71 @@ def _calendario() -> rx.Component:
     )
 
 
-def _confirmacao() -> rx.Component:
-    return rx.vstack(
-        rx.cond(
-            AgendaState.resumo != "",
-            rx.callout(AgendaState.resumo, icon="calendar_check", size="1", width="100%"),
-        ),
-        rx.cond(
-            AgendaState.erro,
-            rx.callout(AgendaState.erro, icon="triangle_alert", color_scheme="red",
-                       size="1", width="100%"),
-        ),
-        rx.button(
-            "Confirmar agendamento",
-            on_click=AgendaState.confirmar,
-            disabled=AgendaState.enviando | (AgendaState.resumo == ""),
-            size="3",
-            width="100%",
-        ),
+def _linha_do_resumo(l: rx.Var) -> rx.Component:
+    return rx.hstack(
+        rx.text(l["rotulo"], size="2", color=rx.color("gray", 10), min_width="4.5rem"),
+        rx.text(l["valor"], size="2",
+                weight=rx.cond(l["escolhido"].to(bool), "medium", "regular"),
+                color=rx.cond(l["escolhido"].to(bool), rx.color("gray", 12),
+                              rx.color("gray", 9)),
+                font_style=rx.cond(l["escolhido"].to(bool), "normal", "italic")),
         spacing="3",
         width="100%",
+        align="start",
+        padding_y="0.35rem",
+        border_bottom=f"1px solid {rx.color('gray', 3)}",
+    )
+
+
+def _resumo() -> rx.Component:
+    """O resumo fixo ao lado, com o Confirmar (change `agenda-guiada`, D2 e D3)."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(rx.icon("clipboard-list", size=18, color=rx.color("teal", 10)),
+                      rx.heading("Seu agendamento", size="4"), spacing="2", align="center"),
+            rx.vstack(rx.foreach(AgendaState.linhas_do_resumo, _linha_do_resumo),
+                      spacing="0", width="100%"),
+            _observacoes(),
+            rx.cond(
+                AgendaState.erro,
+                rx.callout(AgendaState.erro, icon="triangle_alert", color_scheme="red",
+                           size="1", width="100%"),
+            ),
+            rx.button(
+                rx.icon("calendar-check", size=16),
+                "Confirmar agendamento",
+                on_click=AgendaState.confirmar,
+                disabled=AgendaState.enviando | (AgendaState.resumo == ""),
+                loading=AgendaState.enviando,
+                size="3",
+                width="100%",
+            ),
+            spacing="3",
+            width="100%",
+        ),
+        width="100%",
+        position=rx.breakpoints(initial="static", md="sticky"),
+        top="1rem",
+    )
+
+
+def _aviso_de_marcado() -> rx.Component:
+    """O sucesso, com o compromisso para a agenda do celular (D4)."""
+    return rx.cond(
+        AgendaState.aviso,
+        rx.callout.root(
+            rx.callout.icon(rx.icon("circle_check")),
+            rx.callout.text(AgendaState.aviso),
+            rx.cond(
+                AgendaState.ultimo_ics != "",
+                rx.button(rx.icon("calendar-plus", size=14), "Adicionar à agenda do celular",
+                          on_click=AgendaState.baixar_ics, variant="soft", color_scheme="green",
+                          size="1", width="fit-content"),
+            ),
+            color_scheme="green",
+            size="1",
+            width="100%",
+        ),
     )
 
 
@@ -315,18 +399,16 @@ def agenda_page() -> rx.Component:
         rx.vstack(
             topo_do_cliente("/agenda"),
             titulo_de_pagina("Agendar", "Escolha o animal, o serviço e um horário livre."),
-            rx.cond(
-                AgendaState.aviso,
-                rx.callout(AgendaState.aviso, icon="circle_check", color_scheme="green",
-                           size="1", width="100%"),
-            ),
+            _aviso_de_marcado(),
+            _progresso(),
+            # Passos numa coluna, resumo ao lado (change `agenda-guiada`, D3).
             rx.grid(
-                rx.vstack(_escolhas(), spacing="4", width="100%"),
-                rx.vstack(_calendario(), _observacoes(), _confirmacao(), spacing="4",
-                          width="100%"),
-                columns=rx.breakpoints(initial="1", md="2"),
+                rx.vstack(_escolhas(), _calendario(), spacing="5", width="100%"),
+                _resumo(),
+                columns=rx.breakpoints(initial="1", md="3fr 2fr"),
                 spacing="6",
                 width="100%",
+                align_items="start",
                 # Alvo do "Marcar agora" da tela vazia.
                 id="marcar",
             ),

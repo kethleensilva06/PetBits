@@ -200,6 +200,8 @@ clínica, mas passam pelo mesmo fluxo.
 | `linha-do-tempo-do-pedido` ✓ | Meus pedidos mostra as etapas de cada pedido, com o pagamento seguindo o registro do pagamento |
 | `esqueletos-de-carregamento` ✓ | Blocos no formato do conteúdo no lugar do "Carregando..."; a tela não mostra mais o vazio enquanto carrega |
 | `boas-vindas-com-fotos` ✓ | A página inicial pública tem capa com foto e os serviços da clínica com fotos, sem download novo |
+| `abas-simetricas` ✓ | O lugar da barra de rolagem fica reservado: toda aba do cliente começa no mesmo ponto |
+| `agenda-guiada` ✓ | Agendar mostra os passos e um resumo fixo; depois de marcar, o compromisso vai para a agenda do celular (.ics) |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
