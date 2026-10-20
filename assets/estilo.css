@@ -28,3 +28,11 @@ body > .radix-themes {
 .rt-Card.rt-variant-surface {
   box-shadow: 0 1px 2px var(--gray-a3), 0 6px 20px -8px var(--gray-a5);
 }
+
+/* O lugar da barra de rolagem fica sempre reservado (change
+ * `abas-simetricas`). Sem isto, as telas curtas (Meus animais, Meus pedidos)
+ * não têm barra, o conteúdo centraliza numa largura 8 px maior, e o cabeçalho,
+ * o avatar e o menu "andam" ao trocar de aba. */
+html {
+  scrollbar-gutter: stable;
+}

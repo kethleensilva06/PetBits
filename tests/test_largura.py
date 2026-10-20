@@ -28,5 +28,15 @@ class LarguraTest(unittest.TestCase):
             self.assertIsNone(re.search(r'size="[1-4]",\s*\)$', final), pagina.__name__)
 
 
+class LugarDaBarraTest(unittest.TestCase):
+    def test_lugar_da_barra_reservado(self):
+        """Sem isto, a aba curta (sem barra de rolagem) começa 8 px adiante
+        das outras (change `abas-simetricas`)."""
+        from pathlib import Path
+        css = (Path(__file__).resolve().parent.parent / "assets/estilo.css").read_text(
+            encoding="utf-8")
+        self.assertRegex(css, r"html\s*\{[^}]*scrollbar-gutter:\s*stable")
+
+
 if __name__ == "__main__":
     unittest.main()
