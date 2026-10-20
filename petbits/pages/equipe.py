@@ -947,6 +947,20 @@ def pedidos_equipe_page() -> rx.Component:
             value=EquipeState.filtro_pedidos,
             on_change=EquipeState.set_filtro_pedidos,
         ),
+        # O que está na tela, somado, e para planilha (change `resumo-dos-pedidos`).
+        rx.cond(
+            EquipeState.resumo_pedidos != "",
+            rx.hstack(
+                rx.text(EquipeState.resumo_pedidos, size="2", weight="medium"),
+                rx.spacer(),
+                rx.button(rx.icon("download", size=14), "Baixar CSV", variant="soft", size="2",
+                          on_click=EquipeState.baixar_csv_pedidos),
+                width="100%",
+                align="center",
+                wrap="wrap",
+                spacing="3",
+            ),
+        ),
         _lista_com_busca(
             EquipeState.tem_pedidos_clinica,
             EquipeState.pedidos_visiveis,

@@ -25,7 +25,7 @@ from typing import Optional
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import busca as busca_da_lista, datas, mascaras, painel, rotulos, xano
+from petbits import busca as busca_da_lista, datas, mascaras, painel, relatorio, rotulos, xano
 from petbits.documentos import cpf_valido, so_digitos
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
 from petbits.ilustracoes import imagem_do_produto
@@ -1110,6 +1110,19 @@ class EquipeState(rx.State):
         return busca_da_lista.filtrar_pedidos(self.pedidos_clinica, self.busca)
 
     @rx.var
+    def resumo_pedidos(self) -> str:
+        """Quantos e quanto, do que está na tela (change `resumo-dos-pedidos`)."""
+        return relatorio.resumo_de_pedidos(self.pedidos_visiveis)
+
+    def baixar_csv_pedidos(self):
+        """Os pedidos da tela, com o filtro e a busca, para planilha."""
+        if not self.pedidos_visiveis:
+            return
+        return rx.download(data=relatorio.csv_de_pedidos(self.pedidos_visiveis),
+                           filename=f"pedidos-petbits-{self.filtro_pedidos}.csv",
+                           mime_type="text/csv")
+
+    @rx.var
     def tem_pedidos_clinica(self) -> bool:
         return len(self.pedidos_clinica) > 0
 
@@ -1170,6 +1183,10 @@ class EquipeState(rx.State):
                 "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "pago": bool(p.get("pago_em")),
                 "total": reais(p.get("total")),
+                # Crus, para o resumo e o CSV (change `resumo-dos-pedidos`).
+                "_total": float(p.get("total") or 0),
+                "_cancelado": p.get("situacao") == "cancelado",
+                "_cliente_nome": p.get("cliente_nome") or "",
                 "itens": itens.get(p.get("id"), []),
                 "acoes": [{"situacao": s, "rotulo": ROTULOS_ACAO[s]}
                           for s in proximas(p.get("situacao") or "", p.get("entrega") or "")],
