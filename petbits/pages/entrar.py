@@ -9,7 +9,7 @@ import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
 from petbits.states.auth_state import AuthState
-from petbits.visual import campo, marca
+from petbits.visual import campo, horario_e_contato, marca
 
 
 def _campo_senha(
@@ -402,6 +402,18 @@ def boas_vindas_page() -> rx.Component:
                 spacing="3",
                 width="100%",
                 align_items="start",
+            ),
+            # Horário e contato (change `horario-e-contato`).
+            rx.card(
+                rx.vstack(
+                    rx.heading("Horário e contato", size="5", weight="bold"),
+                    horario_e_contato(centralizado=True),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                    padding="0.5rem",
+                ),
+                width="100%",
             ),
             spacing="8",
             width="100%",

@@ -9,9 +9,10 @@ import reflex as rx
 
 from petbits import esqueletos
 from petbits.agenda import DIAS_DA_SEMANA
+from petbits.clinica import HORARIO_CURTO
 from petbits.states.agenda_state import AgendaState
-from petbits.visual import (LARGURA_DO_CLIENTE, campo, tela_vazia, titulo_de_pagina,
-                            topo_do_cliente)
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, rodape_do_cliente, tela_vazia,
+                            titulo_de_pagina, topo_do_cliente)
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -195,7 +196,7 @@ def _calendario() -> rx.Component:
                         width="100%",
                     ),
                 ),
-                rx.text("Domingo fechado · seg a sex 8h–18h · sábado 8h–12h",
+                rx.text(HORARIO_CURTO,
                         size="1", color=rx.color("gray", 11)),
                 spacing="2",
                 width="100%",
@@ -413,6 +414,7 @@ def agenda_page() -> rx.Component:
             ),
             rx.divider(margin_y="1rem"),
             _meus_agendamentos(),
+            rodape_do_cliente(),
             spacing="4",
             align_items="start",
             padding_y="2rem",

@@ -104,16 +104,10 @@ query agendamentos verb=POST {
       value = ($fim|format_timestamp:"Hi":"America/Sao_Paulo")|to_int
     }
 
+    // Segunda a sabado, das 8h as 18h (change `horario-e-contato`; antes o
+    // sabado fechava as 12h). O mesmo `EXPEDIENTE` de `petbits/agenda.py`.
     var $fecha_as {
       value = 1800
-    }
-
-    conditional {
-      if ($dia_semana == 6) {
-        var.update $fecha_as {
-          value = 1200
-        }
-      }
     }
 
     precondition ($dia_semana != 7) {

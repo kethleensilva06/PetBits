@@ -8,7 +8,8 @@ import reflex as rx
 
 from petbits import esqueletos
 from petbits.states.loja_state import ORDENS, LojaState
-from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import (LARGURA_DO_CLIENTE, rodape_do_cliente, tela_vazia, titulo_de_pagina,
+                            topo_do_cliente)
 
 
 def _avisos() -> rx.Component:
@@ -350,6 +351,7 @@ def loja_page() -> rx.Component:
             ),
             _finalizacao(),
             _detalhe_do_produto(),
+            rodape_do_cliente(),
             spacing="4",
             align_items="start",
             padding_y="2rem",
@@ -483,6 +485,7 @@ def pedidos_page() -> rx.Component:
                     )),
                 ),
             ),
+            rodape_do_cliente(),
             spacing="4",
             align_items="start",
             padding_y="2rem",

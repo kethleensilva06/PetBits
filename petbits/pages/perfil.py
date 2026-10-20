@@ -13,7 +13,8 @@ from petbits import esqueletos
 from petbits.pages.equipe import _casca
 from petbits.states.perfil_state import (ID_UPLOAD, ID_UPLOAD_EQUIPE, PerfilEquipeState,
                                          PerfilState)
-from petbits.visual import LARGURA_DO_CLIENTE, campo, titulo_de_pagina, topo_do_cliente
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, rodape_do_cliente, titulo_de_pagina,
+                            topo_do_cliente)
 
 
 
@@ -156,6 +157,7 @@ def perfil_page() -> rx.Component:
                     width="100%",
                 ),
             )),
+            rodape_do_cliente(),
             spacing="4",
             align_items="start",
             padding_y="2rem",

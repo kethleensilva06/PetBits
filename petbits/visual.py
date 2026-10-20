@@ -7,6 +7,7 @@ gastaria orçamento da instância do Xano a cada clique no menu.
 
 import reflex as rx
 
+from petbits.clinica import EMAIL, HORARIO
 from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
 
@@ -184,6 +185,36 @@ def campo(rotulo: str, componente: rx.Component) -> rx.Component:
         spacing="1",
         width="100%",
         align_items="start",
+    )
+
+
+def horario_e_contato(centralizado: bool = False) -> rx.Component:
+    """O horário de funcionamento e o e-mail (change `horario-e-contato`)."""
+    return rx.flex(
+        rx.hstack(rx.icon("clock", size=15, color=rx.color("teal", 11)),
+                  rx.text(HORARIO, "; domingo fechado", size="2"), spacing="2",
+                  align="center"),
+        rx.hstack(rx.icon("mail", size=15, color=rx.color("teal", 11)),
+                  rx.link(EMAIL, href=f"mailto:{EMAIL}", size="2"), spacing="2",
+                  align="center"),
+        gap=rx.breakpoints(initial="0.5rem", sm="1.5rem"),
+        direction=rx.breakpoints(initial="column", sm="row"),
+        justify="center" if centralizado else "start",
+        align=rx.breakpoints(initial="center" if centralizado else "start", sm="center"),
+        wrap="wrap",
+        width="100%",
+    )
+
+
+def rodape_do_cliente() -> rx.Component:
+    """O rodapé de toda tela do cliente: a clínica, o horário e o contato."""
+    return rx.box(
+        rx.divider(margin_bottom="1rem"),
+        rx.text("PetBits · clínica e petshop", size="1", weight="bold",
+                color=rx.color("gray", 11), margin_bottom="0.4rem"),
+        horario_e_contato(),
+        width="100%",
+        padding_top="1rem",
     )
 
 

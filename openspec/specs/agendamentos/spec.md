@@ -23,7 +23,8 @@ que encaixa o profissional livre.
 O tutor SHALL poder consultar, para um serviço e um dia, os horários de início
 em que existe pelo menos um profissional compatível livre durante toda a
 duração do serviço. Os horários MUST ser múltiplos de 30 minutos, MUST estar
-no futuro e o atendimento inteiro MUST caber no horário de funcionamento.
+no futuro e o atendimento inteiro MUST caber no horário de funcionamento:
+segunda a sábado, das 8h às 18h.
 
 #### Scenario: Dia útil sem agendamentos
 
@@ -34,7 +35,7 @@ no futuro e o atendimento inteiro MUST caber no horário de funcionamento.
 #### Scenario: O fim do atendimento precisa caber no expediente
 
 - **WHEN** o tutor consulta um sábado para um serviço de 90 minutos
-- **THEN** o último horário oferecido é 10h30, porque o sábado fecha às 12h
+- **THEN** o último horário oferecido é 16h30, porque o sábado fecha às 18h
 
 #### Scenario: Domingo
 

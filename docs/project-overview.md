@@ -214,6 +214,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `estoque-baixo` ✓ | O painel conta os produtos esgotados e acabando; Produtos filtra o estoque baixo |
 | `busca-nos-pedidos` ✓ | Pedidos da clínica têm busca por número, cliente, telefone e produto |
 | `evolucao-do-peso` ✓ | O histórico mostra o último peso, a diferença para a pesagem anterior e as últimas seis |
+| `horario-e-contato` ✓ | Seg a sáb, 8h às 18h (o sábado ia até 12h), e o e-mail petbitsgroup@gmail.com no rodapé e na página inicial |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

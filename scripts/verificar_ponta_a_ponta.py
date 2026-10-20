@@ -284,9 +284,10 @@ async def agendamentos(cliente: str, cliente2: str | None) -> None:
     for nome, inicio in (
         ("Domingo é recusado", as_ms(domingo, 9)),
         ("Antes das 8h é recusado", as_ms(dia, 7, 30)),
-        # 11:30 está na grade; com mais de 30 min o fim passa do meio-dia de sábado
+        # 17:30 está na grade; com mais de 30 min o fim passa das 18h de sábado
+        # (change `horario-e-contato`: o sábado fechava às 12h).
         ("Atendimento que passa do fechamento do sábado é recusado",
-         as_ms(sabado, 11, 30) if duracao > 30 else None),
+         as_ms(sabado, 17, 30) if duracao > 30 else None),
         ("Horário no passado é recusado", as_ms(ontem, 9)),
         ("Horário fora da grade de 30 minutos é recusado", livres[0] + 15 * 60_000),
     ):
