@@ -27,6 +27,7 @@ from petbits.pages.equipe import (
 )
 from petbits.pages.inicio import inicio_page
 from petbits.pages.loja import loja_page, pedidos_page
+from petbits.pages.nao_encontrada import nao_encontrada_page
 from petbits.pages.perfil import perfil_equipe_page, perfil_page
 from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
@@ -150,3 +151,7 @@ app.add_page(
     title="PetBits | Criar conta",
     on_load=AuthState.redirecionar_se_logado,
 )
+
+# Endereço inexistente (change `pagina-nao-encontrada`): a rota "404" é a que o
+# Reflex usa no lugar da página padrão em inglês. Sem `on_load`.
+app.add_page(nao_encontrada_page, route="404", title="PetBits | Página não encontrada")
