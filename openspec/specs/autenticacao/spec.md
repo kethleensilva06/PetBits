@@ -202,10 +202,8 @@ títulos no começo do nome (Dr., Dra., Sr., Sra.).
 O sistema SHALL ter uma página inicial pública que apresenta o PetBits e leva
 à entrada de clientes, à entrada da equipe e à criação de conta. Quem abre o
 endereço principal do sistema sem sessão SHALL ser conduzido a ela. A página
-SHALL apresentar a clínica com fotos reais: uma capa com os atalhos Entrar e
-Criar conta, e os serviços — Clínica, Banho e tosa e Petshop —, cada um com
-foto e texto curto. As fotos MUST ser as que acompanham o app, com crédito em
-`assets/fotos/CREDITOS.md`, e a página MUST NOT fazer requisição ao Xano.
+SHALL apresentar a clínica e seus serviços com as fotos que acompanham o app,
+e MUST NOT fazer requisição ao Xano.
 
 #### Scenario: Visitante abre o sistema
 
