@@ -10,7 +10,8 @@ import reflex as rx
 from petbits import esqueletos
 from petbits.agenda import DIAS_DA_SEMANA
 from petbits.states.agenda_state import AgendaState
-from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, tela_vazia, titulo_de_pagina,
+                            topo_do_cliente)
 
 
 def _passo(numero: str, titulo: str, *conteudo) -> rx.Component:
@@ -60,7 +61,7 @@ def _escolhas() -> rx.Component:
                 rx.text(
                     "A clínica ainda não disponibilizou serviços nesta categoria.",
                     size="2",
-                    color=rx.color("gray", 10),
+                    color=rx.color("gray", 11),
                 ),
             ),
         ),
@@ -83,7 +84,7 @@ def _escolhas() -> rx.Component:
                 ),
                 rx.hstack(
                     rx.text("Você ainda não cadastrou nenhum animal.", size="2",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     rx.link("Cadastrar", href="/", size="2", weight="medium"),
                     spacing="2",
                 ),
@@ -95,16 +96,14 @@ def _escolhas() -> rx.Component:
 
 
 def _observacoes() -> rx.Component:
-    return rx.vstack(
-        rx.text("Observações para a clínica (opcional)", size="2", weight="medium"),
+    return campo(
+        "Observações para a clínica (opcional)",
         rx.text_area(
             placeholder="Ex.: ele fica nervoso com secador",
             value=AgendaState.observacoes,
             on_change=AgendaState.set_observacoes,
             width="100%",
         ),
-        spacing="1",
-        width="100%",
     )
 
 
@@ -119,7 +118,7 @@ def _etapa(p: rx.Var) -> rx.Component:
             border_radius="9999px",
             flex_shrink="0",
             color=rx.cond(p["feito"].to(bool) | p["atual"].to(bool), "white",
-                          rx.color("gray", 10)),
+                          rx.color("gray", 11)),
             background=rx.cond(p["feito"].to(bool), rx.color("teal", 9),
                                rx.cond(p["atual"].to(bool), rx.color("teal", 11),
                                        rx.color("gray", 4))),
@@ -127,7 +126,7 @@ def _etapa(p: rx.Var) -> rx.Component:
         rx.text(p["rotulo"], size="2",
                 weight=rx.cond(p["atual"].to(bool), "bold", "regular"),
                 color=rx.cond(p["feito"].to(bool) | p["atual"].to(bool),
-                              rx.color("gray", 12), rx.color("gray", 10))),
+                              rx.color("gray", 12), rx.color("gray", 11))),
         spacing="2",
         align="center",
     )
@@ -182,7 +181,7 @@ def _calendario() -> rx.Component:
                 ),
                 rx.grid(
                     *[rx.text(d, size="1", weight="medium", align="center",
-                              color=rx.color("gray", 10)) for d in DIAS_DA_SEMANA],
+                              color=rx.color("gray", 11)) for d in DIAS_DA_SEMANA],
                     columns="7",
                     spacing="1",
                     width="100%",
@@ -197,7 +196,7 @@ def _calendario() -> rx.Component:
                     ),
                 ),
                 rx.text("Domingo fechado · seg a sex 8h–18h · sábado 8h–12h",
-                        size="1", color=rx.color("gray", 9)),
+                        size="1", color=rx.color("gray", 11)),
                 spacing="2",
                 width="100%",
             ),
@@ -227,7 +226,7 @@ def _calendario() -> rx.Component:
                             gap="2",
                         ),
                         rx.text("Nenhum horário livre neste dia. Tente outro.",
-                                size="2", color=rx.color("gray", 10)),
+                                size="2", color=rx.color("gray", 11)),
                     ),
                 ),
                 spacing="2",
@@ -240,11 +239,11 @@ def _calendario() -> rx.Component:
 
 def _linha_do_resumo(l: rx.Var) -> rx.Component:
     return rx.hstack(
-        rx.text(l["rotulo"], size="2", color=rx.color("gray", 10), min_width="4.5rem"),
+        rx.text(l["rotulo"], size="2", color=rx.color("gray", 11), min_width="4.5rem"),
         rx.text(l["valor"], size="2",
                 weight=rx.cond(l["escolhido"].to(bool), "medium", "regular"),
                 color=rx.cond(l["escolhido"].to(bool), rx.color("gray", 12),
-                              rx.color("gray", 9)),
+                              rx.color("gray", 11)),
                 font_style=rx.cond(l["escolhido"].to(bool), "normal", "italic")),
         spacing="3",
         width="100%",
@@ -321,7 +320,7 @@ def _item(a: rx.Var) -> rx.Component:
                 ),
                 rx.text(a["quando"], size="2"),
                 rx.text(a["animal"], " · ", a["profissional"], size="1",
-                        color=rx.color("gray", 10)),
+                        color=rx.color("gray", 11)),
                 spacing="1",
                 align_items="start",
             ),
@@ -353,7 +352,7 @@ def _item(a: rx.Var) -> rx.Component:
                 rx.cond(
                     a["dentro_do_prazo"].to(bool),
                     rx.text("Menos de 24 h: para cancelar, fale com a clínica.",
-                            size="1", color=rx.color("gray", 10), max_width="12rem"),
+                            size="1", color=rx.color("gray", 11), max_width="12rem"),
                 ),
             ),
             align="start",

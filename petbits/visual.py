@@ -72,7 +72,8 @@ def pilula(rotulo: str, icone: str, href: str, ativo: bool) -> rx.Component:
         underline="none",
         padding="0.4rem 0.85rem",
         border_radius="9999px",
-        color=rx.color("teal", 11) if ativo else rx.color("gray", 11),
+        # Aba atual em teal 12: o 11 sobre o teal 4 dava 3,82 (change `acessibilidade`).
+        color=rx.color("teal", 12) if ativo else rx.color("gray", 11),
         background=rx.color("teal", 4) if ativo else "transparent",
         _hover={"background": rx.color("teal", 3) if ativo else rx.color("gray", 3)},
         white_space="nowrap",
@@ -135,7 +136,7 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.link(
                 rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
                           radius="full", size="3", color_scheme="teal",
-                          variant="solid"),
+                          variant="solid", custom_attrs={"alt": "Sua foto de perfil"}),
                 href="/perfil",
                 aria_label="Meu perfil",
                 title="Meu perfil",
@@ -155,6 +156,34 @@ def topo_do_cliente(atual: str) -> rx.Component:
         spacing="3",
         width="100%",
         padding_bottom="1rem",
+    )
+
+
+# `DebounceInput` é o invólucro que o Reflex põe em todo campo com `on_change`;
+# ele repassa os atributos ao campo de dentro.
+_CAMPOS = ("TextField.Root", "TextArea", "Select.Trigger", "SegmentedControl.Root",
+           "DebounceInput")
+
+
+def _nomear(componente: rx.Component, rotulo: str) -> bool:
+    """Põe o rótulo como `aria-label` no primeiro campo dentro do componente."""
+    if getattr(componente, "tag", None) in _CAMPOS:
+        componente.custom_attrs.setdefault("aria-label", rotulo)
+        return True
+    return any(_nomear(filho, rotulo) for filho in getattr(componente, "children", []))
+
+
+def campo(rotulo: str, componente: rx.Component) -> rx.Component:
+    """O rótulo acima do campo, e o campo com o mesmo nome para o leitor de
+    tela (change `acessibilidade`, D3). Era um texto solto, sem ligação com o
+    campo, repetido em cinco páginas."""
+    _nomear(componente, rotulo)
+    return rx.vstack(
+        rx.text(rotulo, size="2", weight="medium"),
+        componente,
+        spacing="1",
+        width="100%",
+        align_items="start",
     )
 
 

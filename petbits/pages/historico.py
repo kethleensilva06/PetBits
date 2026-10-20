@@ -9,6 +9,7 @@ import reflex as rx
 
 from petbits import esqueletos
 from petbits.states.historico_state import HistoricoEquipeState, HistoricoTutorState
+from petbits.visual import campo
 
 
 def _linha(rotulo: str, valor) -> rx.Component:
@@ -66,7 +67,7 @@ def _linha_do_tempo(S, *, com_retificar: bool, vazio: str) -> rx.Component:
                 rx.vstack(rx.foreach(S.itens, lambda i: _atendimento(i, com_retificar=com_retificar)),
                           spacing="2", width="100%"),
                 rx.vstack(
-                    rx.icon("clipboard-list", size=28, color=rx.color("gray", 9)),
+                    rx.icon("clipboard-list", size=28, color=rx.color("gray", 11)),
                     rx.text(vazio, size="2", color=rx.color("gray", 11), text_align="center"),
                     spacing="2", align="center", width="100%", padding="1.5rem",
                 ),
@@ -87,7 +88,7 @@ def dialogo_historico_equipe() -> rx.Component:
                 align="center", width="100%", wrap="wrap", spacing="3",
             ),
             rx.text("Do mais recente ao mais antigo. Um atendimento não se apaga: para "
-                    "corrigir, retifique.", size="1", color=rx.color("gray", 10),
+                    "corrigir, retifique.", size="1", color=rx.color("gray", 11),
                     margin_bottom="0.75rem"),
             rx.scroll_area(
                 _linha_do_tempo(S, com_retificar=True,
@@ -101,9 +102,6 @@ def dialogo_historico_equipe() -> rx.Component:
     )
 
 
-def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
-    return rx.vstack(rx.text(rotulo, size="2", weight="medium"), componente,
-                     spacing="1", width="100%", align_items="start")
 
 
 def dialogo_form_atendimento() -> rx.Component:
@@ -121,32 +119,32 @@ def dialogo_form_atendimento() -> rx.Component:
                                size="1", width="100%", margin_bottom="0.5rem")),
             rx.vstack(
                 rx.grid(
-                    _campo("Quem atendeu", rx.select.root(
+                    campo("Quem atendeu", rx.select.root(
                         rx.select.trigger(placeholder="Veterinário ou clínico geral",
                                           width="100%"),
                         rx.select.content(rx.foreach(
                             S.profissionais,
                             lambda p: rx.select.item(p["rotulo"], value=p["id"]))),
                         value=S.f_colaborador, on_change=S.set_f_colaborador)),
-                    _campo("Data", rx.input(type="date", value=S.f_data,
+                    campo("Data", rx.input(type="date", value=S.f_data,
                                             on_change=S.set_f_data, width="100%")),
                     columns=rx.breakpoints(initial="1", sm="2"), spacing="3", width="100%",
                 ),
-                _campo("Motivo", rx.input(placeholder="Consulta de rotina, vacina, queixa...",
+                campo("Motivo", rx.input(placeholder="Consulta de rotina, vacina, queixa...",
                                           value=S.f_motivo, on_change=S.set_f_motivo,
                                           width="100%")),
-                _campo("Diagnóstico", rx.text_area(value=S.f_diagnostico,
+                campo("Diagnóstico", rx.text_area(value=S.f_diagnostico,
                                                    on_change=S.set_f_diagnostico,
                                                    width="100%")),
-                _campo("Tratamento realizado", rx.text_area(
+                campo("Tratamento realizado", rx.text_area(
                     placeholder="Opcional", value=S.f_tratamento,
                     on_change=S.set_f_tratamento, width="100%")),
                 rx.grid(
-                    _campo("Peso no dia (kg)", rx.input(placeholder="Opcional",
+                    campo("Peso no dia (kg)", rx.input(placeholder="Opcional",
                                                         value=S.f_peso,
                                                         on_change=S.set_f_peso,
                                                         width="100%")),
-                    _campo("Retorno", rx.input(type="date", value=S.f_retorno,
+                    campo("Retorno", rx.input(type="date", value=S.f_retorno,
                                                on_change=S.set_f_retorno, width="100%")),
                     columns=rx.breakpoints(initial="1", sm="2"), spacing="3", width="100%",
                 ),
@@ -173,7 +171,7 @@ def dialogo_historico_tutor() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title("Histórico de ", S.pet_nome),
             rx.text("Os atendimentos registrados pela clínica, do mais recente ao mais antigo.",
-                    size="1", color=rx.color("gray", 10), margin_bottom="0.75rem"),
+                    size="1", color=rx.color("gray", 11), margin_bottom="0.75rem"),
             rx.scroll_area(
                 _linha_do_tempo(S, com_retificar=False,
                                 vazio="Ainda não há atendimento registrado. Depois da "

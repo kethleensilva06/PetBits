@@ -36,3 +36,20 @@ body > .radix-themes {
 html {
   scrollbar-gutter: stable;
 }
+
+/* Contraste do WCAG 2.1 AA (change `acessibilidade`, D1). O branco sobre o
+ * verde-água 9 do Radix (#12a594) dava 3,07; o mínimo é 4,5. Sobrescrito no
+ * próprio `.radix-themes`, onde o Radix liga `--accent-*` a `--teal-*`, para
+ * valer também no accent e na versão P3 das cores. */
+.radix-themes {
+  --teal-9: #0b7d70;
+  --teal-10: #0a7366;
+  --orange-9: #c24400;
+  --orange-10: #b03d00;
+}
+
+/* Foco visível na navegação pelo teclado (D4); o clique não mostra. */
+:focus-visible {
+  outline: 2px solid var(--teal-11);
+  outline-offset: 2px;
+}

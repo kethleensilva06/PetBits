@@ -21,7 +21,7 @@ from petbits.states.historico_state import HistoricoEquipeState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
                                          EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
-from petbits.visual import barra, marca, pilula, sair, titulo_de_pagina
+from petbits.visual import barra, campo, marca, pilula, sair, titulo_de_pagina
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -36,14 +36,6 @@ AREAS = [
 ]
 
 
-def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
-    return rx.vstack(
-        rx.text(rotulo, size="2", weight="medium"),
-        componente,
-        spacing="1",
-        width="100%",
-        align_items="start",
-    )
 
 
 def _navegacao(atual: str) -> rx.Component:
@@ -122,7 +114,7 @@ def _casca(
                     rx.hstack(
                         rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
                                   radius="full", size="3", color_scheme="teal",
-                                  variant="solid"),
+                                  variant="solid", custom_attrs={"alt": "Sua foto de perfil"}),
                         rx.text(AuthState.primeiro_nome, size="2",
                                 color=rx.color("gray", 11),
                                 display=rx.breakpoints(initial="none", sm="block")),
@@ -177,7 +169,7 @@ def _vazio(titulo: str, recado: str, acao: rx.Component | None = None) -> rx.Com
     return rx.card(
         rx.vstack(
             rx.heading(titulo, size="4"),
-            rx.text(recado, size="2", color=rx.color("gray", 10)),
+            rx.text(recado, size="2", color=rx.color("gray", 11)),
             acao if acao is not None else rx.fragment(),
             spacing="3",
             align="center",
@@ -379,10 +371,10 @@ def _cartao_colaborador(c: dict) -> rx.Component:
                     wrap="wrap",
                 ),
                 rx.hstack(
-                    rx.text(c["telefone"], size="1", color=rx.color("gray", 10)),
-                    rx.text(c["email"], size="1", color=rx.color("gray", 10)),
+                    rx.text(c["telefone"], size="1", color=rx.color("gray", 11)),
+                    rx.text(c["email"], size="1", color=rx.color("gray", 11)),
                     rx.text("Entrada: ", c["entrada"], size="1",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     spacing="4",
                     wrap="wrap",
                 ),
@@ -429,7 +421,7 @@ def _dialogo_colaborador() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title(EquipeState.titulo_col),
             rx.vstack(
-                _campo("Nome", rx.input(placeholder="Nome completo",
+                campo("Nome", rx.input(placeholder="Nome completo",
                                         value=EquipeState.col_nome,
                                         on_change=EquipeState.set_col_nome,
                                         width="100%")),
@@ -438,7 +430,7 @@ def _dialogo_colaborador() -> rx.Component:
                 # geral" na lista e `clinico_geral` no seletor, no mesmo
                 # clique. O mapa de rotulos ja existia duas linhas abaixo da
                 # lista; faltava aplica-lo aqui.
-                _campo("Função", rx.select.root(
+                campo("Função", rx.select.root(
                     rx.select.trigger(width="100%"),
                     rx.select.content(
                         *[rx.select.item(FUNCAO_LEGIVEL[v], value=v) for v in FUNCOES]
@@ -448,17 +440,17 @@ def _dialogo_colaborador() -> rx.Component:
                     width="100%",
                 )),
                 rx.hstack(
-                    _campo("Telefone", rx.input(placeholder="Opcional",
+                    campo("Telefone", rx.input(placeholder="Opcional",
                                                 value=EquipeState.col_telefone,
                                                 on_change=EquipeState.set_col_telefone,
                                                 width="100%")),
-                    _campo("E-mail", rx.input(placeholder="Opcional", type="email",
+                    campo("E-mail", rx.input(placeholder="Opcional", type="email",
                                               value=EquipeState.col_email,
                                               on_change=EquipeState.set_col_email,
                                               width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("Entrada na clínica", rx.input(
+                campo("Entrada na clínica", rx.input(
                     type="date",
                     value=EquipeState.col_entrada,
                     on_change=EquipeState.set_col_entrada,
@@ -499,7 +491,7 @@ def colaboradores_page() -> rx.Component:
                     rx.button("Cadastrar colaborador",
                               on_click=EquipeState.novo_colaborador, size="3"),
                     rx.text("Peça à gerência para cadastrar.", size="2",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                 ),
             ),
             "os colaboradores",
@@ -561,21 +553,21 @@ def _dialogo_servico() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title(EquipeState.titulo_srv),
             rx.vstack(
-                _campo("Nome", rx.input(placeholder="Banho e tosa, consulta...",
+                campo("Nome", rx.input(placeholder="Banho e tosa, consulta...",
                                         value=EquipeState.srv_nome,
                                         on_change=EquipeState.set_srv_nome,
                                         width="100%")),
-                _campo("Descrição", rx.text_area(
+                campo("Descrição", rx.text_area(
                     placeholder="Opcional",
                     value=EquipeState.srv_descricao,
                     on_change=EquipeState.set_srv_descricao,
                     width="100%")),
                 rx.hstack(
-                    _campo("Preço (R$)", rx.input(placeholder="0,00",
+                    campo("Preço (R$)", rx.input(placeholder="0,00",
                                                   value=EquipeState.srv_preco,
                                                   on_change=EquipeState.set_srv_preco,
                                                   width="100%")),
-                    _campo("Duração (min)", rx.input(placeholder="30",
+                    campo("Duração (min)", rx.input(placeholder="30",
                                                      value=EquipeState.srv_duracao,
                                                      on_change=EquipeState.set_srv_duracao,
                                                      width="100%")),
@@ -583,7 +575,7 @@ def _dialogo_servico() -> rx.Component:
                 ),
                 # Change `agendamento`, D5: sem categoria, o serviço não é
                 # oferecido ao tutor.
-                _campo("Categoria", rx.select.root(
+                campo("Categoria", rx.select.root(
                     rx.select.trigger(placeholder="Escolha: Clínica ou Banho e tosa",
                                       width="100%"),
                     rx.select.content(
@@ -599,7 +591,7 @@ def _dialogo_servico() -> rx.Component:
                 rx.text(
                     "A duração é obrigatória e maior que zero — é ela que permite "
                     "calcular a agenda. Preço zero é válido (serviço gratuito).",
-                    size="1", color=rx.color("gray", 10),
+                    size="1", color=rx.color("gray", 11),
                 ),
                 rx.cond(
                     EquipeState.srv_erro,
@@ -668,7 +660,7 @@ def _cartao_produto(p: dict) -> rx.Component:
                             rx.badge("Inativo", color_scheme="amber", radius="full")),
                     spacing="2", align="center", wrap="wrap",
                 ),
-                rx.text(p["marca"], " ", p["unidade"], size="1", color=rx.color("gray", 10)),
+                rx.text(p["marca"], " ", p["unidade"], size="1", color=rx.color("gray", 11)),
                 rx.cond(p["descricao"],
                         rx.text(p["descricao"], size="1", color=rx.color("gray", 11))),
                 spacing="1", align_items="start",
@@ -716,7 +708,7 @@ def _foto_do_produto() -> rx.Component:
                 rx.text(rx.cond(EquipeState.prd_tem_foto,
                                 "Foto enviada pela equipe. JPG, PNG ou WebP, até 5 MB.",
                                 "Foto automática. JPG, PNG ou WebP, até 5 MB."),
-                        size="1", color=rx.color("gray", 10)),
+                        size="1", color=rx.color("gray", 11)),
                 rx.cond(EquipeState.prd_erro_foto,
                         rx.text(EquipeState.prd_erro_foto, size="1",
                                 color=rx.color("red", 11))),
@@ -728,7 +720,7 @@ def _foto_do_produto() -> rx.Component:
             width="100%",
         ),
         rx.text("Depois de cadastrar, edite o produto para pôr a foto dele.",
-                size="1", color=rx.color("gray", 10)),
+                size="1", color=rx.color("gray", 11)),
     )
 
 
@@ -738,39 +730,39 @@ def _dialogo_produto() -> rx.Component:
             rx.dialog.title(EquipeState.titulo_prd),
             rx.vstack(
                 _foto_do_produto(),
-                _campo("Nome", rx.input(placeholder="Ração adulto 1 kg",
+                campo("Nome", rx.input(placeholder="Ração adulto 1 kg",
                                         value=EquipeState.prd_nome,
                                         on_change=EquipeState.set_prd_nome, width="100%")),
                 rx.hstack(
-                    _campo("Categoria", rx.select.root(
+                    campo("Categoria", rx.select.root(
                         rx.select.trigger(width="100%"),
                         rx.select.content(*[rx.select.item(rotulo, value=valor)
                                             for valor, rotulo in CATEGORIAS_PRODUTO.items()]),
                         value=EquipeState.prd_categoria,
                         on_change=EquipeState.set_prd_categoria,
                     )),
-                    _campo("Marca", rx.input(placeholder="Opcional",
+                    campo("Marca", rx.input(placeholder="Opcional",
                                              value=EquipeState.prd_marca,
                                              on_change=EquipeState.set_prd_marca,
                                              width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
                 rx.hstack(
-                    _campo("Unidade", rx.input(placeholder="un, pacote 1 kg...",
+                    campo("Unidade", rx.input(placeholder="un, pacote 1 kg...",
                                                value=EquipeState.prd_unidade,
                                                on_change=EquipeState.set_prd_unidade,
                                                width="100%")),
-                    _campo("Preço (R$)", rx.input(placeholder="49,90",
+                    campo("Preço (R$)", rx.input(placeholder="49,90",
                                                   value=EquipeState.prd_preco,
                                                   on_change=EquipeState.set_prd_preco,
                                                   width="100%")),
-                    _campo("Estoque", rx.input(placeholder="20",
+                    campo("Estoque", rx.input(placeholder="20",
                                                value=EquipeState.prd_estoque,
                                                on_change=EquipeState.set_prd_estoque,
                                                width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("Descrição", rx.text_area(placeholder="Opcional",
+                campo("Descrição", rx.text_area(placeholder="Opcional",
                                                  value=EquipeState.prd_descricao,
                                                  on_change=EquipeState.set_prd_descricao,
                                                  width="100%")),
@@ -843,9 +835,9 @@ def _cartao_pedido(p: dict) -> rx.Component:
             ),
             rx.text(p["cliente"], size="2"),
             rx.text(p["quando"], " · ", p["origem"], " · ", p["entrega"], " · ",
-                    p["pagamento"], size="1", color=rx.color("gray", 10)),
+                    p["pagamento"], size="1", color=rx.color("gray", 11)),
             rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
-                                           color=rx.color("gray", 10))),
+                                           color=rx.color("gray", 11))),
             rx.foreach(p["itens"].to(list[dict]), lambda i: rx.hstack(
                 rx.text(i["texto"], size="2"), rx.spacer(), rx.text(i["linha"], size="2"),
                 width="100%")),
@@ -896,7 +888,7 @@ def _produto_balcao(p: dict) -> rx.Component:
         rx.hstack(
             rx.vstack(
                 rx.text(p["nome"], weight="medium", size="2"),
-                rx.text(p["preco"], " · ", p["estoque"], size="1", color=rx.color("gray", 10)),
+                rx.text(p["preco"], " · ", p["estoque"], size="1", color=rx.color("gray", 11)),
                 spacing="0", align_items="start",
             ),
             rx.spacer(),
@@ -937,7 +929,7 @@ def balcao_page() -> rx.Component:
                             columns=rx.breakpoints(initial="1", sm="2"), spacing="2",
                             width="100%"),
                     rx.text("Nenhum produto ativo com estoque.", size="2",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                 ),
                 spacing="2", width="100%", align_items="start",
             ),
@@ -959,7 +951,7 @@ def balcao_page() -> rx.Component:
                     rx.hstack(rx.text("Total"), rx.spacer(),
                               rx.text(EquipeState.total_balcao, weight="bold"), width="100%"),
                     rx.text("A venda é registrada como entregue e paga na loja, na conta do "
-                            "cliente.", size="1", color=rx.color("gray", 10)),
+                            "cliente.", size="1", color=rx.color("gray", 11)),
                     rx.cond(EquipeState.balcao_erro,
                             rx.callout(EquipeState.balcao_erro, icon="triangle_alert",
                                        color_scheme="red", size="1", width="100%")),
@@ -994,7 +986,7 @@ def _item_da_agenda(a: dict) -> rx.Component:
                 ),
                 rx.text(a["animal"], " — ", a["tutor"], size="2",
                         color=rx.color("gray", 11)),
-                rx.text("Com ", a["profissional"], size="1", color=rx.color("gray", 10)),
+                rx.text("Com ", a["profissional"], size="1", color=rx.color("gray", 11)),
                 rx.cond(a["observacoes"],
                         rx.text(a["observacoes"], size="1", color=rx.color("gray", 11))),
                 spacing="1", align_items="start",
@@ -1054,11 +1046,11 @@ def _cartao_tutor(t: dict) -> rx.Component:
                 spacing="2", align="center", wrap="wrap",
             ),
             rx.hstack(
-                rx.text(t["telefone"], size="1", color=rx.color("gray", 10)),
-                rx.text(t["email"], size="1", color=rx.color("gray", 10)),
+                rx.text(t["telefone"], size="1", color=rx.color("gray", 11)),
+                rx.text(t["email"], size="1", color=rx.color("gray", 11)),
                 spacing="4", wrap="wrap",
             ),
-            rx.text(t["endereco"], size="1", color=rx.color("gray", 10)),
+            rx.text(t["endereco"], size="1", color=rx.color("gray", 11)),
             spacing="1", align_items="start", width="100%",
         ),
         width="100%",
@@ -1070,26 +1062,26 @@ def _dialogo_tutor() -> rx.Component:
         rx.dialog.content(
             rx.dialog.title("Novo tutor"),
             rx.vstack(
-                _campo("Nome", rx.input(placeholder="Nome completo",
+                campo("Nome", rx.input(placeholder="Nome completo",
                                         value=EquipeState.tut_nome,
                                         on_change=EquipeState.set_tut_nome,
                                         width="100%")),
                 rx.hstack(
-                    _campo("Documento (CPF)", rx.input(placeholder="000.000.000-00",
+                    campo("Documento (CPF)", rx.input(placeholder="000.000.000-00",
                                                        value=EquipeState.tut_documento,
                                                        on_change=EquipeState.set_tut_documento,
                                                        width="100%")),
-                    _campo("Telefone", rx.input(placeholder="Opcional",
+                    campo("Telefone", rx.input(placeholder="Opcional",
                                                 value=EquipeState.tut_telefone,
                                                 on_change=EquipeState.set_tut_telefone,
                                                 width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("E-mail", rx.input(placeholder="Opcional", type="email",
+                campo("E-mail", rx.input(placeholder="Opcional", type="email",
                                           value=EquipeState.tut_email,
                                           on_change=EquipeState.set_tut_email,
                                           width="100%")),
-                _campo("Endereco", rx.input(placeholder="Opcional",
+                campo("Endereco", rx.input(placeholder="Opcional",
                                             value=EquipeState.tut_endereco,
                                             on_change=EquipeState.set_tut_endereco,
                                             width="100%")),
@@ -1171,11 +1163,11 @@ def _cartao_animal(a: dict) -> rx.Component:
             ),
             rx.hstack(
                 rx.text("Tutor: ", a["tutor"], size="1", color=rx.color("gray", 11)),
-                rx.text(a["raca"], size="1", color=rx.color("gray", 10)),
+                rx.text(a["raca"], size="1", color=rx.color("gray", 11)),
                 rx.text("Nasc.: ", a["nascimento"], size="1",
-                        color=rx.color("gray", 10)),
+                        color=rx.color("gray", 11)),
                 rx.text("Peso: ", a["peso"], " kg", size="1",
-                        color=rx.color("gray", 10)),
+                        color=rx.color("gray", 11)),
                 spacing="4", wrap="wrap",
             ),
             # O histórico clínico (change `historico-clinico`, D5).
@@ -1196,40 +1188,40 @@ def _dialogo_animal() -> rx.Component:
                 # De quem e o animal vem PRIMEIRO: e o campo que o caminho do
                 # tutor nao tem, e o unico cuja ausencia cria um registro
                 # invisivel para o dono.
-                _campo("Tutor responsavel", rx.select(
+                campo("Tutor responsavel", rx.select(
                     EquipeState.opcoes_de_tutor,
                     placeholder="Escolha o tutor",
                     value=EquipeState.ani_tutor,
                     on_change=EquipeState.set_ani_tutor,
                     width="100%",
                 )),
-                _campo("Nome", rx.input(placeholder="Nome do animal",
+                campo("Nome", rx.input(placeholder="Nome do animal",
                                         value=EquipeState.ani_nome,
                                         on_change=EquipeState.set_ani_nome,
                                         width="100%")),
                 rx.hstack(
-                    _campo("Especie", rx.input(placeholder="Cao, gato...",
+                    campo("Especie", rx.input(placeholder="Cao, gato...",
                                                value=EquipeState.ani_especie,
                                                on_change=EquipeState.set_ani_especie,
                                                width="100%")),
-                    _campo("Raca", rx.input(placeholder="Opcional",
+                    campo("Raca", rx.input(placeholder="Opcional",
                                             value=EquipeState.ani_raca,
                                             on_change=EquipeState.set_ani_raca,
                                             width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
                 rx.hstack(
-                    _campo("Nascimento", rx.input(type="date",
+                    campo("Nascimento", rx.input(type="date",
                                                   value=EquipeState.ani_nascimento,
                                                   on_change=EquipeState.set_ani_nascimento,
                                                   width="100%")),
-                    _campo("Peso (kg)", rx.input(placeholder="Opcional",
+                    campo("Peso (kg)", rx.input(placeholder="Opcional",
                                                  value=EquipeState.ani_peso,
                                                  on_change=EquipeState.set_ani_peso,
                                                  width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("Observacoes", rx.text_area(
+                campo("Observacoes", rx.text_area(
                     placeholder="Alergias, cuidados especiais...",
                     value=EquipeState.ani_observacoes,
                     on_change=EquipeState.set_ani_observacoes,

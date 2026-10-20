@@ -41,6 +41,9 @@ from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 # que existiu deixou "dark" guardado em quem o usou. Este script roda no
 # <head>, antes de a página montar, e grava "light" antes de ser lido.
 app = rx.App(
+    # Em português, para o leitor de tela não ler com pronúncia inglesa
+    # (change `acessibilidade`).
+    html_lang="pt-BR",
     theme=TEMA,
     stylesheets=FOLHAS_DE_ESTILO,
     head_components=[

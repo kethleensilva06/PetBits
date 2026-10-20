@@ -11,18 +11,11 @@ from petbits import esqueletos
 from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
 from petbits.states.historico_state import HistoricoTutorState
-from petbits.visual import LARGURA_DO_CLIENTE, tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, tela_vazia, titulo_de_pagina,
+                            topo_do_cliente)
 from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
 
-def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
-    return rx.vstack(
-        rx.text(rotulo, size="2", weight="medium"),
-        componente,
-        spacing="1",
-        width="100%",
-        align_items="start",
-    )
 
 
 def _cartao(animal: dict) -> rx.Component:
@@ -41,12 +34,12 @@ def _cartao(animal: dict) -> rx.Component:
                     align="center",
                     wrap="wrap",
                 ),
-                rx.text(animal["raca"], size="2", color=rx.color("gray", 10)),
+                rx.text(animal["raca"], size="2", color=rx.color("gray", 11)),
                 rx.hstack(
                     rx.text("Nascimento: ", animal["nascimento"], size="1",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     rx.text("Peso: ", animal["peso"], " kg", size="1",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     spacing="4",
                     wrap="wrap",
                 ),
@@ -121,7 +114,7 @@ def _dialogo() -> rx.Component:
                                     rx.upload_files(upload_id=ID_UPLOAD_ANIMAL)),
                             ),
                             rx.text("JPG, PNG ou WebP, até 5 MB.", size="1",
-                                    color=rx.color("gray", 10)),
+                                    color=rx.color("gray", 11)),
                             rx.cond(PetState.erro_foto,
                                     rx.text(PetState.erro_foto, size="1",
                                             color=rx.color("red", 11))),
@@ -133,35 +126,35 @@ def _dialogo() -> rx.Component:
                         width="100%",
                     ),
                     rx.text("Depois de cadastrar, edite o animal para pôr a foto dele.",
-                            size="1", color=rx.color("gray", 10)),
+                            size="1", color=rx.color("gray", 11)),
                 ),
-                _campo("Nome", rx.input(placeholder="Nome do animal",
+                campo("Nome", rx.input(placeholder="Nome do animal",
                                         value=PetState.f_nome,
                                         on_change=PetState.set_f_nome,
                                         width="100%")),
                 rx.hstack(
-                    _campo("Espécie", rx.input(placeholder="Cão, gato...",
+                    campo("Espécie", rx.input(placeholder="Cão, gato...",
                                                value=PetState.f_especie,
                                                on_change=PetState.set_f_especie,
                                                width="100%")),
-                    _campo("Raça", rx.input(placeholder="Opcional",
+                    campo("Raça", rx.input(placeholder="Opcional",
                                             value=PetState.f_raca,
                                             on_change=PetState.set_f_raca,
                                             width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
                 rx.hstack(
-                    _campo("Nascimento", rx.input(type="date",
+                    campo("Nascimento", rx.input(type="date",
                                                   value=PetState.f_nascimento,
                                                   on_change=PetState.set_f_nascimento,
                                                   width="100%")),
-                    _campo("Peso (kg)", rx.input(placeholder="Opcional",
+                    campo("Peso (kg)", rx.input(placeholder="Opcional",
                                                  value=PetState.f_peso,
                                                  on_change=PetState.set_f_peso,
                                                  width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("Observações", rx.text_area(
+                campo("Observações", rx.text_area(
                     placeholder="Alergias, cuidados especiais...",
                     value=PetState.f_observacoes,
                     on_change=PetState.set_f_observacoes,
