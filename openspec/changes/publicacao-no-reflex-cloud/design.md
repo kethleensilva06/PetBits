@@ -31,3 +31,14 @@ alguma variável além das duas estiver no comando, ele para.
 O atalho Alt+1/Alt+2 já não é montado em produção, e os manipuladores
 recusam (`is_prod_mode`). Com o arquivo de contas fora do pacote, nem haveria
 o que ler.
+
+### D6. Limite do prerender (achado na compilação)
+
+O `reflex deploy` compila o frontend nesta máquina antes de enviar. O React
+Router dá 10 s ao prerender da página raiz, e aqui só importar o
+`@radix-ui/themes` leva ~16 s — o antivírus do Windows confere cada um dos
+centenas de módulos pequenos que o Node abre; renderizar leva 0,1 s. O script
+sobe o limite para 60 s em `.web/node_modules/@react-router/dev/dist/vite.js`
+antes de publicar, e passa `--no-ssr`. O `.web/` é gerado e não versionado,
+então o ajuste é refeito a cada publicação; se o trecho mudar numa versão nova
+do React Router, o script avisa e não mexe.

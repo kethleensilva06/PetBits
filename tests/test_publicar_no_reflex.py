@@ -67,5 +67,27 @@ class VariaveisTest(unittest.TestCase):
         self.assertNotIn("https://a", p._sem_valores(cmd))
 
 
+class LimiteDoPrerenderTest(unittest.TestCase):
+    """O limite de 10 s do prerender sobe para 60 s (D6)."""
+
+    def test_ajusta_uma_vez(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            arquivo = Path(tmp) / "vite.js"
+            arquivo.write_text("const { a, maxRedirects = 0, timeout = 1e4 } = x;", encoding="utf-8")
+            self.assertEqual(p.ajustar_limite_do_prerender(arquivo), "ajustado de 10 s para 60 s")
+            self.assertIn("timeout = 6e4", arquivo.read_text(encoding="utf-8"))
+            self.assertEqual(p.ajustar_limite_do_prerender(arquivo), "já em 60 s")
+
+    def test_nao_mexe_no_que_nao_reconhece(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            arquivo = Path(tmp) / "vite.js"
+            arquivo.write_text("outra coisa", encoding="utf-8")
+            self.assertIn("nada alterado", p.ajustar_limite_do_prerender(arquivo))
+            self.assertEqual(arquivo.read_text(encoding="utf-8"), "outra coisa")
+
+    def test_sem_ssr(self):
+        self.assertIn("--no-ssr", p.comando({v: "x" for v in p.VARIAVEIS}))
+
+
 if __name__ == "__main__":
     unittest.main()

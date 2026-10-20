@@ -38,6 +38,29 @@ PASTAS_PROIBIDAS = ("xano", ".xano", "scripts", "tests")
 
 NOME_DO_APP = "petbits"
 
+# O prerender da página raiz (D6). O React Router dá 10 s para ele, e nesta
+# máquina Windows só importar o `@radix-ui/themes` leva ~16 s (medido: o
+# antivírus confere cada um dos centenas de arquivos pequenos que o Node abre).
+# O `reflex deploy` compila AQUI antes de enviar, então o limite sobe para 60 s
+# no `.web/`, que é gerado e não versionado — por isso o ajuste é refeito a cada
+# publicação.
+VITE_DO_REACT_ROUTER = Path(".web/node_modules/@react-router/dev/dist/vite.js")
+LIMITE_ORIGINAL = "maxRedirects = 0, timeout = 1e4"
+LIMITE_NOVO = "maxRedirects = 0, timeout = 6e4"
+
+
+def ajustar_limite_do_prerender(arquivo: Path = VITE_DO_REACT_ROUTER) -> str:
+    """Sobe o limite do prerender para 60 s (D6). Devolve o que foi feito."""
+    if not arquivo.exists():
+        return "o .web ainda não existe; o reflex deploy vai criá-lo com o limite de 10 s"
+    texto = arquivo.read_text(encoding="utf-8")
+    if LIMITE_NOVO in texto:
+        return "já em 60 s"
+    if LIMITE_ORIGINAL not in texto:
+        return "trecho do limite não encontrado (o React Router mudou?); nada alterado"
+    arquivo.write_text(texto.replace(LIMITE_ORIGINAL, LIMITE_NOVO), encoding="utf-8")
+    return "ajustado de 10 s para 60 s"
+
 
 def _parece_venv(pasta: Path) -> bool:
     return (pasta / "pyvenv.cfg").exists()
@@ -94,7 +117,7 @@ def ler_variaveis(arquivo: Path = PROJETO / ".env") -> dict[str, str]:
 
 def comando(variaveis: dict[str, str], raiz: Path = PROJETO) -> list[str]:
     """O `reflex deploy`, com as exclusões e só as duas variáveis."""
-    cmd = ["reflex", "deploy", "--app-name", NOME_DO_APP, "--no-interactive"]
+    cmd = ["reflex", "deploy", "--app-name", NOME_DO_APP, "--no-interactive", "--no-ssr"]
     for nome in VARIAVEIS:
         cmd += ["--env", f"{nome}={variaveis[nome]}"]
     for item in excluidos(raiz):
@@ -133,6 +156,8 @@ def main(argv: list[str]) -> int:
     if "--publicar" not in argv:
         print("\nNada foi enviado. Para publicar: acrescente --publicar.")
         return 0
+
+    print(f"Limite do prerender: {ajustar_limite_do_prerender()}")
 
     executavel = PROJETO / ".venv" / ("Scripts" if os.name == "nt" else "bin") / "reflex"
     if executavel.with_suffix(".exe").exists():

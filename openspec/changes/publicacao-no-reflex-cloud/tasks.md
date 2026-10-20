@@ -24,7 +24,9 @@ desenvolvimento na subida. Rodar o export com o servidor de desenvolvimento
 ligado derrubou o site local (os dois usam `.web/`).
 
 Pendente, nesta ordem:
-- [ ] 2.4 Compilar o frontend com o servidor de desenvolvimento parado, tentando
-  `--no-ssr`; se o prerender continuar estourando, desligar o prerender
+- [x] 2.4 Compilar o frontend com o servidor de desenvolvimento parado. Medido: o
+  React Router dá 10 s ao prerender da raiz e só importar o `@radix-ui/themes`
+  leva 16,6 s nesta máquina (renderizar leva 0,1 s). Com `--no-ssr` e o limite
+  em 60 s no `.web/` (D6), o build passou e gerou o `index.html`
 - [ ] 2.5 `reflex login` da usuária, no navegador
 - [ ] 2.6 Prévia revisada com ela e `--publicar` só com a autorização dela
