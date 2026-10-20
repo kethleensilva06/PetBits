@@ -39,3 +39,16 @@ def filtrar(itens: list[dict], termo: str, campos: tuple[str, ...],
         if all(p in texto or _numero_bate(p, numeros) for p in palavras):
             achados.append(item)
     return achados
+
+
+def filtrar_pedidos(pedidos: list[dict], termo: str) -> list[dict]:
+    """A busca dos pedidos da clínica (change `busca-nos-pedidos`).
+
+    Um número curto (até 4 dígitos) é o número do pedido, e só ele: achado no
+    navegador, "14" trazia também os pedidos cujo telefone tinha 14. Telefone
+    se procura a partir de 5 dígitos.
+    """
+    limpo = termo.strip().lstrip("nº#").strip()
+    if limpo.isdigit() and len(limpo) <= 4:
+        return [p for p in pedidos if str(p.get("id")) == limpo]
+    return filtrar(pedidos, termo, ("_busca",), ("_telefone",))

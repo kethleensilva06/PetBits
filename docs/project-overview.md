@@ -212,6 +212,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `cliente-cancela-pedido` ✓ | O cliente cancela o próprio pedido enquanto aguarda pagamento; o estoque volta |
 | `loja-organizada` ✓ | Cartões da loja com a mesma altura e o preço no mesmo lugar; carrinho em duas linhas, sem valor cortado |
 | `estoque-baixo` ✓ | O painel conta os produtos esgotados e acabando; Produtos filtra o estoque baixo |
+| `busca-nos-pedidos` ✓ | Pedidos da clínica têm busca por número, cliente, telefone e produto |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

@@ -947,12 +947,13 @@ def pedidos_equipe_page() -> rx.Component:
             value=EquipeState.filtro_pedidos,
             on_change=EquipeState.set_filtro_pedidos,
         ),
-        _lista(
+        _lista_com_busca(
             EquipeState.tem_pedidos_clinica,
-            EquipeState.pedidos_clinica,
+            EquipeState.pedidos_visiveis,
             _cartao_pedido,
             _vazio("Nenhum pedido", "Os pedidos feitos na loja aparecem aqui."),
             "os pedidos",
+            "Buscar por número, cliente, telefone ou produto",
         ),
         rota="/equipe/pedidos",
         titulo="Pedidos",

@@ -2,7 +2,7 @@
 
 import unittest
 
-from petbits.busca import filtrar
+from petbits.busca import filtrar, filtrar_pedidos
 
 ANIMAIS = [
     {"nome": "Mel", "especie": "Cachorro", "raca": "Golden", "tutor": "Ana Ribeiro"},
@@ -47,6 +47,32 @@ class BuscaTest(unittest.TestCase):
 
     def test_nada_encontrado(self):
         self.assertEqual(filtrar(ANIMAIS, "papagaio", CAMPOS_ANIMAL), [])
+
+
+
+class BuscaNosPedidosTest(unittest.TestCase):
+    """Pedidos da clínica (change `busca-nos-pedidos`)."""
+
+    PEDIDOS = [
+        {"id": 14, "_busca": "14 Ana Ribeiro 1 × Arranhador de papelão", "_telefone": "11988887777"},
+        {"id": 12, "_busca": "12 Ana Ribeiro 1 × Areia higiênica", "_telefone": "11988887777"},
+        {"id": 19, "_busca": "19 Bruno Lima 2 × Areia higiênica", "_telefone": "11977776666"},
+    ]
+
+    def ids(self, termo):
+        return [p["id"] for p in filtrar_pedidos(self.PEDIDOS, termo)]
+
+    def test_numero_cliente_produto(self):
+        self.assertEqual(self.ids("14"), [14])
+        self.assertEqual(self.ids("nº 12"), [12])
+
+    def test_numero_curto_nao_procura_no_telefone(self):
+        """Achado no navegador: "14" trazia os pedidos com 14 no telefone."""
+        pedidos = self.PEDIDOS + [{"id": 15, "_busca": "15 Carla", "_telefone": "11914141414"}]
+        self.assertEqual([p["id"] for p in filtrar_pedidos(pedidos, "14")], [14])
+        self.assertEqual([p["id"] for p in filtrar_pedidos(pedidos, "91414")], [15])
+        self.assertEqual(self.ids("ana areia"), [12])
+        self.assertEqual(self.ids("(11) 97777"), [19])
 
 
 if __name__ == "__main__":

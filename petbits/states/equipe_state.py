@@ -1106,6 +1106,10 @@ class EquipeState(rx.State):
     # --- pedidos da loja (change `pedidos-da-equipe`) ------------------------
 
     @rx.var
+    def pedidos_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar_pedidos(self.pedidos_clinica, self.busca)
+
+    @rx.var
     def tem_pedidos_clinica(self) -> bool:
         return len(self.pedidos_clinica) > 0
 
@@ -1169,6 +1173,11 @@ class EquipeState(rx.State):
                 "itens": itens.get(p.get("id"), []),
                 "acoes": [{"situacao": s, "rotulo": ROTULOS_ACAO[s]}
                           for s in proximas(p.get("situacao") or "", p.get("entrega") or "")],
+                # Onde a busca procura (change `busca-nos-pedidos`): número,
+                # cliente e produtos do pedido.
+                "_busca": " ".join([str(p.get("id") or ""), p.get("cliente_nome") or ""]
+                                   + [i["texto"] for i in itens.get(p.get("id"), [])]),
+                "_telefone": p.get("cliente_telefone") or "",
             }
             for p in dados.get("pedidos") or []
         ]
