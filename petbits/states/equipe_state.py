@@ -602,6 +602,8 @@ class EquipeState(rx.State):
                 "_duracao": str(s.get("duracao_minutos") or ""),
                 "categoria": CATEGORIAS.get(s.get("categoria") or "", "Sem categoria"),
                 "_categoria": s.get("categoria") or "",
+                # Desligado pela equipe (change `desligar-servico`, D1).
+                "ativo": s.get("ativo") is not False,
             }
             for s in registros
         ]
@@ -1034,6 +1036,20 @@ class EquipeState(rx.State):
             self.erro = str(erro)
             return
         return await self.carregar_produtos()
+
+    async def alternar_ativo_servico(self, registro: dict):
+        """Desligar ou religar serviço manda SÓ `ativo` (change
+        `desligar-servico`, D3); o `pick` do backend deixa o resto como está."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.atualizar_servico(registro["id"], {"ativo": not registro["ativo"]},
+                                         token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_servicos()
 
     # --- pedidos da loja (change `pedidos-da-equipe`) ------------------------
 

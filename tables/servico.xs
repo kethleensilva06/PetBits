@@ -43,6 +43,11 @@ table servico {
       values = ["clinica", "banho_tosa"]
     }
 
+    // Desligado pela equipe (change `desligar-servico`, D1). Nasce `true`, como
+    // em `colaborador` e `produto`: MEDIDO que, sem padrao, o Xano gravou
+    // `false` nos servicos que ja existiam -- e o catalogo do tutor sumiu.
+    bool ativo?=true
+
     timestamp created_at?=now
   }
 

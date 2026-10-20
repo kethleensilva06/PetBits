@@ -49,16 +49,23 @@ PAUSA = 2.2
 # Cada endpoint de equipe, com o corpo mínimo que o faz chegar até a prova.
 # A prova é a SEGUNDA instrução de todos eles, então um corpo inválido ainda
 # assim bate na recusa — que é exatamente o que se quer medir.
+# As sondas de ESCRITA vão com nome SÓ DE ESPAÇOS (change `desligar-servico`,
+# D4). Vazio não serve: o Xano confere a entrada antes da pilha, e "" num campo
+# obrigatório é recusado com 400 para qualquer um — inclusive o cliente, e aí a
+# sonda não prova a recusa de equipe (medido: o POST dava 400 para o cliente).
+# Com "   ", a entrada é aceita, o `trim` esvazia, a prova de equipe roda (403
+# para o cliente) e a validação do nome recusa a equipe (400) antes de gravar. Com "Sonda" no nome, cada rodada deixava um serviço e um colaborador de
+# verdade na base, e eles apareciam na lista da clínica.
 SUPERFICIE_DA_EQUIPE = [
     ("GET", "/equipe/painel", None),
     ("GET", "/equipe/colaboradores", None),
     ("GET", "/equipe/colaboradores/1", None),
-    ("POST", "/equipe/colaboradores", {"nome": "Sonda", "funcao": "atendente"}),
-    ("PATCH", "/equipe/colaboradores/1", {"nome": "Sonda"}),
+    ("POST", "/equipe/colaboradores", {"nome": "   ", "funcao": "atendente"}),
+    ("PATCH", "/equipe/colaboradores/1", {"nome": "   "}),
     ("GET", "/equipe/servicos", None),
     ("GET", "/equipe/servicos/1", None),
-    ("POST", "/equipe/servicos", {"nome": "Sonda", "preco": 1, "duracao_minutos": 10}),
-    ("PATCH", "/equipe/servicos/1", {"nome": "Sonda"}),
+    ("POST", "/equipe/servicos", {"nome": "   ", "preco": 1, "duracao_minutos": 10}),
+    ("PATCH", "/equipe/servicos/1", {"nome": "   "}),
     ("GET", "/equipe/tutores", None),
     ("GET", "/equipe/animais", None),
 ]

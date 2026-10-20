@@ -446,6 +446,9 @@ def _cartao_servico(s: dict) -> rx.Component:
                              radius="full"),
                     rx.badge(s["categoria"], radius="full",
                              color_scheme=rx.cond(s["_categoria"] == "", "amber", "teal")),
+                    rx.cond(~s["ativo"].to(bool),
+                            rx.badge("Inativo", color_scheme="gray", variant="surface",
+                                     radius="full")),
                     spacing="2", align="center", wrap="wrap",
                 ),
                 rx.cond(
@@ -455,9 +458,14 @@ def _cartao_servico(s: dict) -> rx.Component:
                 spacing="1", align_items="start",
             ),
             rx.spacer(),
+            # Desligar e religar (change `desligar-servico`, D3), como em produtos.
+            rx.button(rx.cond(s["ativo"], "Desativar", "Ativar"),
+                      on_click=lambda: EquipeState.alternar_ativo_servico(s),
+                      variant="soft", color_scheme=rx.cond(s["ativo"], "amber", "teal"),
+                      size="1"),
             rx.button("Editar", on_click=lambda: EquipeState.editar_servico(s),
                       variant="soft", size="1"),
-            width="100%", align="start", spacing="3",
+            width="100%", align="start", spacing="2",
         ),
         width="100%",
     )

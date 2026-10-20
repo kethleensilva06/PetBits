@@ -45,7 +45,7 @@ query agendamentos verb=POST {
     db.get servico {
       field_name = "id"
       field_value = $input.servico_id
-      output = ["id", "categoria", "duracao_minutos"]
+      output = ["id", "categoria", "duracao_minutos", "ativo"]
     } as $servico
 
     precondition ($servico != null) {
@@ -61,6 +61,13 @@ query agendamentos verb=POST {
     }
 
     precondition ($servico.duracao_minutos > 0) {
+      error_type = "inputerror"
+      error = "Este servico nao esta disponivel para agendamento."
+    }
+
+    // Servico desligado nao e oferecido (change `desligar-servico`, D2).
+    // Vazio vale como ativo: e o que os servicos anteriores a coluna tem.
+    precondition ($servico.ativo != false) {
       error_type = "inputerror"
       error = "Este servico nao esta disponivel para agendamento."
     }

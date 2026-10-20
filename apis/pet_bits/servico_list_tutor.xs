@@ -19,7 +19,7 @@ query servicos verb=GET {
     }
 
     db.query servico {
-      where = ($db.servico.categoria == "clinica") || ($db.servico.categoria == "banho_tosa")
+      where = (($db.servico.categoria == "clinica") || ($db.servico.categoria == "banho_tosa")) && ($db.servico.ativo != false)
       sort = {nome: "asc"}
       output = ["id", "nome", "descricao", "preco", "duracao_minutos", "categoria"]
       return = {type: "list"}

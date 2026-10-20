@@ -28,7 +28,7 @@ query "agenda/ocupacao" verb=GET {
     db.get servico {
       field_name = "id"
       field_value = $input.servico_id
-      output = ["id", "categoria"]
+      output = ["id", "categoria", "ativo"]
     } as $servico
 
     precondition ($servico != null) {
@@ -37,6 +37,13 @@ query "agenda/ocupacao" verb=GET {
     }
 
     precondition (($servico.categoria == "clinica") || ($servico.categoria == "banho_tosa")) {
+      error_type = "inputerror"
+      error = "Este servico nao esta disponivel para agendamento."
+    }
+
+    // Servico desligado nao e oferecido (change `desligar-servico`, D2).
+    // Vazio vale como ativo: e o que os servicos anteriores a coluna tem.
+    precondition ($servico.ativo != false) {
       error_type = "inputerror"
       error = "Este servico nao esta disponivel para agendamento."
     }
