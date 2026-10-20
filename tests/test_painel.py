@@ -4,7 +4,8 @@ import unittest
 from datetime import date
 
 from petbits import agenda
-from petbits.painel import agenda_do_dia, pedidos_esperando
+from petbits.painel import (agenda_do_dia, estoque_baixo, estoque_do_painel, nivel_do_estoque,
+                            pedidos_esperando)
 
 NOVE = agenda.inicio_do_dia_ms(date(2026, 10, 21)) + 9 * 3600 * 1000
 QUINZE = NOVE + 6 * 3600 * 1000
@@ -46,6 +47,32 @@ class PedidosEsperandoTest(unittest.TestCase):
     def test_sem_dados(self):
         self.assertEqual(pedidos_esperando(None),
                          {"pendente": 0, "pago": 0, "pronto_retirada": 0})
+
+
+
+class EstoqueTest(unittest.TestCase):
+    """Estoque baixo (change `estoque-baixo`)."""
+
+    PRODUTOS = [
+        {"nome": "Ração", "ativo": True, "_estoque": "40"},
+        {"nome": "Arranhador", "ativo": True, "_estoque": "4"},
+        {"nome": "Coleira", "ativo": True, "_estoque": "0"},
+        {"nome": "Inativo", "ativo": False, "_estoque": "0"},
+        {"nome": "Bolinha", "ativo": True, "_estoque": "5"},
+    ]
+
+    def test_so_ativos_ate_5_esgotados_primeiro(self):
+        self.assertEqual([p["nome"] for p in estoque_baixo(self.PRODUTOS)],
+                         ["Coleira", "Arranhador", "Bolinha"])
+
+    def test_nivel(self):
+        self.assertEqual([nivel_do_estoque(n) for n in (0, 1, 5, 6)],
+                         ["esgotado", "baixo", "baixo", "ok"])
+
+    def test_contagens_do_painel(self):
+        self.assertEqual(estoque_do_painel({"produtos_esgotados": 2, "produtos_acabando": 3}),
+                         {"esgotados": 2, "acabando": 3})
+        self.assertEqual(estoque_do_painel(None), {"esgotados": 0, "acabando": 0})
 
 
 if __name__ == "__main__":

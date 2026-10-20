@@ -211,6 +211,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `ordenar-a-loja` ✓ | A loja ordena por destaque, menor e maior preço e nome, junto com a busca e a categoria |
 | `cliente-cancela-pedido` ✓ | O cliente cancela o próprio pedido enquanto aguarda pagamento; o estoque volta |
 | `loja-organizada` ✓ | Cartões da loja com a mesma altura e o preço no mesmo lugar; carrinho em duas linhas, sem valor cortado |
+| `estoque-baixo` ✓ | O painel conta os produtos esgotados e acabando; Produtos filtra o estoque baixo |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

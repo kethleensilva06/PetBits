@@ -137,6 +137,18 @@ query "equipe/painel" verb=GET {
       where = $db.pedido.situacao == "pronto_retirada"
       return = {type: "count"}
     } as $pedidos_prontos
+
+    // Estoque (change `estoque-baixo`, D1): so contagens, de produto ATIVO
+    // (D3). O limite 5 e o `ESTOQUE_BAIXO` de `petbits/painel.py` (D2).
+    db.query produto {
+      where = ($db.produto.ativo == true) && ($db.produto.estoque < 1)
+      return = {type: "count"}
+    } as $produtos_esgotados
+
+    db.query produto {
+      where = ($db.produto.ativo == true) && ($db.produto.estoque > 0) && ($db.produto.estoque < 6)
+      return = {type: "count"}
+    } as $produtos_acabando
   }
 
   // Contagens, a agenda do dia e as contagens de pedido. Nenhum contato de
@@ -150,5 +162,7 @@ query "equipe/painel" verb=GET {
     pedidos_pendentes: $pedidos_pendentes
     pedidos_pagos  : $pedidos_pagos
     pedidos_prontos: $pedidos_prontos
+    produtos_esgotados: $produtos_esgotados
+    produtos_acabando: $produtos_acabando
   }
 }

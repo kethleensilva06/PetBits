@@ -15,7 +15,7 @@ import reflex as rx
 
 from petbits import esqueletos
 from petbits.states.auth_state import AuthState
-from petbits.painel import PEDIDOS_ESPERANDO
+from petbits.painel import ESTOQUE_BAIXO, PEDIDOS_ESPERANDO
 from petbits.pages.historico import dialogo_form_atendimento, dialogo_historico_equipe
 from petbits.states.historico_state import HistoricoEquipeState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
@@ -324,11 +324,41 @@ def _pedido_esperando(situacao: str, rotulo: str, icone: str) -> rx.Component:
     )
 
 
+def _estoque_do_painel(chave: str, rotulo: str, icone: str, cor: str) -> rx.Component:
+    return rx.card(
+        rx.hstack(
+            rx.icon(icone, size=20, color=rx.color(cor, 10)),
+            rx.vstack(
+                rx.heading(EquipeState.painel_estoque[chave], size="6"),
+                rx.text(rotulo, size="2", color=rx.color("gray", 11)),
+                spacing="0",
+                align_items="start",
+            ),
+            spacing="3",
+            align="center",
+        ),
+        on_click=EquipeState.abrir_estoque_baixo,
+        cursor="pointer",
+        width="100%",
+        _hover={"background": rx.color("gray", 2)},
+    )
+
+
 def _pedidos_esperando() -> rx.Component:
     return rx.vstack(
         rx.heading("Pedidos esperando a equipe", size="4"),
         *[_pedido_esperando(situacao, rotulo, icone)
           for _chave, situacao, rotulo, icone in PEDIDOS_ESPERANDO],
+        # Estoque (change `estoque-baixo`): os dois abrem Produtos filtrado.
+        rx.heading("Estoque", size="4", padding_top="0.5rem"),
+        rx.grid(
+            _estoque_do_painel("esgotados", "Esgotados", "package-x", "red"),
+            _estoque_do_painel("acabando", f"Com {ESTOQUE_BAIXO} ou menos", "package-minus",
+                               "amber"),
+            columns="2",
+            spacing="2",
+            width="100%",
+        ),
         spacing="2",
         width="100%",
     )
@@ -686,7 +716,10 @@ def _cartao_produto(p: dict) -> rx.Component:
                     rx.heading(p["nome"], size="4"),
                     rx.badge(p["categoria"], variant="soft", radius="full"),
                     rx.badge(p["preco"], color_scheme="gray", variant="soft", radius="full"),
-                    rx.badge(p["estoque"], color_scheme="gray", variant="soft", radius="full"),
+                    # Vermelho esgotado, âmbar até 5 (change `estoque-baixo`).
+                    rx.badge(p["estoque"], variant="soft", radius="full",
+                             color_scheme=rx.match(p["nivel"], ("esgotado", "red"),
+                                                   ("baixo", "amber"), "gray")),
                     rx.cond(p["ativo"], rx.fragment(),
                             rx.badge("Inativo", color_scheme="amber", radius="full")),
                     spacing="2", align="center", wrap="wrap",
@@ -818,9 +851,25 @@ def _dialogo_produto() -> rx.Component:
 
 def produtos_page() -> rx.Component:
     return _casca(
+        # Todos ou só o estoque baixo (change `estoque-baixo`).
+        rx.cond(
+            EquipeState.tem_produtos,
+            rx.segmented_control.root(
+                rx.segmented_control.item("Todos", value="todos"),
+                rx.segmented_control.item(f"Estoque baixo (até {ESTOQUE_BAIXO})",
+                                          value="baixo"),
+                value=EquipeState.filtro_estoque,
+                on_change=EquipeState.set_filtro_estoque,
+            ),
+        ),
+        rx.cond(
+            EquipeState.tem_produtos & (EquipeState.produtos_visiveis.length() == 0),
+            rx.text("Nenhum produto ativo com estoque baixo.", size="2",
+                    color=rx.color("gray", 11)),
+        ),
         _lista(
             EquipeState.tem_produtos,
-            EquipeState.produtos,
+            EquipeState.produtos_visiveis,
             _cartao_produto,
             _vazio("Nenhum produto na loja",
                    "Cadastre o que a loja vende, com preço e estoque.",

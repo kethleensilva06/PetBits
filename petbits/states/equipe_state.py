@@ -86,6 +86,10 @@ class EquipeState(rx.State):
     # O dia e os pedidos esperando (change `painel-do-dia`).
     painel_agenda: list[dict] = []
     painel_pedidos: dict[str, int] = {}
+    # Esgotados e acabando (change `estoque-baixo`).
+    painel_estoque: dict[str, int] = {}
+    # "todos" ou "baixo", na tela de Produtos.
+    filtro_estoque: str = "todos"
 
     # --- listas ---
     colaboradores: list[dict] = []
@@ -377,6 +381,8 @@ class EquipeState(rx.State):
         self.painel_carregado = False
         self.painel_agenda = []
         self.painel_pedidos = {}
+        self.painel_estoque = {}
+        self.filtro_estoque = "todos"
         self.colaboradores = []
         self.servicos = []
         self.tutores = []
@@ -477,6 +483,7 @@ class EquipeState(rx.State):
         self.total_animais = int(dados.get("animais") or 0)
         self.painel_agenda = painel.agenda_do_dia(dados.get("agenda"))
         self.painel_pedidos = painel.pedidos_esperando(dados)
+        self.painel_estoque = painel.estoque_do_painel(dados)
         self.painel_carregado = True
         self.carregando = False
         self.ja_carregou = True
@@ -941,6 +948,8 @@ class EquipeState(rx.State):
                 "_categoria": p.get("categoria") or "racao",
                 "_preco": datas.numero_para_campo(p.get("preco")),
                 "_estoque": str(int(p.get("estoque") or 0)),
+                # A cor do selo de estoque (change `estoque-baixo`).
+                "nivel": painel.nivel_do_estoque(int(p.get("estoque") or 0)),
             }
             for p in registros
         ]
@@ -1099,6 +1108,22 @@ class EquipeState(rx.State):
     @rx.var
     def tem_pedidos_clinica(self) -> bool:
         return len(self.pedidos_clinica) > 0
+
+    def abrir_estoque_baixo(self):
+        """Do painel para Produtos filtrado por estoque baixo (change `estoque-baixo`)."""
+        self.filtro_estoque = "baixo"
+        return rx.redirect("/equipe/produtos")
+
+    def set_filtro_estoque(self, valor: str | list[str]):
+        if isinstance(valor, list):
+            valor = valor[0] if valor else "todos"
+        self.filtro_estoque = "baixo" if valor == "baixo" else "todos"
+
+    @rx.var
+    def produtos_visiveis(self) -> list[dict]:
+        if self.filtro_estoque == "baixo":
+            return painel.estoque_baixo(self.produtos)
+        return self.produtos
 
     def abrir_pedidos(self, situacao: str):
         """Do painel para Pedidos já filtrado (change `painel-do-dia`, D4). O

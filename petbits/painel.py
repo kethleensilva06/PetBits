@@ -44,3 +44,27 @@ def pedidos_esperando(dados: dict) -> dict[str, int]:
     """
     return {situacao: int((dados or {}).get(chave) or 0)
             for chave, situacao, _rotulo, _icone in PEDIDOS_ESPERANDO}
+
+
+# Estoque baixo (change `estoque-baixo`, D2): o mesmo 5 de `equipe_painel.xs`.
+ESTOQUE_BAIXO = 5
+
+
+def estoque_do_painel(dados: dict) -> dict[str, int]:
+    """Quantos produtos ativos estão esgotados e quantos estão acabando."""
+    dados = dados or {}
+    return {"esgotados": int(dados.get("produtos_esgotados") or 0),
+            "acabando": int(dados.get("produtos_acabando") or 0)}
+
+
+def nivel_do_estoque(estoque: int) -> str:
+    """"esgotado", "baixo" ou "ok", para a cor do selo."""
+    if estoque <= 0:
+        return "esgotado"
+    return "baixo" if estoque <= ESTOQUE_BAIXO else "ok"
+
+
+def estoque_baixo(produtos: list[dict]) -> list[dict]:
+    """Os ativos com até `ESTOQUE_BAIXO` unidades, os esgotados primeiro (D3)."""
+    baixos = [p for p in produtos if p.get("ativo") and int(p.get("_estoque") or 0) <= ESTOQUE_BAIXO]
+    return sorted(baixos, key=lambda p: int(p.get("_estoque") or 0))
