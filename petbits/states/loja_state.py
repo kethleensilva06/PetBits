@@ -10,7 +10,7 @@ requisição sai (change `porta-de-entrada`, D5).
 
 import reflex as rx
 
-from petbits import agenda, rotulos, xano
+from petbits import agenda, etapas_do_pedido, rotulos, xano
 from petbits.ilustracoes import imagem_do_produto, normalizar
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
@@ -320,6 +320,11 @@ class LojaState(rx.State):
                 "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "total": reais(p.get("total")),
                 "itens": itens_por_pedido.get(p.get("id"), []),
+                # As etapas do caminho (change `linha-do-tempo-do-pedido`).
+                "etapas": etapas_do_pedido.etapas(p.get("situacao") or "",
+                                                  p.get("entrega") or "",
+                                                  p.get("forma_pagamento") or "",
+                                                  p.get("pago_em")),
             }
             for p in dados.get("pedidos") or []
         ]

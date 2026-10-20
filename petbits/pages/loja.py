@@ -320,6 +320,42 @@ def loja_page() -> rx.Component:
     )
 
 
+def _etapa(e: rx.Var) -> rx.Component:
+    """Uma etapa do pedido (change `linha-do-tempo-do-pedido`): a faixa no
+    alto diz feita, atual ou por vir."""
+    return rx.vstack(
+        rx.box(height="4px", width="100%", border_radius="9999px",
+               background=rx.cond(e["feita"], rx.color("teal", 9),
+                                  rx.cond(e["atual"], rx.color("teal", 6),
+                                          rx.color("gray", 4)))),
+        rx.hstack(
+            rx.cond(e["feita"], rx.icon("circle-check", size=14, color=rx.color("teal", 10)),
+                    rx.icon("circle", size=14,
+                            color=rx.cond(e["atual"], rx.color("teal", 9),
+                                          rx.color("gray", 8)))),
+            rx.text(e["rotulo"], size="1",
+                    weight=rx.cond(e["atual"], "bold", "regular"),
+                    color=rx.cond(e["feita"] | e["atual"], rx.color("gray", 12),
+                                  rx.color("gray", 10))),
+            spacing="1",
+            align="start",
+        ),
+        spacing="1",
+        width="100%",
+    )
+
+
+def _etapas(p: rx.Var) -> rx.Component:
+    return rx.cond(
+        p["cancelado"].to(bool),
+        rx.text("Pedido cancelado. Os itens voltaram ao estoque.", size="1",
+                color=rx.color("gray", 10)),
+        rx.grid(rx.foreach(p["etapas"].to(list[dict]), _etapa),
+                columns=rx.breakpoints(initial="2", sm="4"), spacing="2", width="100%",
+                padding_y="0.25rem"),
+    )
+
+
 def _pedido(p: rx.Var) -> rx.Component:
     return rx.card(
         rx.vstack(
@@ -333,6 +369,7 @@ def _pedido(p: rx.Var) -> rx.Component:
                 align="center",
                 wrap="wrap",
             ),
+            _etapas(p),
             rx.text(p["quando"], " · ", p["origem"], " · ", p["entrega"], " · ",
                     p["pagamento"], size="1", color=rx.color("gray", 10)),
             rx.cond(p["endereco"], rx.text("Entregar em: ", p["endereco"], size="1",
