@@ -41,7 +41,8 @@ PAPEL_GERENCIA = "admin"
 PAPEL_EQUIPE_COMUM = "staff"
 
 ROTA_EQUIPE = "/equipe"
-ROTA_TUTOR = "/"
+# A casa do cliente (change `boas-vindas-primeiro`, D2): `/` é a página inicial.
+ROTA_TUTOR = "/animais"
 
 # Mantido para quem ainda importa pelo nome antigo. `admin` deixou de querer
 # dizer "equipe" e passou a querer dizer "gerencia" quando o terceiro papel

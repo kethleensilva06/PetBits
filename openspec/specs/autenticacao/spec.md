@@ -200,10 +200,11 @@ títulos no começo do nome (Dr., Dra., Sr., Sra.).
 ### Requirement: Página inicial pública
 
 O sistema SHALL ter uma página inicial pública que apresenta o PetBits e leva
-à entrada de clientes, à entrada da equipe e à criação de conta. Quem abre o
-endereço principal do sistema sem sessão SHALL ser conduzido a ela. A página
-SHALL apresentar a clínica e seus serviços com as fotos que acompanham o app,
-e MUST NOT fazer requisição ao Xano.
+à entrada de clientes, à entrada da equipe e à criação de conta, no endereço
+principal do sistema (`/`). Quem abre o endereço principal sem sessão SHALL
+ver essa página primeiro, antes de qualquer tela de cliente. A página SHALL
+apresentar a clínica e seus serviços com as fotos que acompanham o app, e MUST
+NOT fazer requisição ao Xano.
 
 #### Scenario: Visitante abre o sistema
 
@@ -297,7 +298,7 @@ Uma conta de equipe que abre um endereço da área de cliente SHALL ser levada
 
 #### Scenario: Funcionário abre a área de cliente pelo endereço
 
-- **WHEN** uma conta de equipe com sessão abre `/` ou `/agenda`
+- **WHEN** uma conta de equipe com sessão abre `/animais` ou `/agenda`
 - **THEN** ela é levada à gerência
 - **AND** nenhuma requisição de dados de cliente é feita
 

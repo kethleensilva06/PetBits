@@ -34,7 +34,7 @@ def destino(State, token="", expirou=False, papel=""):
 
 class GuardaDeCliente(unittest.TestCase):
     def test_visitante(self):
-        self.assertEqual(destino(PetState), "/boas-vindas")
+        self.assertEqual(destino(PetState), "/")
         self.assertEqual(destino(AgendaState), "/entrar")
         self.assertEqual(destino(LojaState), "/entrar")
 

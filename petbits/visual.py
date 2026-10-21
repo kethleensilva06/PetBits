@@ -30,7 +30,7 @@ FOLHAS_DE_ESTILO = [
 LARGURA_DO_CLIENTE = "3"
 
 AREAS_DO_CLIENTE = [
-    ("/", "Meus animais", "paw-print"),
+    ("/animais", "Meus animais", "paw-print"),
     ("/agenda", "Agendar", "calendar"),
     ("/loja", "Loja", "shopping-bag"),
     ("/pedidos", "Meus pedidos", "receipt"),
@@ -113,7 +113,7 @@ def topo_do_cliente(atual: str) -> rx.Component:
     """O cabeçalho único da área do cliente (casa, agenda, loja, pedidos)."""
     return rx.vstack(
         barra(
-            marca("/"),
+            marca("/animais"),
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
                      radius="full", display=rx.breakpoints(initial="none", sm="inline-flex")),

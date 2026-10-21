@@ -315,7 +315,7 @@ class PerfilEquipeState(_PerfilBase, rx.State):
         if not auth.token:
             raise SemSessao("/entrar")
         if not xano.eh_equipe(auth.usuario_papel):
-            raise SemSessao("/")
+            raise SemSessao(xano.ROTA_TUTOR)
         return auth.token
 
     async def _ler(self, token: str) -> dict | None:

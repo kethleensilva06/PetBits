@@ -63,7 +63,7 @@ class Papeis(unittest.TestCase):
     def test_member_e_tutor(self):
         self.assertTrue(xano.eh_tutor("member"))
         self.assertFalse(xano.eh_equipe("member"))
-        self.assertEqual(xano.rota_do_papel("member"), "/")
+        self.assertEqual(xano.rota_do_papel("member"), "/animais")
 
     def test_papel_vazio_ou_desconhecido_nao_e_equipe(self):
         for papel in ("", "gerente", "Admin"):

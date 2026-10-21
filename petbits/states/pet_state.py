@@ -157,7 +157,7 @@ class PetState(rx.State):
     async def _token(self) -> str:
         """Este State só carrega no endereço principal, cujo visitante sem
         sessão vê a página inicial (change `porta-de-entrada`, D3)."""
-        return await sessao.token_de_cliente(self, sem_sessao="/boas-vindas")
+        return await sessao.token_de_cliente(self, sem_sessao="/")
 
     async def _encerrar(self, erro: Exception):
         return await sessao.encerrar(self, erro)

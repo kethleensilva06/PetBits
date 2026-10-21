@@ -86,7 +86,7 @@ def _escolhas() -> rx.Component:
                 rx.hstack(
                     rx.text("Você ainda não cadastrou nenhum animal.", size="2",
                             color=rx.color("gray", 11)),
-                    rx.link("Cadastrar", href="/", size="2", weight="medium"),
+                    rx.link("Cadastrar", href="/animais", size="2", weight="medium"),
                     spacing="2",
                 ),
             ),

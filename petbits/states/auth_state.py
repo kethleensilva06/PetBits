@@ -502,7 +502,7 @@ class AuthState(rx.State):
         página inicial pública, e não um formulário (change
         `porta-de-entrada`, D3). Sessão expirada continua indo para a
         entrada, com o aviso."""
-        return await self._validar_sessao("/boas-vindas")
+        return await self._validar_sessao("/")
 
     async def _validar_sessao(self, destino_sem_sessao: str):
         if not self.token:

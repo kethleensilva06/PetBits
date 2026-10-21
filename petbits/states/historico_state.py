@@ -306,7 +306,7 @@ class HistoricoTutorState(rx.State):
         self.carregando = True
         yield
         try:
-            token = await sessao.token_de_cliente(self, sem_sessao="/boas-vindas")
+            token = await sessao.token_de_cliente(self, sem_sessao="/")
             registros = await xano.historico_do_meu_animal(int(animal.get("id") or 0),
                                                             token=token)
         except (SemSessao, SessaoExpirada) as erro:

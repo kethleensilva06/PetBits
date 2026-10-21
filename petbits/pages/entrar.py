@@ -67,7 +67,7 @@ def _casca(
 ) -> rx.Component:
     return rx.center(
         rx.vstack(
-            marca("/boas-vindas"),
+            marca("/"),
             rx.card(
                 rx.vstack(
                     rx.vstack(
@@ -476,7 +476,7 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
         ),
         rodape=rx.vstack(
             rodape,
-            rx.link("← Voltar ao início", href="/boas-vindas", size="1",
+            rx.link("← Voltar ao início", href="/", size="1",
                     color=rx.color("gray", 11)),
             spacing="3",
             align_items="start",
