@@ -2,7 +2,7 @@ alembic==1.19.1
 annotated-types==0.8.0
 anyio==4.15.0
 bidict==0.24.1
-certifi==2026.7.22
+certifi>=2026.10.19
 click==8.5.0
 granian==2.8.2
 greenlet==3.5.5
