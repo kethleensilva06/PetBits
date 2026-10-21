@@ -2,7 +2,8 @@
 
 import unittest
 
-from petbits.historico import data_local, dia_em_ms, evolucao_do_peso, linha_do_tempo
+from petbits.historico import (data_local, dia_em_ms, evolucao_do_peso, linha_do_tempo,
+                               proximo_retorno)
 
 # 18/10/2026 00:00 em São Paulo = 03:00 UTC
 MEIA_NOITE_SP = 1792292400000
@@ -91,6 +92,42 @@ class EvolucaoDoPesoTest(unittest.TestCase):
         e = evolucao_do_peso([self.reg(i, i, 20 + i) for i in range(1, 10)])
         self.assertEqual(len(e["pontos"]), 6)
         self.assertEqual(e["pontos"][-1]["peso"], "29 kg")
+
+
+
+class ProximoRetornoTest(unittest.TestCase):
+    """O retorno sugerido (change `agendar-retorno`)."""
+
+    DIA = 86400000
+
+    def reg(self, id_, dias, retorno_em_dias=None, retifica=0):
+        return {"id": id_, "data_atendimento": MEIA_NOITE_SP + dias * self.DIA,
+                "retorno": None if retorno_em_dias is None
+                else MEIA_NOITE_SP + retorno_em_dias * self.DIA, "retifica": retifica}
+
+    def agora(self, dias):
+        return MEIA_NOITE_SP + dias * self.DIA + 10 * 3600 * 1000
+
+    def test_o_mais_proximo(self):
+        r = proximo_retorno([self.reg(1, 0, 20), self.reg(2, 5, 12)], self.agora(6))
+        self.assertEqual(r, {"data": data_local(MEIA_NOITE_SP + 12 * self.DIA)})
+
+    def test_retorno_hoje_conta_e_ontem_nao(self):
+        self.assertTrue(proximo_retorno([self.reg(1, 0, 6)], self.agora(6)))
+        self.assertEqual(proximo_retorno([self.reg(1, 0, 5)], self.agora(6)), {})
+
+    def test_atendimento_depois_sem_retorno_nao_esconde(self):
+        """Achado no navegador: a vacina sem retorno escondia o da consulta."""
+        r = proximo_retorno([self.reg(1, 0, 20), self.reg(2, 5)], self.agora(6))
+        self.assertEqual(r, {"data": data_local(MEIA_NOITE_SP + 20 * self.DIA)})
+
+    def test_retificado_nao_conta(self):
+        registros = [self.reg(1, 5, 9), self.reg(2, 5, 15, retifica=1)]
+        self.assertEqual(proximo_retorno(registros, self.agora(6)),
+                         {"data": data_local(MEIA_NOITE_SP + 15 * self.DIA)})
+
+    def test_sem_registros(self):
+        self.assertEqual(proximo_retorno([], self.agora(0)), {})
 
 
 if __name__ == "__main__":

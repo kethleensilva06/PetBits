@@ -8,8 +8,8 @@ de um animal: nenhuma a mais no carregamento das listas.
 
 import reflex as rx
 
-from petbits import xano
-from petbits.historico import dia_em_ms, evolucao_do_peso, linha_do_tempo
+from petbits import agenda, xano
+from petbits.historico import dia_em_ms, evolucao_do_peso, linha_do_tempo, proximo_retorno
 from petbits.rotulos import FUNCAO_LEGIVEL
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -261,11 +261,29 @@ class HistoricoTutorState(rx.State):
     itens: list[dict] = []
     # O quadro do peso (change `evolucao-do-peso`); {} sem pesagem.
     peso: dict = {}
+    # O retorno sugerido e o animal, para o Agendar retorno (change
+    # `agendar-retorno`); {} sem retorno de hoje em diante.
+    retorno: dict = {}
+    pet_id: int = 0
     carregando: bool = False
     erro: str = ""
 
     def set_aberto(self, v: bool):
         self.aberto = v
+
+    async def agendar_retorno(self):
+        """Fecha o histórico e abre a Agenda com o animal e a Clínica escolhidos."""
+        from petbits.states.agenda_state import AgendaState
+
+        agenda_do_tutor = await self.get_state(AgendaState)
+        # Os campos direto, como o `set_categoria` faz: a categoria muda e o
+        # serviço e o horário escolhidos antes saem.
+        agenda_do_tutor.categoria = "clinica"
+        agenda_do_tutor.servico_id = ""
+        agenda_do_tutor._limpar_escolha_de_horario()
+        agenda_do_tutor.pet_id = str(self.pet_id)
+        self.aberto = False
+        return rx.redirect("/agenda")
 
     def limpar_dados(self):
         self.aberto = False
@@ -274,11 +292,15 @@ class HistoricoTutorState(rx.State):
         self.peso = {}
         self.carregando = False
         self.erro = ""
+        self.retorno = {}
+        self.pet_id = 0
 
     async def abrir(self, animal: dict):
         self.pet_nome = animal.get("nome") or "-"
+        self.pet_id = int(animal.get("id") or 0)
         self.itens = []
         self.peso = {}
+        self.retorno = {}
         self.erro = ""
         self.aberto = True
         self.carregando = True
@@ -297,4 +319,5 @@ class HistoricoTutorState(rx.State):
             return
         self.itens = linha_do_tempo(registros)
         self.peso = evolucao_do_peso(registros)
+        self.retorno = proximo_retorno(registros, agenda.agora_ms())
         self.carregando = False

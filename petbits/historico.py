@@ -120,3 +120,27 @@ def evolucao_do_peso(registros: list[dict], ultimas: int = 6) -> dict:
     ]
     return {"atual": _kg(atual), "data": data_local(ultimo.get("data_atendimento")),
             "variacao": variacao, "pontos": pontos}
+
+
+def proximo_retorno(registros: list[dict], agora_ms: int) -> dict:
+    """O retorno mais próximo, de hoje em diante, entre os atendimentos do animal
+    (change `agendar-retorno`). Retificado não conta: vale a correção.
+
+    Não só o do atendimento mais recente: achado na verificação, a Mel tinha
+    retorno marcado na consulta da otite, e a vacina que veio depois, sem
+    retorno, escondia o aviso.
+
+    Devolve {"data": "DD/MM/AAAA"} ou {}.
+    """
+    corrigidos = {r.get("retifica") for r in registros if r.get("retifica")}
+    hoje = datetime.fromtimestamp(agora_ms / 1000, agenda.FUSO).date()
+    futuros = []
+    for r in registros:
+        if r.get("id") in corrigidos or not r.get("retorno"):
+            continue
+        dia = datetime.fromtimestamp(float(r["retorno"]) / 1000, agenda.FUSO).date()
+        if dia >= hoje:
+            futuros.append((dia, r["retorno"]))
+    if not futuros:
+        return {}
+    return {"data": data_local(min(futuros)[1])}

@@ -221,6 +221,21 @@ def dialogo_historico_tutor() -> rx.Component:
             rx.dialog.title("Histórico de ", S.pet_nome),
             rx.text("Os atendimentos registrados pela clínica, do mais recente ao mais antigo.",
                     size="1", color=rx.color("gray", 11), margin_bottom="0.75rem"),
+            # O retorno sugerido, com o atalho para a Agenda (change `agendar-retorno`).
+            rx.cond(
+                S.retorno.contains("data"),
+                rx.callout.root(
+                    rx.callout.icon(rx.icon("calendar-clock")),
+                    rx.callout.text("Retorno sugerido para ",
+                                    rx.text.strong(S.retorno["data"].to(str)), "."),
+                    rx.button(rx.icon("calendar-plus", size=14), "Agendar retorno", size="1",
+                              on_click=S.agendar_retorno, width="fit-content"),
+                    color_scheme="teal",
+                    size="1",
+                    width="100%",
+                    margin_bottom="0.75rem",
+                ),
+            ),
             rx.scroll_area(
                 _linha_do_tempo(S, com_retificar=False,
                                 vazio="Ainda não há atendimento registrado. Depois da "

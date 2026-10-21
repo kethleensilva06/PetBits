@@ -221,6 +221,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `pedidos-em-andamento` ✓ | Meus pedidos separa os em andamento dos finalizados, que começam fechados |
 | `publicacao-no-reflex-cloud` ✓ | Site no ar em petbits-blue-grass.reflex.run, por um script que só manda o site e as duas variáveis do Xano |
 | `site-no-github-pages` ✓ | A parte visual também em kethleensilva06.github.io/PetBits, ligada ao servidor do Reflex Cloud |
+| `agendar-retorno` ✓ | O histórico do tutor sugere o retorno marcado pelo veterinário e abre a Agenda com o animal |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.
