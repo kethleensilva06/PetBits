@@ -9,24 +9,18 @@ recebe o seu State.
 
 import reflex as rx
 
+from petbits import esqueletos
 from petbits.pages.equipe import _casca
 from petbits.states.perfil_state import (ID_UPLOAD, ID_UPLOAD_EQUIPE, PerfilEquipeState,
                                          PerfilState)
-from petbits.visual import titulo_de_pagina, topo_do_cliente
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, rodape_do_cliente, titulo_de_pagina,
+                            topo_do_cliente)
 
 
-def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
-    return rx.vstack(
-        rx.text(rotulo, size="2", weight="medium"),
-        componente,
-        spacing="1",
-        width="100%",
-        align_items="start",
-    )
 
 
 def _travado(rotulo: str, valor) -> rx.Component:
-    return _campo(rotulo, rx.input(value=valor, disabled=True, width="100%", size="3"))
+    return campo(rotulo, rx.input(value=valor, disabled=True, width="100%", size="3"))
 
 
 def _aviso(texto, cor: str, icone: str) -> rx.Component:
@@ -38,10 +32,11 @@ def _foto(S, id_upload: str, legenda=None) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.avatar(src=S.foto_url, fallback=S.iniciais,
-                      radius="full", size="8", color_scheme="teal", variant="solid"),
+                      radius="full", size="8", color_scheme="teal", variant="solid",
+                      custom_attrs={"alt": "Sua foto de perfil"}),
             rx.heading(S.nome, size="5", text_align="center"),
             legenda if legenda is not None else rx.fragment(),
-            rx.text(S.email, size="2", color=rx.color("gray", 10)),
+            rx.text(S.email, size="2", color=rx.color("gray", 11)),
             rx.upload.root(
                 rx.button(
                     rx.cond(S.enviando_foto, rx.spinner(size="2"), rx.icon("camera", size=16)),
@@ -55,7 +50,7 @@ def _foto(S, id_upload: str, legenda=None) -> rx.Component:
                 no_drag=True,
                 on_drop=S.enviar_foto(rx.upload_files(upload_id=id_upload)),
             ),
-            rx.text("JPG, PNG ou WebP, até 5 MB.", size="1", color=rx.color("gray", 10)),
+            rx.text("JPG, PNG ou WebP, até 5 MB.", size="1", color=rx.color("gray", 11)),
             _aviso(S.erro_foto, "red", "triangle_alert"),
             spacing="3",
             align="center",
@@ -71,10 +66,10 @@ def _dados(S, *meio: rx.Component, nota: str) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.heading("Seus dados", size="4"),
-            _campo("Nome", rx.input(value=S.nome, on_change=S.set_nome, width="100%",
+            campo("Nome", rx.input(value=S.nome, on_change=S.set_nome, width="100%",
                                     size="3")),
             *meio,
-            rx.text(nota, size="1", color=rx.color("gray", 10)),
+            rx.text(nota, size="1", color=rx.color("gray", 11)),
             _aviso(S.erro_dados, "red", "triangle_alert"),
             rx.button("Salvar dados", on_click=S.salvar_dados, disabled=S.salvando, size="3"),
             spacing="3",
@@ -86,7 +81,7 @@ def _dados(S, *meio: rx.Component, nota: str) -> rx.Component:
 
 
 def _telefone(S) -> rx.Component:
-    return _campo("Telefone", rx.input(value=S.telefone, on_change=S.set_telefone,
+    return campo("Telefone", rx.input(value=S.telefone, on_change=S.set_telefone,
                                        placeholder="(00) 00000-0000", width="100%", size="3"))
 
 
@@ -99,19 +94,19 @@ def _senha(S) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.heading("Trocar senha", size="4"),
-            _campo("Senha atual", rx.input(type="password", value=S.senha_atual,
+            campo("Senha atual", rx.input(type="password", value=S.senha_atual,
                                            on_change=S.set_senha_atual, width="100%",
                                            size="3")),
             _em_duas(
-                _campo("Nova senha", rx.input(type="password", value=S.nova_senha,
+                campo("Nova senha", rx.input(type="password", value=S.nova_senha,
                                               on_change=S.set_nova_senha, width="100%",
                                               size="3")),
-                _campo("Repita a nova", rx.input(type="password", value=S.confirmar,
+                campo("Repita a nova", rx.input(type="password", value=S.confirmar,
                                                  on_change=S.set_confirmar, width="100%",
                                                  size="3")),
             ),
             rx.text("Pelo menos 8 caracteres, com uma letra e um número.", size="1",
-                    color=rx.color("gray", 10)),
+                    color=rx.color("gray", 11)),
             _aviso(S.erro_senha, "red", "triangle_alert"),
             rx.button("Trocar senha", on_click=S.trocar_senha, disabled=S.trocando,
                       variant="soft", size="3"),
@@ -127,9 +122,8 @@ def _carregado(S, conteudo: rx.Component) -> rx.Component:
     return rx.cond(
         S.ja_carregou & ~S.erro.bool(),
         conteudo,
-        rx.cond(S.carregando,
-                rx.hstack(rx.spinner(size="2"), rx.text("Carregando o perfil..."),
-                          spacing="2")),
+        # Sem dado e sem erro é carga (change `esqueletos-de-carregamento`).
+        rx.cond(~S.erro.bool(), esqueletos.perfil("Carregando o perfil...")),
     )
 
 
@@ -151,7 +145,7 @@ def perfil_page() -> rx.Component:
                     _dados(
                         S,
                         _em_duas(_telefone(S), _travado("CPF", S.documento)),
-                        _campo("Endereço", rx.input(value=S.endereco,
+                        campo("Endereço", rx.input(value=S.endereco,
                                                     on_change=S.set_endereco,
                                                     placeholder="Rua, número, bairro",
                                                     width="100%", size="3")),
@@ -163,12 +157,13 @@ def perfil_page() -> rx.Component:
                     width="100%",
                 ),
             )),
+            rodape_do_cliente(),
             spacing="4",
             align_items="start",
             padding_y="2rem",
             width="100%",
         ),
-        size="3",
+        size=LARGURA_DO_CLIENTE,
     )
 
 

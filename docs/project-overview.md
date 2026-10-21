@@ -195,6 +195,35 @@ clínica, mas passam pelo mesmo fluxo.
 | `ferramentas-de-verificacao` ✓ | Testes locais, guarda de endpoints públicos e verificação de ponta a ponta |
 | `publicacao-por-script` ✓ | `scripts/publicar.py` publica só os arquivos pedidos, com prévia, e confere o repositório contra o Xano |
 | `acabamentos` ✓ | Sem as duplicações de guarda, rótulos e regra da categoria; saudação sem título |
+| `historico-clinico` ✓ | A equipe registra e retifica atendimentos (pela lista de animais ou pela agenda, concluindo o agendamento); o tutor lê a linha do tempo de cada animal; nada se apaga |
+| `painel-do-dia` ✓ | O painel da clínica abre com quem vem hoje e os pedidos que esperam a equipe, ainda numa requisição só |
+| `linha-do-tempo-do-pedido` ✓ | Meus pedidos mostra as etapas de cada pedido, com o pagamento seguindo o registro do pagamento |
+| `esqueletos-de-carregamento` ✓ | Blocos no formato do conteúdo no lugar do "Carregando..."; a tela não mostra mais o vazio enquanto carrega |
+| `boas-vindas-com-fotos` ✓ | A página inicial pública tem capa com foto e os serviços da clínica com fotos, sem download novo |
+| `abas-simetricas` ✓ | O lugar da barra de rolagem fica reservado: toda aba do cliente começa no mesmo ponto |
+| `agenda-guiada` ✓ | Agendar mostra os passos e um resumo fixo; depois de marcar, o compromisso vai para a agenda do celular (.ics) |
+| `acessibilidade` ✓ | Contraste do WCAG AA em todo texto e botão, campos com nome para leitor de tela, foco visível e página em pt-BR |
+| `carrinho-guardado` ✓ | O carrinho da loja fica no navegador e sobrevive ao F5; sair da conta o esvazia |
+| `busca-na-clinica` ✓ | Colaboradores, Tutores e Animais têm busca na própria tela, sem requisição; CPF e telefone pelos números |
+| `pagina-nao-encontrada` ✓ | Endereço inexistente mostra uma página do PetBits, em português, com Ir ao início e Voltar |
+| `proximo-agendamento-na-casa` ✓ | A casa do cliente mostra o próximo agendamento, com dia, hora e profissional |
+| `comprar-de-novo` ✓ | Meus pedidos repete um pedido no carrinho; a loja ajusta ao estoque e avisa o que mudou |
+| `ordenar-a-loja` ✓ | A loja ordena por destaque, menor e maior preço e nome, junto com a busca e a categoria |
+| `cliente-cancela-pedido` ✓ | O cliente cancela o próprio pedido enquanto aguarda pagamento; o estoque volta |
+| `loja-organizada` ✓ | Cartões da loja com a mesma altura e o preço no mesmo lugar; carrinho em duas linhas, sem valor cortado |
+| `estoque-baixo` ✓ | O painel conta os produtos esgotados e acabando; Produtos filtra o estoque baixo |
+| `busca-nos-pedidos` ✓ | Pedidos da clínica têm busca por número, cliente, telefone e produto |
+| `evolucao-do-peso` ✓ | O histórico mostra o último peso, a diferença para a pesagem anterior e as últimas seis |
+| `horario-e-contato` ✓ | Seg a sáb, 8h às 18h (o sábado ia até 12h), e o e-mail petbitsgroup@gmail.com no rodapé e na página inicial |
+| `nao-compareceu` ✓ | A equipe registra a falta de um agendamento que já começou; falta não vira atendimento |
+| `resumo-dos-pedidos` ✓ | Pedidos da clínica mostram quantos e o total do filtro, e baixam o CSV para planilha |
+| `proximos-e-anteriores` ✓ | Meus agendamentos separa os próximos dos anteriores, que começam fechados |
+| `pedidos-em-andamento` ✓ | Meus pedidos separa os em andamento dos finalizados, que começam fechados |
+| `publicacao-no-reflex-cloud` ✓ | Site no ar em petbits-blue-grass.reflex.run, por um script que só manda o site e as duas variáveis do Xano |
+| `site-no-github-pages` ✓ | A parte visual também em kethleensilva06.github.io/PetBits, ligada ao servidor do Reflex Cloud |
+| `agendar-retorno` ✓ | O histórico do tutor sugere o retorno marcado pelo veterinário e abre a Agenda com o animal |
+| `editar-tutor` ✓ | A equipe edita nome, CPF, telefone, e-mail e endereço do tutor; o e-mail de entrada muda junto |
+| `foto-do-produto-na-mao` ✓ | Foto do produto pela miniatura do cartão, já no cadastro, e removível |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

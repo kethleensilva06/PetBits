@@ -27,6 +27,7 @@ from petbits.pages.equipe import (
 )
 from petbits.pages.inicio import inicio_page
 from petbits.pages.loja import loja_page, pedidos_page
+from petbits.pages.nao_encontrada import nao_encontrada_page
 from petbits.pages.perfil import perfil_equipe_page, perfil_page
 from petbits.states.agenda_state import AgendaState
 from petbits.states.auth_state import AuthState
@@ -36,7 +37,20 @@ from petbits.states.perfil_state import PerfilEquipeState, PerfilState
 from petbits.states.pet_state import PetState
 from petbits.visual import FOLHAS_DE_ESTILO, TEMA
 
-app = rx.App(theme=TEMA, stylesheets=FOLHAS_DE_ESTILO)
+# Sempre claro (change `tema-claro-fixo`, D1). O Reflex ignora o `appearance`
+# do tema e segue o modo de cor guardado no navegador, e o ícone de sol/lua
+# que existiu deixou "dark" guardado em quem o usou. Este script roda no
+# <head>, antes de a página montar, e grava "light" antes de ser lido.
+app = rx.App(
+    # Em português, para o leitor de tela não ler com pronúncia inglesa
+    # (change `acessibilidade`).
+    html_lang="pt-BR",
+    theme=TEMA,
+    stylesheets=FOLHAS_DE_ESTILO,
+    head_components=[
+        rx.script("try { localStorage.setItem('theme', 'light'); } catch (e) {}"),
+    ],
+)
 
 # Rota privada. O `on_load` é a guarda: `carregar_sessao` devolve um
 # redirecionamento e **retorna antes** de qualquer chamada ao Xano quando não
@@ -46,20 +60,24 @@ app.add_page(
     inicio_page,
     route="/inicio",
     title="PetBits",
-    on_load=[AuthState.carregar_sessao_da_casa, PetState.carregar],
+    on_load=[PetState.preparar_carga, AuthState.carregar_sessao_da_casa, PetState.carregar,
+             PetState.carregar_proximo],
 )
 
 # Loja do cliente (change `loja`). Mesma guarda da área de cliente: sem sessão,
 # ou com conta de equipe, `LojaState._token` levanta antes de qualquer requisição.
 app.add_page(loja_page, route="/loja", title="PetBits | Loja",
-             on_load=[AuthState.carregar_sessao, LojaState.carregar_loja])
+             on_load=[LojaState.preparar_carga, AuthState.carregar_sessao,
+                      LojaState.carregar_loja])
 app.add_page(pedidos_page, route="/pedidos", title="PetBits | Meus pedidos",
-             on_load=[AuthState.carregar_sessao, LojaState.carregar_pedidos])
+             on_load=[LojaState.preparar_carga, AuthState.carregar_sessao,
+                      LojaState.carregar_pedidos])
 
 # Meu perfil (change `perfil-e-fotos`). Mesma guarda: `PerfilState._token`
 # levanta antes de qualquer requisição sem sessão ou com conta de equipe.
 app.add_page(perfil_page, route="/perfil", title="PetBits | Meu perfil",
-             on_load=[AuthState.carregar_sessao, PerfilState.carregar])
+             on_load=[PerfilState.preparar_carga, AuthState.carregar_sessao,
+                      PerfilState.carregar])
 
 # Agenda do tutor (change `agendamento`). Mesma guarda da casa: sem sessão,
 # `AgendaState._token` levanta antes de qualquer requisição.
@@ -67,7 +85,7 @@ app.add_page(
     agenda_page,
     route="/agenda",
     title="PetBits | Agendar",
-    on_load=[AuthState.carregar_sessao, AgendaState.carregar],
+    on_load=[AgendaState.preparar_carga, AuthState.carregar_sessao, AgendaState.carregar],
 )
 
 # Área da clínica. Cada tela tem o seu próprio carregamento, e nenhuma
@@ -98,7 +116,10 @@ for rota, pagina, titulo, carregar in (
         pagina,
         route=rota,
         title=f"PetBits | {titulo}",
-        on_load=[AuthState.carregar_sessao, carregar],
+        # `preparar_carga` primeiro: a tela mostra o esqueleto já, e não o
+        # vazio, enquanto a sessão e a lista vêm (change `esqueletos-de-carregamento`).
+        on_load=[(PerfilEquipeState if rota == "/equipe/perfil" else EquipeState).preparar_carga,
+                 AuthState.carregar_sessao, carregar],
     )
 
 # Portas de entrada. `redirecionar_se_logado` evita mostrar o formulário a
@@ -138,3 +159,7 @@ app.add_page(
     title="PetBits | Criar conta",
     on_load=AuthState.redirecionar_se_logado,
 )
+
+# Endereço inexistente (change `pagina-nao-encontrada`): a rota "404" é a que o
+# Reflex usa no lugar da página padrão em inglês. Sem `on_load`.
+app.add_page(nao_encontrada_page, route="404", title="PetBits | Página não encontrada")

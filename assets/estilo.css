@@ -1,7 +1,7 @@
 /* Identidade visual do PetBits (change `identidade-visual`, D2).
  *
- * Só usa variáveis do próprio tema do Radix, para o degradê e a fonte
- * acompanharem o modo escuro sem uma segunda regra. */
+ * Só usa variáveis do próprio tema do Radix. O tema é sempre claro e o fundo,
+ * branco (change `tema-claro-fixo`). */
 
 /* A fonte vale para todo `.radix-themes`, inclusive os menus e as janelas que o
  * Radix abre fora da página. */
@@ -16,11 +16,8 @@
  * `acabamentos-de-tela`). */
 body > .radix-themes {
   min-height: 100vh;
-  background:
-    radial-gradient(60rem 30rem at 0% 0%, var(--accent-a3), transparent 70%),
-    radial-gradient(50rem 28rem at 100% 0%, var(--orange-a2), transparent 70%),
-    var(--color-background);
-  background-attachment: fixed;
+  /* Branco liso (change `tema-claro-fixo`, D3): saiu o degradê do fundo. */
+  background: var(--color-background);
 }
 
 .rt-Heading {
@@ -30,4 +27,40 @@ body > .radix-themes {
 /* Cartões um pouco mais leves que o padrão, com sombra suave. */
 .rt-Card.rt-variant-surface {
   box-shadow: 0 1px 2px var(--gray-a3), 0 6px 20px -8px var(--gray-a5);
+}
+
+/* O lugar da barra de rolagem fica sempre reservado (change
+ * `abas-simetricas`). Sem isto, as telas curtas (Meus animais, Meus pedidos)
+ * não têm barra, o conteúdo centraliza numa largura 8 px maior, e o cabeçalho,
+ * o avatar e o menu "andam" ao trocar de aba. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Contraste do WCAG 2.1 AA (change `acessibilidade`, D1). O branco sobre o
+ * verde-água 9 do Radix (#12a594) dava 3,07; o mínimo é 4,5. Sobrescrito no
+ * próprio `.radix-themes`, onde o Radix liga `--accent-*` a `--teal-*`, para
+ * valer também no accent e na versão P3 das cores. */
+.radix-themes {
+  --teal-9: #0b7d70;
+  --teal-10: #0a7366;
+  --orange-9: #c24400;
+  --orange-10: #b03d00;
+}
+
+/* Foco visível na navegação pelo teclado (D4); o clique não mostra. */
+:focus-visible {
+  outline: 2px solid var(--teal-11);
+  outline-offset: 2px;
+}
+
+/* Texto em até duas linhas, com reticências (change `loja-organizada`): os
+ * cartões da loja ficam da mesma altura e o preço no mesmo lugar. */
+.duas-linhas {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* O espaço de duas linhas fica reservado mesmo com uma. */
+  min-height: 2lh;
 }

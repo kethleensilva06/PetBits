@@ -7,11 +7,14 @@ gastaria orçamento da instância do Xano a cada clique no menu.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
+from petbits.clinica import EMAIL, HORARIO
 from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
 
 TEMA = rx.theme(
-    appearance="inherit",
+    # Sempre claro, com fundo branco (change `tema-claro-fixo`, D1).
+    appearance="light",
     accent_color="teal",
     gray_color="sand",
     radius="large",
@@ -21,6 +24,10 @@ FOLHAS_DE_ESTILO = [
     "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap",
     "/estilo.css",
 ]
+
+# Toda aba do cliente tem a mesma largura (change `mesma-largura-no-cliente`):
+# a loja usava a largura 4 e as outras a 3, e o cabeçalho "pulava" ao trocar de aba.
+LARGURA_DO_CLIENTE = "3"
 
 AREAS_DO_CLIENTE = [
     ("/inicio", "Meus animais", "paw-print"),
@@ -67,7 +74,8 @@ def pilula(rotulo: str, icone: str, href: str, ativo: bool) -> rx.Component:
         underline="none",
         padding="0.4rem 0.85rem",
         border_radius="9999px",
-        color=rx.color("teal", 11) if ativo else rx.color("gray", 11),
+        # Aba atual em teal 12: o 11 sobre o teal 4 dava 3,82 (change `acessibilidade`).
+        color=rx.color("teal", 12) if ativo else rx.color("gray", 11),
         background=rx.color("teal", 4) if ativo else "transparent",
         _hover={"background": rx.color("teal", 3) if ativo else rx.color("gray", 3)},
         white_space="nowrap",
@@ -92,24 +100,6 @@ def barra(*conteudo) -> rx.Component:
     )
 
 
-def botao_tema(**props) -> rx.Component:
-    """Sol/lua: alterna claro e escuro (change `tema-claro-escuro`, D1 e D2).
-
-    Usa o modo de cor do Reflex, que o tema (`appearance="inherit"`) segue e
-    que fica guardado no navegador. Sem escolha, vale o do sistema.
-    """
-    return rx.icon_button(
-        rx.color_mode_cond(rx.icon("moon", size=16), rx.icon("sun", size=16)),
-        on_click=rx.toggle_color_mode,
-        variant="soft",
-        color_scheme="gray",
-        size="2",
-        aria_label="Alternar entre claro e escuro",
-        title="Claro ou escuro",
-        **props,
-    )
-
-
 def sair() -> rx.Component:
     # No celular fica só o ícone, para o topo caber numa linha (change
     # `acabamentos-de-tela`, D3); o nome continua para leitor de tela.
@@ -127,7 +117,6 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.spacer(),
             rx.badge(AuthState.papel_exibido, variant="soft", color_scheme="orange",
                      radius="full", display=rx.breakpoints(initial="none", sm="inline-flex")),
-            botao_tema(),
             # O carrinho em qualquer tela do cliente (change `acabamentos-de-tela`,
             # D4): o número sai do LojaState, sem requisição.
             rx.link(
@@ -149,7 +138,7 @@ def topo_do_cliente(atual: str) -> rx.Component:
             rx.link(
                 rx.avatar(src=AuthState.usuario_foto, fallback=AuthState.iniciais,
                           radius="full", size="3", color_scheme="teal",
-                          variant="solid"),
+                          variant="solid", custom_attrs={"alt": "Sua foto de perfil"}),
                 href="/perfil",
                 aria_label="Meu perfil",
                 title="Meu perfil",
@@ -172,6 +161,64 @@ def topo_do_cliente(atual: str) -> rx.Component:
     )
 
 
+# `DebounceInput` é o invólucro que o Reflex põe em todo campo com `on_change`;
+# ele repassa os atributos ao campo de dentro.
+_CAMPOS = ("TextField.Root", "TextArea", "Select.Trigger", "SegmentedControl.Root",
+           "DebounceInput")
+
+
+def _nomear(componente: rx.Component, rotulo: str) -> bool:
+    """Põe o rótulo como `aria-label` no primeiro campo dentro do componente."""
+    if getattr(componente, "tag", None) in _CAMPOS:
+        componente.custom_attrs.setdefault("aria-label", rotulo)
+        return True
+    return any(_nomear(filho, rotulo) for filho in getattr(componente, "children", []))
+
+
+def campo(rotulo: str, componente: rx.Component) -> rx.Component:
+    """O rótulo acima do campo, e o campo com o mesmo nome para o leitor de
+    tela (change `acessibilidade`, D3). Era um texto solto, sem ligação com o
+    campo, repetido em cinco páginas."""
+    _nomear(componente, rotulo)
+    return rx.vstack(
+        rx.text(rotulo, size="2", weight="medium"),
+        componente,
+        spacing="1",
+        width="100%",
+        align_items="start",
+    )
+
+
+def horario_e_contato(centralizado: bool = False) -> rx.Component:
+    """O horário de funcionamento e o e-mail (change `horario-e-contato`)."""
+    return rx.flex(
+        rx.hstack(rx.icon("clock", size=15, color=rx.color("teal", 11)),
+                  rx.text(HORARIO, "; domingo fechado", size="2"), spacing="2",
+                  align="center"),
+        rx.hstack(rx.icon("mail", size=15, color=rx.color("teal", 11)),
+                  rx.link(EMAIL, href=f"mailto:{EMAIL}", size="2"), spacing="2",
+                  align="center"),
+        gap=rx.breakpoints(initial="0.5rem", sm="1.5rem"),
+        direction=rx.breakpoints(initial="column", sm="row"),
+        justify="center" if centralizado else "start",
+        align=rx.breakpoints(initial="center" if centralizado else "start", sm="center"),
+        wrap="wrap",
+        width="100%",
+    )
+
+
+def rodape_do_cliente() -> rx.Component:
+    """O rodapé de toda tela do cliente: a clínica, o horário e o contato."""
+    return rx.box(
+        rx.divider(margin_bottom="1rem"),
+        rx.text("PetBits · clínica e petshop", size="1", weight="bold",
+                color=rx.color("gray", 11), margin_bottom="0.4rem"),
+        horario_e_contato(),
+        width="100%",
+        padding_top="1rem",
+    )
+
+
 def titulo_de_pagina(titulo, subtitulo=None) -> rx.Component:
     return rx.vstack(
         rx.heading(titulo, size="7", weight="bold"),
@@ -189,7 +236,7 @@ def tela_vazia(imagem: str, titulo: str, texto: str, acao: rx.Component) -> rx.C
     """
     return rx.card(
         rx.vstack(
-            rx.image(src=imagem, alt="", width="15rem", max_width="80%", height="10rem",
+            rx.image(src=no_site(imagem), alt="", width="15rem", max_width="80%", height="10rem",
                      object_fit="cover", border_radius="1.25rem"),
             rx.heading(titulo, size="5", weight="bold", text_align="center"),
             rx.text(texto, size="2", color=rx.color("gray", 11), text_align="center",

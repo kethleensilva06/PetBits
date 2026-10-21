@@ -7,25 +7,22 @@ animais de quem perguntou.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
+from petbits import esqueletos
+from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
-from petbits.visual import tela_vazia, titulo_de_pagina, topo_do_cliente
+from petbits.states.historico_state import HistoricoTutorState
+from petbits.visual import (LARGURA_DO_CLIENTE, campo, rodape_do_cliente, tela_vazia,
+                            titulo_de_pagina, topo_do_cliente)
 from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 
 
-def _campo(rotulo: str, componente: rx.Component) -> rx.Component:
-    return rx.vstack(
-        rx.text(rotulo, size="2", weight="medium"),
-        componente,
-        spacing="1",
-        width="100%",
-        align_items="start",
-    )
 
 
 def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
-            rx.image(src=rx.cond(animal["foto"], animal["foto"], animal["imagem"]),
+            rx.image(src=no_site(rx.cond(animal["foto"], animal["foto"], animal["imagem"])),
                      alt=animal["nome"], width="4.5rem",
                      height="4.5rem", border_radius="1.1rem", flex_shrink="0",
                      object_fit="cover"),
@@ -38,12 +35,12 @@ def _cartao(animal: dict) -> rx.Component:
                     align="center",
                     wrap="wrap",
                 ),
-                rx.text(animal["raca"], size="2", color=rx.color("gray", 10)),
+                rx.text(animal["raca"], size="2", color=rx.color("gray", 11)),
                 rx.hstack(
                     rx.text("Nascimento: ", animal["nascimento"], size="1",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     rx.text("Peso: ", animal["peso"], " kg", size="1",
-                            color=rx.color("gray", 10)),
+                            color=rx.color("gray", 11)),
                     spacing="4",
                     wrap="wrap",
                 ),
@@ -57,11 +54,24 @@ def _cartao(animal: dict) -> rx.Component:
                 width="100%",
             ),
             rx.spacer(),
-            rx.button(
-                "Editar",
-                on_click=lambda: PetState.editar(animal),
-                variant="soft",
-                size="1",
+            rx.vstack(
+                rx.button(
+                    "Editar",
+                    on_click=lambda: PetState.editar(animal),
+                    variant="soft",
+                    size="1",
+                    width="100%",
+                ),
+                # A linha do tempo clínica, só de leitura (change `historico-clinico`).
+                rx.button(
+                    rx.icon("clipboard-list", size=14), "Histórico",
+                    on_click=HistoricoTutorState.abrir(animal),
+                    variant="soft",
+                    color_scheme="gray",
+                    size="1",
+                    width="100%",
+                ),
+                spacing="1",
             ),
             spacing="3",
             align="start",
@@ -82,8 +92,8 @@ def _dialogo() -> rx.Component:
                 rx.cond(
                     PetState.editando_id,
                     rx.hstack(
-                        rx.image(src=rx.cond(PetState.f_foto, PetState.f_foto,
-                                             PetState.f_imagem),
+                        rx.image(src=no_site(rx.cond(PetState.f_foto, PetState.f_foto,
+                                                     PetState.f_imagem)),
                                  alt="Foto do animal", width="5.5rem", height="5.5rem",
                                  object_fit="cover", border_radius="1.25rem",
                                  flex_shrink="0"),
@@ -105,7 +115,7 @@ def _dialogo() -> rx.Component:
                                     rx.upload_files(upload_id=ID_UPLOAD_ANIMAL)),
                             ),
                             rx.text("JPG, PNG ou WebP, até 5 MB.", size="1",
-                                    color=rx.color("gray", 10)),
+                                    color=rx.color("gray", 11)),
                             rx.cond(PetState.erro_foto,
                                     rx.text(PetState.erro_foto, size="1",
                                             color=rx.color("red", 11))),
@@ -117,35 +127,35 @@ def _dialogo() -> rx.Component:
                         width="100%",
                     ),
                     rx.text("Depois de cadastrar, edite o animal para pôr a foto dele.",
-                            size="1", color=rx.color("gray", 10)),
+                            size="1", color=rx.color("gray", 11)),
                 ),
-                _campo("Nome", rx.input(placeholder="Nome do animal",
+                campo("Nome", rx.input(placeholder="Nome do animal",
                                         value=PetState.f_nome,
                                         on_change=PetState.set_f_nome,
                                         width="100%")),
                 rx.hstack(
-                    _campo("Espécie", rx.input(placeholder="Cão, gato...",
+                    campo("Espécie", rx.input(placeholder="Cão, gato...",
                                                value=PetState.f_especie,
                                                on_change=PetState.set_f_especie,
                                                width="100%")),
-                    _campo("Raça", rx.input(placeholder="Opcional",
+                    campo("Raça", rx.input(placeholder="Opcional",
                                             value=PetState.f_raca,
                                             on_change=PetState.set_f_raca,
                                             width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
                 rx.hstack(
-                    _campo("Nascimento", rx.input(type="date",
+                    campo("Nascimento", rx.input(type="date",
                                                   value=PetState.f_nascimento,
                                                   on_change=PetState.set_f_nascimento,
                                                   width="100%")),
-                    _campo("Peso (kg)", rx.input(placeholder="Opcional",
+                    campo("Peso (kg)", rx.input(placeholder="Opcional",
                                                  value=PetState.f_peso,
                                                  on_change=PetState.set_f_peso,
                                                  width="100%")),
                     spacing="3", width="100%", align="start",
                 ),
-                _campo("Observações", rx.text_area(
+                campo("Observações", rx.text_area(
                     placeholder="Alergias, cuidados especiais...",
                     value=PetState.f_observacoes,
                     on_change=PetState.set_f_observacoes,
@@ -182,6 +192,57 @@ def _vazio() -> rx.Component:
     )
 
 
+def _proximo() -> rx.Component:
+    """O próximo agendamento (change `proximo-agendamento-na-casa`). Nada
+    enquanto a agenda não chega ou se ela falhou (D1)."""
+    P = PetState.proximo
+    return rx.cond(
+        PetState.proximo_carregado,
+        rx.card(
+            rx.hstack(
+                rx.center(rx.icon("calendar-clock", size=22, color=rx.color("teal", 11)),
+                          width="2.75rem", height="2.75rem", border_radius="30%",
+                          background=rx.color("teal", 3), flex_shrink="0"),
+                rx.cond(
+                    P.contains("titulo"),
+                    rx.vstack(
+                        rx.hstack(
+                            rx.text("Próximo agendamento", size="1", weight="bold",
+                                    color=rx.color("teal", 11)),
+                            rx.cond(P["em_andamento"].to(bool),
+                                    rx.badge("Em andamento", radius="full", size="1")),
+                            spacing="2", align="center",
+                        ),
+                        rx.text(P["titulo"].to(str), size="3", weight="bold"),
+                        rx.text(
+                            P["quando"].to(str),
+                            rx.cond(P["profissional"].to(str) != "",
+                                    rx.text.span(" · com ", P["profissional"].to(str))),
+                            size="2",
+                            color=rx.color("gray", 11),
+                        ),
+                        rx.cond(P["outros"].to(str) != "",
+                                rx.text("E ", P["outros"].to(str), " depois.", size="1",
+                                        color=rx.color("gray", 11))),
+                        spacing="1", align_items="start", flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text("Nenhum agendamento marcado", size="3", weight="bold"),
+                        rx.text("Consulta, vacina ou banho e tosa: escolha um horário livre.",
+                                size="2", color=rx.color("gray", 11)),
+                        spacing="1", align_items="start", flex="1",
+                    ),
+                ),
+                rx.link(rx.button(rx.cond(P.contains("titulo"), "Ver na agenda", "Agendar"),
+                                  variant="soft", size="2"),
+                        href="/agenda"),
+                spacing="4", align="center", width="100%", wrap="wrap",
+            ),
+            width="100%",
+        ),
+    )
+
+
 def _banner() -> rx.Component:
     """Boas-vindas da casa (D3): saudação, atalhos e a ilustração."""
     return rx.card(
@@ -208,7 +269,7 @@ def _banner() -> rx.Component:
                 align_items="start",
                 flex="1",
             ),
-            rx.image(src="/fotos/banner.webp", alt="Um cão e um gato abraçados",
+            rx.image(src=no_site("/fotos/banner.webp"), alt="Um cão e um gato abraçados",
                      width="17rem", height="11.5rem", object_fit="cover",
                      border_radius="1.25rem", flex_shrink="0",
                      display=rx.breakpoints(initial="none", sm="block")),
@@ -224,15 +285,7 @@ def _banner() -> rx.Component:
 
 def _carregando() -> rx.Component:
     """Enquanto a lista não chegou, não dizer que ela está vazia."""
-    return rx.center(
-        rx.hstack(
-            rx.spinner(size="2"),
-            rx.text("Carregando os seus animais...", size="2",
-                    color=rx.color("gray", 10)),
-            spacing="2", align="center",
-        ),
-        padding="3rem", width="100%",
-    )
+    return esqueletos.cartoes("Carregando os seus animais...", n=2, com_imagem=False)
 
 
 def inicio_page() -> rx.Component:
@@ -240,6 +293,7 @@ def inicio_page() -> rx.Component:
         rx.vstack(
             topo_do_cliente("/inicio"),
             _banner(),
+            _proximo(),
             rx.hstack(
                 titulo_de_pagina("Seus animais", "Os seus animais sob cuidado da clínica."),
                 rx.spacer(),
@@ -310,7 +364,9 @@ def inicio_page() -> rx.Component:
                 ),
             ),
             _dialogo(),
+            dialogo_historico_tutor(),
+            rodape_do_cliente(),
             spacing="4", align_items="start", padding_y="2rem", width="100%",
         ),
-        size="3",
+        size=LARGURA_DO_CLIENTE,
     )

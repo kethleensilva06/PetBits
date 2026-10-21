@@ -482,8 +482,10 @@ async def enviar_foto_do_animal(animal_id: int, conteudo: bytes, extensao: str, 
 # é o backend, lendo o papel do banco a cada requisição.
 
 
-async def painel_equipe(*, token: str) -> dict:
-    """Os contadores do painel, numa requisição só.
+async def painel_equipe(dia_ms: int, *, token: str) -> dict:
+    """O painel numa requisição só: contadores, a agenda do dia e os pedidos
+    que esperam a equipe (change `painel-do-dia`). `dia_ms` é a meia-noite em
+    São Paulo, como em `agenda_da_clinica`.
 
     Existe por causa do limite de 10 requisições a cada 20 segundos, **por
     instância**: as quatro listas soltas no carregamento custariam metade do
@@ -494,7 +496,7 @@ async def painel_equipe(*, token: str) -> dict:
     pouparia requisição nenhuma, porque o painel faria as mesmas quatro
     chamadas de qualquer jeito.
     """
-    dados = await _requisitar("GET", "/equipe/painel", token=token)
+    dados = await _requisitar("GET", "/equipe/painel", token=token, params={"dia": dia_ms})
     return dados if isinstance(dados, dict) else {}
 
 
@@ -616,6 +618,15 @@ async def criar_tutor_de_balcao(dados: dict, *, token: str) -> dict:
     return criado
 
 
+async def alterar_tutor(tutor_id: int, dados: dict, *, token: str) -> dict:
+    """Altera os dados de um tutor (change `editar-tutor`). Só vão os campos que
+    mudaram. Inexistente chega como 404, que vira `NaoEncontrado`."""
+    alterado = await _requisitar("PATCH", f"/equipe/tutores/{tutor_id}", token=token, json=dados)
+    if alterado is None:
+        raise NaoEncontrado("Este tutor não está mais disponível.", status=404)
+    return alterado
+
+
 async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
     """Cadastra um animal para um tutor existente. `dados` leva `id_tutor`."""
     criado = await _requisitar("POST", "/equipe/animais", token=token, json=dados)
@@ -680,6 +691,16 @@ async def cancelar_agendamento(agendamento_id: int, *, token: str) -> dict:
     return cancelado
 
 
+async def marcar_falta(agendamento_id: int, *, token: str) -> dict:
+    """Registra que o animal não compareceu (change `nao-compareceu`). O 404
+    vira `NaoEncontrado`, como em `cancelar_agendamento`."""
+    marcado = await _requisitar("POST", f"/equipe/agendamentos/{agendamento_id}/falta",
+                                token=token)
+    if marcado is None:
+        raise NaoEncontrado("Este agendamento não está mais disponível.", status=404)
+    return marcado
+
+
 async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
     """A agenda de um dia, para a equipe. Só leitura."""
     dados = await _requisitar(
@@ -698,6 +719,16 @@ async def produtos_da_loja(*, token: str) -> list[dict]:
     """Produtos ativos com estoque, para o cliente."""
     dados = await _requisitar("GET", "/loja/produtos", token=token)
     return dados if isinstance(dados, list) else []
+
+
+async def cancelar_pedido(pedido_id: int, *, token: str) -> dict:
+    """Cancela um pedido do tutor enquanto aguarda pagamento (change
+    `cliente-cancela-pedido`). Alheio e inexistente chegam como 404, que vira
+    `NaoEncontrado`, como em `cancelar_agendamento`."""
+    cancelado = await _requisitar("POST", f"/pedido/{pedido_id}/cancelar", token=token)
+    if cancelado is None:
+        raise NaoEncontrado("Este pedido não está mais disponível.", status=404)
+    return cancelado
 
 
 async def fazer_pedido(
@@ -744,6 +775,15 @@ async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str
     if resposta is None:
         raise NaoEncontrado("Este produto não está mais disponível.", status=404)
     return resposta.get("foto") or {}
+
+
+async def remover_foto_do_produto(produto_id: int, *, token: str) -> dict:
+    """Tira a foto enviada; a loja volta à automática (change
+    `foto-do-produto-na-mao`, D1)."""
+    resposta = await _requisitar("DELETE", f"/equipe/produtos/{produto_id}/foto", token=token)
+    if resposta is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return resposta
 
 
 async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
@@ -813,3 +853,26 @@ async def enviar_minha_foto_de_equipe(conteudo: bytes, extensao: str, *, token: 
     resposta = await _requisitar("POST", "/equipe/meu-perfil/foto", token=token,
                                  files=files, data=data)
     return (resposta or {}).get("foto") or {}
+
+
+# --- histórico clínico (change `historico-clinico`) ---------------------------
+
+
+async def registrar_atendimento(dados: dict, *, token: str) -> dict:
+    """Cria um atendimento — ou uma retificação, com `retifica`. Não existe
+    alterar nem remover: o histórico não se apaga (D2)."""
+    criado = await _requisitar("POST", "/equipe/atendimentos", token=token, json=dados)
+    if criado is None:
+        raise NaoEncontrado("Animal nao encontrado.", status=404)
+    return criado
+
+
+async def historico_na_clinica(pet_id: int, *, token: str) -> list[dict]:
+    dados = await _requisitar("GET", f"/equipe/animais/{pet_id}/historico", token=token)
+    return dados if isinstance(dados, list) else []
+
+
+async def historico_do_meu_animal(pet_id: int, *, token: str) -> list[dict]:
+    """Do animal do token; animal alheio dá o mesmo vazio de inexistente."""
+    dados = await _requisitar("GET", f"/pet/{pet_id}/historico", token=token)
+    return dados if isinstance(dados, list) else []

@@ -210,3 +210,59 @@ de lá (o CPF é normalizado no servidor).
 
 - **WHEN** alguém digita `11988887777` no telefone
 - **THEN** o campo mostra `(11) 98888-7777`
+
+### Requirement: Ordenar a loja
+
+A loja do cliente SHALL poder ser ordenada por Em destaque (a ordem do
+catálogo), Menor preço, Maior preço e Nome (A–Z), junto com a busca e o
+filtro de categoria, sem requisição ao backend. A ordem por nome MUST ignorar
+acentos e maiúsculas.
+
+#### Scenario: Menor preço
+
+- **WHEN** a tutora escolhe Menor preço
+- **THEN** o produto mais barato aparece primeiro
+
+#### Scenario: Com categoria
+
+- **WHEN** a tutora filtra Higiene e escolhe Maior preço
+- **THEN** vê só os produtos de higiene, do mais caro para o mais barato
+
+### Requirement: Loja organizada
+
+Todo cartão de produto da loja SHALL ter a mesma altura, com o preço no mesmo
+lugar, e nome e descrição em até duas linhas. Cada item do carrinho SHALL
+mostrar o nome inteiro, o total da linha, o preço de cada um e a quantidade,
+sem cortar nenhum valor.
+
+#### Scenario: Cartões lado a lado
+
+- **WHEN** a loja mostra produtos com nomes e descrições de tamanhos diferentes
+- **THEN** os cartões têm a mesma altura e o preço aparece na mesma posição em todos
+
+#### Scenario: Carrinho com nome longo
+
+- **WHEN** a tutora põe "Coleira ajustável média" no carrinho
+- **THEN** o nome aparece inteiro, e o total e o preço de cada um aparecem sem corte
+
+### Requirement: Foto do produto ao cadastrar e removível
+
+A equipe SHALL poder escolher a foto ao cadastrar um produto, e ela SHALL ser
+gravada assim que o produto for salvo. A equipe SHALL poder remover a foto
+enviada de um produto, que volta a usar a foto automática. Remover MUST ser
+exclusivo da equipe.
+
+#### Scenario: Cadastrar com foto
+
+- **WHEN** a atendente cadastra um produto e escolhe uma foto antes de salvar
+- **THEN** o produto aparece na loja com essa foto
+
+#### Scenario: Remover a foto
+
+- **WHEN** a equipe remove a foto enviada de um produto
+- **THEN** a loja volta a mostrar a foto automática dele
+
+#### Scenario: Tutor tenta remover
+
+- **WHEN** uma conta de cliente chama a remoção, fora da interface
+- **THEN** o backend recusa e a foto continua

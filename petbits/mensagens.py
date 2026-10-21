@@ -55,6 +55,9 @@ _PALAVRAS = {
     "ja": "já",
     "disponivel": "disponível",
     "area": "área",
+    # change `nao-compareceu`
+    "so": "só",
+    "concluido": "concluído",
 }
 
 _TRADUCOES = {

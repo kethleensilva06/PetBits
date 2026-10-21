@@ -50,11 +50,12 @@ query "equipe/agenda" verb=GET {
         tutor_nome       : $db.tutor.nome
         tutor_telefone   : $db.tutor.telefone
         servico_nome     : $db.servico.nome
+        servico_categoria: $db.servico.categoria
         profissional_nome: $db.colaborador.nome
       }
 
       sort = {inicio: "asc"}
-      output = ["id", "inicio", "fim", "situacao", "observacoes", "pet_nome", "pet_especie", "tutor_nome", "tutor_telefone", "servico_nome", "profissional_nome"]
+      output = ["id", "id_pet", "id_colaborador", "inicio", "fim", "situacao", "observacoes", "pet_nome", "pet_especie", "tutor_nome", "tutor_telefone", "servico_nome", "servico_categoria", "profissional_nome"]
       return = {type: "list"}
     } as $agenda
   }

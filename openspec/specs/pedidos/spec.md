@@ -189,9 +189,144 @@ simultâneos MUST NOT vender a mesma unidade duas vezes.
 ### Requirement: Meus pedidos
 
 O cliente SHALL ver apenas os próprios pedidos, do mais recente para o mais
-antigo, com itens, total, entrega, pagamento e situação.
+antigo, com itens, total, entrega, pagamento e situação. Cada pedido não
+cancelado SHALL mostrar as etapas do seu caminho — Pedido recebido,
+Pagamento, Pronto para retirada ou Enviado, Retirado ou Entregue —, com as
+etapas feitas marcadas e a atual destacada. A etapa do pagamento SHALL ficar
+feita só quando o pagamento foi registrado. O pedido cancelado SHALL dizer
+que foi cancelado, sem as etapas.
 
 #### Scenario: Dois clientes
 
 - **WHEN** dois clientes têm pedidos
 - **THEN** cada um vê só os seus, mesmo pedindo a lista fora da interface
+
+#### Scenario: Pedido pago para entrega
+
+- **WHEN** a cliente abre um pedido pago, com entrega no endereço
+- **THEN** vê Pedido recebido e Pagamento feitos, Enviado como a etapa atual e Entregue por vir
+
+#### Scenario: Pronto antes de pagar
+
+- **WHEN** um pedido de retirada com pagamento na loja está pronto para retirada e ainda não foi pago
+- **THEN** Pronto para retirada aparece feito, Retirado como a atual, e o pagamento como "Pagar na retirada", não feito
+
+#### Scenario: Pedido cancelado
+
+- **WHEN** o pedido foi cancelado
+- **THEN** ele não mostra etapas, e diz que foi cancelado e que os itens voltaram ao estoque
+
+### Requirement: O carrinho sobrevive a recarregar a página
+
+O carrinho do cliente SHALL continuar com os mesmos produtos e quantidades
+depois de recarregar a página, abrir outra aba ou o servidor reiniciar. Ao
+abrir a loja, o carrinho SHALL ser conferido com o catálogo: produto fora da
+loja sai, e quantidade acima do estoque é reduzida. Sair da conta MUST
+esvaziar o carrinho.
+
+#### Scenario: Recarregar a loja
+
+- **WHEN** a tutora põe dois sachês no carrinho e aperta F5
+- **THEN** o carrinho continua com os dois sachês
+
+#### Scenario: Estoque menor
+
+- **WHEN** o carrinho guardado tem 5 unidades e o estoque agora é 3
+- **THEN** ao abrir a loja o carrinho fica com 3
+
+#### Scenario: Outra pessoa no mesmo navegador
+
+- **WHEN** a tutora sai da conta e outra pessoa entra no mesmo navegador
+- **THEN** o carrinho da outra pessoa começa vazio
+
+### Requirement: Comprar de novo
+
+Cada pedido em Meus pedidos SHALL oferecer Comprar de novo, que põe os itens
+do pedido no carrinho, somados ao que já está nele, e leva à loja. Ao abrir a
+loja, item fora da loja ou sem estoque SHALL sair do carrinho e quantidade
+acima do estoque SHALL ser reduzida, e o carrinho SHALL avisar o que foi
+ajustado.
+
+#### Scenario: Repetir um pedido
+
+- **WHEN** a tutora clica em Comprar de novo num pedido com 2 sachês e 1 areia
+- **THEN** vai para a loja com 2 sachês e 1 areia no carrinho
+
+#### Scenario: Produto sem estoque
+
+- **WHEN** um dos produtos do pedido está sem estoque
+- **THEN** ele não entra no carrinho, e o carrinho avisa que um item saiu
+
+### Requirement: O cliente cancela o próprio pedido
+
+O cliente SHALL poder cancelar o próprio pedido enquanto ele está aguardando
+pagamento e sem pagamento registrado. Cancelar SHALL devolver o estoque de
+cada item na mesma transação. Pedido de outra pessoa MUST ser recusado como
+inexistente, e pedido em qualquer outra situação MUST ser recusado sem
+mudança.
+
+#### Scenario: Cancelar antes de pagar
+
+- **WHEN** a tutora cancela um pedido aguardando pagamento com 1 areia
+- **THEN** o pedido fica cancelado e o estoque da areia aumenta em 1
+
+#### Scenario: Pedido de outra pessoa
+
+- **WHEN** um tutor tenta cancelar o pedido de outro, fora da interface
+- **THEN** o backend responde que o pedido não foi encontrado, e nada muda
+
+#### Scenario: Pedido já pago
+
+- **WHEN** a tutora tenta cancelar um pedido pago
+- **THEN** o backend recusa, e o pedido e o estoque não mudam
+
+### Requirement: A equipe procura pedidos
+
+A tela de Pedidos da clínica SHALL ter um campo de busca que filtra a lista
+já carregada pelo número do pedido, pelo nome ou telefone do cliente e pelos
+produtos do pedido, junto com o filtro de situação e sem requisição ao
+backend.
+
+#### Scenario: Pelo número
+
+- **WHEN** alguém da equipe digita "14" em Pedidos
+- **THEN** aparece o pedido nº 14
+
+#### Scenario: Pelo cliente e produto
+
+- **WHEN** alguém da equipe digita "ana areia"
+- **THEN** aparecem só os pedidos da Ana que têm areia
+
+### Requirement: Resumo e exportação dos pedidos
+
+A tela de Pedidos da clínica SHALL mostrar quantos pedidos estão na lista e o
+total deles, respeitando o filtro e a busca, sem os cancelados no total, e
+SHALL oferecer os mesmos pedidos num arquivo CSV para planilha. O arquivo MUST
+NOT trazer telefone, documento nem endereço do cliente, e nada disso MUST
+fazer requisição ao backend.
+
+#### Scenario: Total dos pagos
+
+- **WHEN** a gerência filtra "Pagos" com três pedidos de R$ 10, R$ 20 e R$ 30
+- **THEN** o resumo mostra 3 pedidos e R$ 60,00
+
+#### Scenario: Cancelado não soma
+
+- **WHEN** a lista tem um pedido cancelado de R$ 50 e um entregue de R$ 20
+- **THEN** o resumo mostra 2 pedidos e R$ 20,00, avisando que cancelados não entram no total
+
+#### Scenario: Baixar CSV
+
+- **WHEN** a gerência clica em Baixar CSV
+- **THEN** recebe um arquivo com uma linha por pedido da tela, sem telefone do cliente
+
+### Requirement: Pedidos em andamento e finalizados
+
+Meus pedidos SHALL separar os pedidos em andamento — aguardando pagamento,
+pagos, prontos para retirada e enviados — dos finalizados — entregues e
+cancelados —, estes fechados por padrão, com a quantidade à vista.
+
+#### Scenario: Um pronto e um entregue
+
+- **WHEN** a tutora tem um pedido pronto para retirada e outro entregue
+- **THEN** o pronto aparece em Em andamento e o entregue em Finalizados, que começa fechado

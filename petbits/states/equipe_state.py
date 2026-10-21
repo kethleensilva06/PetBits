@@ -19,13 +19,14 @@ segundos, compartilhadas por todo mundo) numa única abertura de tela — e um
 F5 derrubaria o painel e a tela dos tutores junto.
 """
 
+import base64
 from datetime import date, timedelta
 from typing import Optional
 
 import reflex as rx
 
 from petbits import agenda as regras_da_agenda
-from petbits import datas, mascaras, rotulos, xano
+from petbits import busca as busca_da_lista, datas, mascaras, painel, relatorio, rotulos, xano
 from petbits.documentos import cpf_valido, so_digitos
 from petbits.fotos_enviadas import FotoRecusada, extensao_da_foto
 from petbits.ilustracoes import imagem_do_produto
@@ -83,12 +84,23 @@ class EquipeState(rx.State):
     total_tutores: int = 0
     total_animais: int = 0
     painel_carregado: bool = False
+    # O dia e os pedidos esperando (change `painel-do-dia`).
+    painel_agenda: list[dict] = []
+    painel_pedidos: dict[str, int] = {}
+    # Esgotados e acabando (change `estoque-baixo`).
+    painel_estoque: dict[str, int] = {}
+    # "todos" ou "baixo", na tela de Produtos.
+    filtro_estoque: str = "todos"
 
     # --- listas ---
     colaboradores: list[dict] = []
     servicos: list[dict] = []
     tutores: list[dict] = []
     animais: list[dict] = []
+
+    # A busca da tela atual (change `busca-na-clinica`): filtra a lista que
+    # já chegou, sem requisição. Zerada ao trocar de tela.
+    busca: str = ""
 
     # --- estado de carga, por tela ---
     carregando: bool = False
@@ -133,6 +145,11 @@ class EquipeState(rx.State):
     prd_tem_foto: bool = False
     prd_enviando_foto: bool = False
     prd_erro_foto: str = ""
+    # A foto escolhida no cadastro, esperando o id do produto (change
+    # `foto-do-produto-na-mao`, D2). Com `_`, fica no servidor e não vai ao
+    # navegador.
+    _foto_pendente: bytes = b""
+    _extensao_pendente: str = ""
 
     # Pedidos da loja (change `pedidos-da-equipe`).
     pedidos_clinica: list[dict] = []
@@ -156,6 +173,9 @@ class EquipeState(rx.State):
     tut_telefone: str = ""
     tut_email: str = ""
     tut_endereco: str = ""
+    # Editando um tutor existente (change `editar-tutor`); None é cadastro novo.
+    tut_editando: Optional[int] = None
+    tut_original: dict[str, str] = {}
 
     # --- formulário de animal da clínica ---
     ani_dialogo: bool = False
@@ -261,6 +281,9 @@ class EquipeState(rx.State):
 
     def set_prd_categoria(self, v: str):
         self.prd_categoria = v
+        # Sem foto enviada nem escolhida, a prévia segue a categoria.
+        if not self.prd_tem_foto:
+            self.prd_imagem = imagem_do_produto(self.prd_nome, v, None)
 
     def set_prd_marca(self, v: str):
         self.prd_marca = v
@@ -275,6 +298,25 @@ class EquipeState(rx.State):
         self.prd_estoque = v
 
     # --- vars de tela ---
+
+    def set_busca(self, valor: str):
+        self.busca = valor
+
+    @rx.var
+    def colaboradores_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.colaboradores, self.busca,
+                                      ("nome", "funcao", "email", "telefone"), ("telefone",))
+
+    @rx.var
+    def tutores_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.tutores, self.busca,
+                                      ("nome", "documento", "telefone", "email"),
+                                      ("documento", "telefone"))
+
+    @rx.var
+    def animais_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar(self.animais, self.busca,
+                                      ("nome", "especie", "raca", "tutor"))
 
     @rx.var
     def tem_colaboradores(self) -> bool:
@@ -325,6 +367,17 @@ class EquipeState(rx.State):
     def titulo_srv(self) -> str:
         return "Editar serviço" if self.srv_editando is not None else "Novo serviço"
 
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self._comecar()
+        # Cada tela começa sem busca (change `busca-na-clinica`).
+        self.busca = ""
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`.
 
@@ -338,6 +391,10 @@ class EquipeState(rx.State):
         self.total_tutores = 0
         self.total_animais = 0
         self.painel_carregado = False
+        self.painel_agenda = []
+        self.painel_pedidos = {}
+        self.painel_estoque = {}
+        self.filtro_estoque = "todos"
         self.colaboradores = []
         self.servicos = []
         self.tutores = []
@@ -369,6 +426,8 @@ class EquipeState(rx.State):
         self.srv_erro = ""
         self.salvando = False
         self.tut_dialogo = False
+        self.tut_editando = None
+        self.tut_original = {}
         self.tut_erro = ""
         self.ani_dialogo = False
         self.ani_erro = ""
@@ -423,7 +482,9 @@ class EquipeState(rx.State):
         self._comecar()
         try:
             token = await self._token_de_equipe()
-            dados = await xano.painel_equipe(token=token)
+            dados = await xano.painel_equipe(
+                regras_da_agenda.inicio_do_dia_ms(regras_da_agenda.hoje()), token=token
+            )
         except (SemSessao, SessaoExpirada) as erro:
             self.carregando = False
             return await self._encerrar(erro)
@@ -434,6 +495,9 @@ class EquipeState(rx.State):
         self.total_servicos = int(dados.get("servicos") or 0)
         self.total_tutores = int(dados.get("tutores") or 0)
         self.total_animais = int(dados.get("animais") or 0)
+        self.painel_agenda = painel.agenda_do_dia(dados.get("agenda"))
+        self.painel_pedidos = painel.pedidos_esperando(dados)
+        self.painel_estoque = painel.estoque_do_painel(dados)
         self.painel_carregado = True
         self.carregando = False
         self.ja_carregou = True
@@ -602,6 +666,8 @@ class EquipeState(rx.State):
                 "_duracao": str(s.get("duracao_minutos") or ""),
                 "categoria": CATEGORIAS.get(s.get("categoria") or "", "Sem categoria"),
                 "_categoria": s.get("categoria") or "",
+                # Desligado pela equipe (change `desligar-servico`, D1).
+                "ativo": s.get("ativo") is not False,
             }
             for s in registros
         ]
@@ -716,7 +782,34 @@ class EquipeState(rx.State):
     def novo_tutor(self):
         self.tut_erro = ""
         self._limpar_form_tut()
+        self.tut_editando = None
+        self.tut_original = {}
         self.tut_dialogo = True
+
+    def editar_tutor(self, registro: dict):
+        """O mesmo formulário, preenchido (change `editar-tutor`)."""
+        self.tut_erro = ""
+        self.tut_editando = registro.get("id")
+        self.tut_nome = registro.get("nome") or ""
+        self.tut_documento = registro.get("_documento") or ""
+        self.tut_telefone = registro.get("_telefone") or ""
+        self.tut_email = registro.get("_email") or ""
+        self.tut_endereco = registro.get("_endereco") or ""
+        self.tut_original = self._dados_do_form_tut()
+        self.tut_dialogo = True
+
+    def _dados_do_form_tut(self) -> dict[str, str]:
+        return {
+            "nome": self.tut_nome.strip(),
+            "documento": so_digitos(self.tut_documento),
+            "telefone": self.tut_telefone.strip(),
+            "email": self.tut_email.strip().lower(),
+            "endereco": self.tut_endereco.strip(),
+        }
+
+    @rx.var
+    def titulo_tut(self) -> str:
+        return "Editar tutor" if self.tut_editando is not None else "Novo tutor"
 
     def fechar_tutor(self):
         self.tut_dialogo = False
@@ -727,26 +820,41 @@ class EquipeState(rx.State):
             self.tut_erro = "Informe o nome do tutor."
             return
         documento = so_digitos(self.tut_documento)
-        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
-        if not cpf_valido(documento):
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3). Na edição,
+        # só quando o CPF mudou: há fichas antigas com CPF inválido, e elas não
+        # podem travar a correção do telefone (change `editar-tutor`).
+        cpf_mudou = self.tut_editando is None or documento != self.tut_original.get("documento")
+        if cpf_mudou and not cpf_valido(documento):
             self.tut_erro = "CPF inválido. Confira os números."
             return
 
-        dados = {
-            "nome": self.tut_nome.strip(),
-            "documento": documento,
-            "telefone": self.tut_telefone.strip(),
-            "endereco": self.tut_endereco.strip(),
-        }
-        if self.tut_email.strip():
-            dados["email"] = self.tut_email.strip().lower()
+        if self.tut_editando is not None:
+            # Só o que mudou (change `editar-tutor`, D2): salvar sem mexer no
+            # e-mail não pode cair nas regras do e-mail.
+            atual = self._dados_do_form_tut()
+            dados = {k: v for k, v in atual.items() if v != self.tut_original.get(k)}
+            if not dados:
+                self.tut_dialogo = False
+                return
+        else:
+            dados = {
+                "nome": self.tut_nome.strip(),
+                "documento": documento,
+                "telefone": self.tut_telefone.strip(),
+                "endereco": self.tut_endereco.strip(),
+            }
+            if self.tut_email.strip():
+                dados["email"] = self.tut_email.strip().lower()
 
         self.salvando = True
         yield
 
         try:
             token = await self._token_de_equipe()
-            await xano.criar_tutor_de_balcao(dados, token=token)
+            if self.tut_editando is not None:
+                await xano.alterar_tutor(self.tut_editando, dados, token=token)
+            else:
+                await xano.criar_tutor_de_balcao(dados, token=token)
         except (SemSessao, SessaoExpirada) as erro:
             self.salvando = False
             yield await self._encerrar(erro)
@@ -896,6 +1004,8 @@ class EquipeState(rx.State):
                 "_categoria": p.get("categoria") or "racao",
                 "_preco": datas.numero_para_campo(p.get("preco")),
                 "_estoque": str(int(p.get("estoque") or 0)),
+                # A cor do selo de estoque (change `estoque-baixo`).
+                "nivel": painel.nivel_do_estoque(int(p.get("estoque") or 0)),
             }
             for p in registros
         ]
@@ -912,9 +1022,12 @@ class EquipeState(rx.State):
         self.prd_unidade = ""
         self.prd_preco = ""
         self.prd_estoque = ""
-        self.prd_imagem = ""
+        # A prévia começa na foto automática (change `foto-do-produto-na-mao`).
+        self.prd_imagem = imagem_do_produto("", self.prd_categoria, None)
         self.prd_tem_foto = False
         self.prd_erro_foto = ""
+        self._foto_pendente = b""
+        self._extensao_pendente = ""
         self.prd_dialogo = True
 
     def editar_produto(self, registro: dict):
@@ -930,13 +1043,17 @@ class EquipeState(rx.State):
         self.prd_imagem = registro["imagem"]
         self.prd_tem_foto = registro["tem_foto"]
         self.prd_erro_foto = ""
+        self._foto_pendente = b""
+        self._extensao_pendente = ""
         self.prd_dialogo = True
 
     async def enviar_foto_produto(self, arquivos: list[rx.UploadFile]):
-        """Só para produto que já existe: a foto é gravada pelo id dele, e a
-        prova de equipe é do backend (change `foto-do-produto`, D5)."""
+        """A foto é gravada pelo id do produto, e a prova de equipe é do
+        backend (change `foto-do-produto`, D5). No cadastro ainda não há id: a
+        foto fica guardada e vai depois de salvar (change
+        `foto-do-produto-na-mao`, D2)."""
         self.prd_erro_foto = ""
-        if self.prd_editando is None or not arquivos:
+        if not arquivos:
             return
         arquivo = arquivos[0]
         conteudo = await arquivo.read()
@@ -944,6 +1061,14 @@ class EquipeState(rx.State):
             extensao = extensao_da_foto(arquivo.name, len(conteudo))
         except FotoRecusada as motivo:
             self.prd_erro_foto = str(motivo)
+            return
+        if self.prd_editando is None:
+            self._foto_pendente = conteudo
+            self._extensao_pendente = extensao
+            tipo = "jpeg" if extensao in ("jpg", "jpeg") else extensao
+            self.prd_imagem = f"data:image/{tipo};base64," + base64.b64encode(conteudo).decode()
+            self.prd_tem_foto = True
+            yield rx.clear_selected_files(ID_UPLOAD_PRODUTO)
             return
         self.prd_enviando_foto = True
         yield
@@ -970,6 +1095,37 @@ class EquipeState(rx.State):
             for p in self.produtos
         ]
         yield rx.clear_selected_files(ID_UPLOAD_PRODUTO)
+
+    async def remover_foto_produto(self):
+        """Volta à foto automática (change `foto-do-produto-na-mao`, D1)."""
+        self.prd_erro_foto = ""
+        automatica = imagem_do_produto(self.prd_nome, self.prd_categoria, None)
+        if self.prd_editando is None:
+            self._foto_pendente = b""
+            self._extensao_pendente = ""
+            self.prd_imagem = automatica
+            self.prd_tem_foto = False
+            return
+        self.prd_enviando_foto = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            await xano.remover_foto_do_produto(self.prd_editando, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.prd_enviando_foto = False
+            yield await self._encerrar(erro)
+            return
+        except (NaoEncontrado, XanoError) as erro:
+            self.prd_enviando_foto = False
+            self.prd_erro_foto = str(erro)
+            return
+        self.prd_enviando_foto = False
+        self.prd_imagem = automatica
+        self.prd_tem_foto = False
+        self.produtos = [
+            {**p, "imagem": automatica, "tem_foto": False} if p["id"] == self.prd_editando else p
+            for p in self.produtos
+        ]
 
     async def salvar_produto(self):
         if not self.prd_nome.strip():
@@ -1005,7 +1161,18 @@ class EquipeState(rx.State):
         try:
             token = await self._token_de_equipe()
             if self.prd_editando is None:
-                await xano.criar_produto(dados, token=token)
+                criado = await xano.criar_produto(dados, token=token)
+                # A foto escolhida no cadastro vai agora, com o id (D2). Se
+                # falhar, o produto fica com a foto automática e o erro aparece.
+                if self._foto_pendente and criado.get("id"):
+                    try:
+                        await xano.enviar_foto_do_produto(
+                            criado["id"], self._foto_pendente, self._extensao_pendente,
+                            token=token)
+                    except XanoError as erro:
+                        yield rx.toast.error(f"Produto salvo, mas a foto não foi: {erro}")
+                    self._foto_pendente = b""
+                    self._extensao_pendente = ""
             else:
                 await xano.atualizar_produto(self.prd_editando, dados, token=token)
         except (SemSessao, SessaoExpirada) as erro:
@@ -1035,11 +1202,64 @@ class EquipeState(rx.State):
             return
         return await self.carregar_produtos()
 
+    async def alternar_ativo_servico(self, registro: dict):
+        """Desligar ou religar serviço manda SÓ `ativo` (change
+        `desligar-servico`, D3); o `pick` do backend deixa o resto como está."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.atualizar_servico(registro["id"], {"ativo": not registro["ativo"]},
+                                         token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except (NaoEncontrado, XanoError) as erro:
+            self.erro = str(erro)
+            return
+        return await self.carregar_servicos()
+
     # --- pedidos da loja (change `pedidos-da-equipe`) ------------------------
+
+    @rx.var
+    def pedidos_visiveis(self) -> list[dict]:
+        return busca_da_lista.filtrar_pedidos(self.pedidos_clinica, self.busca)
+
+    @rx.var
+    def resumo_pedidos(self) -> str:
+        """Quantos e quanto, do que está na tela (change `resumo-dos-pedidos`)."""
+        return relatorio.resumo_de_pedidos(self.pedidos_visiveis)
+
+    def baixar_csv_pedidos(self):
+        """Os pedidos da tela, com o filtro e a busca, para planilha."""
+        if not self.pedidos_visiveis:
+            return
+        return rx.download(data=relatorio.csv_de_pedidos(self.pedidos_visiveis),
+                           filename=f"pedidos-petbits-{self.filtro_pedidos}.csv",
+                           mime_type="text/csv")
 
     @rx.var
     def tem_pedidos_clinica(self) -> bool:
         return len(self.pedidos_clinica) > 0
+
+    def abrir_estoque_baixo(self):
+        """Do painel para Produtos filtrado por estoque baixo (change `estoque-baixo`)."""
+        self.filtro_estoque = "baixo"
+        return rx.redirect("/equipe/produtos")
+
+    def set_filtro_estoque(self, valor: str | list[str]):
+        if isinstance(valor, list):
+            valor = valor[0] if valor else "todos"
+        self.filtro_estoque = "baixo" if valor == "baixo" else "todos"
+
+    @rx.var
+    def produtos_visiveis(self) -> list[dict]:
+        if self.filtro_estoque == "baixo":
+            return painel.estoque_baixo(self.produtos)
+        return self.produtos
+
+    def abrir_pedidos(self, situacao: str):
+        """Do painel para Pedidos já filtrado (change `painel-do-dia`, D4). O
+        `on_load` de Pedidos carrega com este filtro."""
+        self.filtro_pedidos = situacao
+        return rx.redirect("/equipe/pedidos")
 
     async def set_filtro_pedidos(self, valor: str):
         self.filtro_pedidos = valor
@@ -1076,9 +1296,18 @@ class EquipeState(rx.State):
                 "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "pago": bool(p.get("pago_em")),
                 "total": reais(p.get("total")),
+                # Crus, para o resumo e o CSV (change `resumo-dos-pedidos`).
+                "_total": float(p.get("total") or 0),
+                "_cancelado": p.get("situacao") == "cancelado",
+                "_cliente_nome": p.get("cliente_nome") or "",
                 "itens": itens.get(p.get("id"), []),
                 "acoes": [{"situacao": s, "rotulo": ROTULOS_ACAO[s]}
                           for s in proximas(p.get("situacao") or "", p.get("entrega") or "")],
+                # Onde a busca procura (change `busca-nos-pedidos`): número,
+                # cliente e produtos do pedido.
+                "_busca": " ".join([str(p.get("id") or ""), p.get("cliente_nome") or ""]
+                                   + [i["texto"] for i in itens.get(p.get("id"), [])]),
+                "_telefone": p.get("cliente_telefone") or "",
             }
             for p in dados.get("pedidos") or []
         ]
@@ -1191,6 +1420,10 @@ class EquipeState(rx.State):
         return regras_da_agenda.data_por_extenso(date.fromisoformat(self.agenda_dia_iso))
 
     @rx.var
+    def tem_painel_agenda(self) -> bool:
+        return len(self.painel_agenda) > 0
+
+    @rx.var
     def tem_agenda(self) -> bool:
         return len(self.agenda) > 0
 
@@ -1225,11 +1458,37 @@ class EquipeState(rx.State):
                 "situacao": regras_da_agenda.SITUACOES.get(a.get("situacao") or "", "-"),
                 "cancelado": a.get("situacao") == "cancelado",
                 "observacoes": a.get("observacoes") or "",
+                # Para registrar o atendimento a partir daqui (change
+                # `historico-clinico`, D5): só o marcado pode ser concluído.
+                # Só o atendimento clínico vai para o histórico: banho e tosa
+                # não tem diagnóstico, e a tosadora não pode registrar.
+                "marcado": (a.get("situacao") or "marcado") == "marcado"
+                           and a.get("servico_categoria") == "clinica",
+                # Falta só depois que o horário começou (change `nao-compareceu`,
+                # D2). Conveniência: quem decide é o Xano, pelo relógio dele.
+                "pode_faltar": a.get("situacao") == "marcado"
+                               and int(a.get("inicio") or 0) <= regras_da_agenda.agora_ms(),
+                "faltou": a.get("situacao") == "faltou",
+                "pet_nome": a.get("pet_nome") or "-",
+                "_id_pet": a.get("id_pet") or 0,
+                "_id_colaborador": a.get("id_colaborador") or 0,
             }
             for a in registros
         ]
         self.carregando = False
         self.ja_carregou = True
+
+    async def marcar_falta(self, agendamento_id: int):
+        """O animal não veio (change `nao-compareceu`)."""
+        try:
+            token = await self._token_de_equipe()
+            await xano.marcar_falta(agendamento_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            return rx.toast.error(str(erro))
+        await self.carregar_agenda()
+        return rx.toast.success("Falta registrada.")
 
     async def mudar_dia_da_agenda(self, passo: int):
         dia = date.fromisoformat(self.agenda_dia_iso or regras_da_agenda.hoje().isoformat())
@@ -1264,6 +1523,11 @@ class EquipeState(rx.State):
                 "telefone": t.get("telefone") or "-",
                 "email": t.get("email") or "-",
                 "endereco": t.get("endereco") or "-",
+                # Crus, para o formulário de edição (change `editar-tutor`).
+                "_documento": mascaras.cpf(t.get("documento") or ""),
+                "_telefone": mascaras.telefone(t.get("telefone") or ""),
+                "_email": t.get("email") or "",
+                "_endereco": t.get("endereco") or "",
             }
             for t in registros
         ]

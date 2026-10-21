@@ -10,31 +10,30 @@ se reconheçam como o mesmo sistema e o topo não mude de lugar entre elas.
 ### Requirement: Tema do sistema
 
 O app SHALL usar um tema único em todas as telas: cor principal verde-água
-(`teal`), cinza quente (`sand`), cantos grandes e a fonte Nunito. A aparência
-clara ou escura SHALL seguir a preferência do sistema operacional até a
-pessoa escolher outra pelo ícone de sol/lua, presente no topo das duas áreas
-e nas portas de entrada. A escolha SHALL ficar guardada no navegador e valer
-nas visitas seguintes, sem requisição ao backend.
+(`teal`), cinza quente (`sand`), cantos grandes e a fonte Nunito, sempre na
+aparência clara, com o fundo da página branco. A aparência MUST NOT mudar
+com a preferência do sistema operacional nem com escolha guardada no
+navegador.
 
 #### Scenario: Sistema em modo claro
 
 - **WHEN** alguém abre qualquer tela com o sistema em modo claro
-- **THEN** a tela aparece clara, com botões principais verde-água e texto em Nunito
+- **THEN** a tela aparece clara, com fundo branco, botões principais verde-água e texto em Nunito
 
 #### Scenario: Sistema em modo escuro
 
 - **WHEN** alguém abre qualquer tela com o sistema em modo escuro
-- **THEN** a tela aparece escura, com a mesma cor principal
+- **THEN** a tela aparece clara do mesmo jeito, com fundo branco
 
 #### Scenario: Trocar pelo ícone
 
-- **WHEN** alguém toca no ícone de sol/lua
-- **THEN** a tela troca de claro para escuro, ou o contrário, na hora
+- **WHEN** alguém procura o ícone de sol/lua no topo ou nas portas de entrada
+- **THEN** não há ícone: a aparência não se troca pela tela
 
 #### Scenario: A escolha fica
 
-- **WHEN** a pessoa escolheu o escuro e recarrega a página ou volta outro dia
-- **THEN** a tela abre escura, mesmo com o sistema em modo claro
+- **WHEN** o navegador guardou o escuro pelo ícone que existia antes
+- **THEN** a tela abre clara mesmo assim, e o valor guardado passa a ser o claro
 
 ### Requirement: Marca do PetBits
 
@@ -218,3 +217,103 @@ sozinha, e não como texto parado na tela.
 
 - **WHEN** a pessoa salva os dados do perfil
 - **THEN** aparece "Dados atualizados." numa notificação que some sozinha
+
+### Requirement: As abas do cliente têm a mesma largura
+
+Meus animais, Agendar, Loja, Meus pedidos e Meu perfil SHALL ocupar a mesma
+largura de página e começar no mesmo ponto da tela, tenha a aba barra de
+rolagem ou não, para o cabeçalho, o avatar e o menu ficarem no mesmo lugar ao
+trocar de aba.
+
+#### Scenario: Da casa para a loja
+
+- **WHEN** a tutora vai de Meus animais para a Loja numa tela larga
+- **THEN** o conteúdo das duas ocupa a mesma largura, e o cabeçalho não muda de lugar
+
+#### Scenario: Aba curta e aba longa
+
+- **WHEN** Meus animais cabe na tela sem rolar e a Loja precisa de rolagem
+- **THEN** o cabeçalho e o avatar ficam exatamente no mesmo lugar nas duas
+
+### Requirement: Esqueletos enquanto a tela carrega
+
+Enquanto os dados de uma tela não chegaram, a tela SHALL mostrar blocos
+cinza no formato do conteúdo que vai aparecer, no lugar do spinner com
+"Carregando...". O esqueleto MUST NOT aparecer junto com o conteúdo, com a
+tela vazia nem com o erro, e SHALL avisar o leitor de tela de que a tela está
+carregando.
+
+#### Scenario: Abrir a loja
+
+- **WHEN** a tutora abre a loja e os produtos ainda não chegaram
+- **THEN** vê cartões cinza na grade dos produtos, e os produtos entram no lugar deles
+
+#### Scenario: A carga falhou
+
+- **WHEN** a carga de Meus pedidos falha
+- **THEN** aparece o aviso de erro e nenhum esqueleto
+
+#### Scenario: Leitor de tela
+
+- **WHEN** um leitor de tela passa pelo esqueleto
+- **THEN** ele lê que a tela está carregando
+
+### Requirement: Contraste e nomes acessíveis
+
+O texto das telas SHALL ter contraste de pelo menos 4,5 com o fundo (3 para
+texto grande), também nos botões de cor sólida. Todo campo de formulário SHALL
+ter um nome acessível igual ao rótulo visível, toda imagem SHALL ter texto
+alternativo, e a página SHALL ser declarada em português (`pt-BR`). O foco do
+teclado SHALL ser visível.
+
+#### Scenario: Botão principal
+
+- **WHEN** a tela mostra um botão verde-água com texto branco
+- **THEN** o contraste entre o texto e o botão é de pelo menos 4,5
+
+#### Scenario: Texto secundário
+
+- **WHEN** a casa mostra a raça e o peso de um animal em cinza
+- **THEN** o contraste com o fundo é de pelo menos 4,5
+
+#### Scenario: Campo com leitor de tela
+
+- **WHEN** um leitor de tela chega ao campo Nome do perfil
+- **THEN** ele anuncia "Nome"
+
+#### Scenario: Navegação pelo teclado
+
+- **WHEN** alguém navega pelo teclado com Tab
+- **THEN** o elemento em foco tem um contorno visível
+
+### Requirement: Página não encontrada
+
+Um endereço que não existe SHALL mostrar uma página do PetBits, em português,
+com a marca, a mensagem de que a página não foi encontrada e os caminhos Ir ao
+início e Voltar. A página MUST NOT fazer requisição ao Xano.
+
+#### Scenario: Link velho
+
+- **WHEN** alguém abre `/pagina-que-nao-existe`
+- **THEN** vê "Página não encontrada", com a marca e os botões Ir ao início e Voltar
+
+#### Scenario: Ir ao início
+
+- **WHEN** a pessoa clica em Ir ao início
+- **THEN** vai para `/`, que a leva à sua área ou à página inicial pública
+
+### Requirement: Horário e contato à vista
+
+A página inicial pública e todas as telas do cliente SHALL mostrar o horário
+de funcionamento (segunda a sábado, das 8h às 18h; domingo fechado) e o e-mail
+de contato petbitsgroup@gmail.com, com link para escrever.
+
+#### Scenario: Visitante procura o contato
+
+- **WHEN** alguém abre a página inicial sem entrar
+- **THEN** vê o horário de funcionamento e o e-mail petbitsgroup@gmail.com
+
+#### Scenario: Cliente em qualquer tela
+
+- **WHEN** a tutora está na Loja
+- **THEN** o rodapé mostra o horário e o e-mail de contato

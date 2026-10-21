@@ -36,7 +36,7 @@ query pedidos verb=GET {
       }
 
       where = $db.tutor.id_user == $auth.id
-      output = ["id_pedido", "produto_nome", "quantidade", "preco_unitario", "valor_linha"]
+      output = ["id_pedido", "id_produto", "produto_nome", "quantidade", "preco_unitario", "valor_linha"]
       return = {type: "list"}
     } as $itens
   }

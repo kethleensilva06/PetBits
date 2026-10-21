@@ -171,6 +171,41 @@ O primeiro mostra a prévia; o segundo publica. O caminho de cada arquivo no
 Xano CLI é deduzido do conteúdo, e arquivo cujo código é igual ao do Xano
 fica fora. `--conferir` lista o que está só no repositório ou só no Xano.
 
+## Publicar o site (Reflex Cloud)
+
+O GitHub Pages só serve arquivos estáticos; o PetBits precisa do servidor
+Python do Reflex ligado, então o site vai para o Reflex Cloud. Entre na conta
+uma vez (abre o navegador) e use o script, nunca o `reflex deploy` direto:
+
+```bash
+reflex login
+python scripts/publicar_no_reflex.py
+python scripts/publicar_no_reflex.py --publicar
+```
+
+O primeiro mostra o que iria, sem valores; o segundo publica. Só sobem
+`petbits/`, `assets/`, `rxconfig.py` e `requirements.txt`, e só as variáveis
+`XANO_BASE_URL` e `XANO_AUTH_BASE_URL`. O `reflex deploy` sozinho mandaria a
+pasta inteira — inclusive `contas-de-teste.local.txt` —, e `--envfile .env`
+mandaria o `XANO_META_TOKEN`.
+
+O site está em https://petbits-blue-grass.reflex.run.
+
+### Também no GitHub Pages
+
+A parte visual também fica em https://kethleensilva06.github.io/PetBits/,
+falando com o mesmo servidor do Reflex Cloud. Com o servidor de
+desenvolvimento parado (os dois usam `.web/`):
+
+```bash
+python scripts/publicar_no_github_pages.py
+python scripts/publicar_no_github_pages.py --publicar
+```
+
+O primeiro compila e mostra o plano; o segundo envia a branch `gh-pages`, que
+o GitHub Pages serve. Se o endereço do servidor do Reflex Cloud mudar, troque
+`SERVIDOR` no script.
+
 ## Ciclo de desenvolvimento
 
 ```text

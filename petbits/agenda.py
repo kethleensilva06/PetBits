@@ -24,14 +24,15 @@ DIA_MS = 24 * 60 * 60 * 1000
 PRAZO_CANCELAMENTO_MS = DIA_MS
 
 # Expediente por dia da semana (0 = segunda ... 6 = domingo), em minutos
-# desde a meia-noite. Decisão da clínica: seg–sex 8h–18h, sáb 8h–12h.
+# desde a meia-noite. Decisão da clínica: seg–sáb 8h–18h (change
+# `horario-e-contato`; antes o sábado fechava às 12h).
 EXPEDIENTE: dict[int, tuple[int, int]] = {
     0: (8 * 60, 18 * 60),
     1: (8 * 60, 18 * 60),
     2: (8 * 60, 18 * 60),
     3: (8 * 60, 18 * 60),
     4: (8 * 60, 18 * 60),
-    5: (8 * 60, 12 * 60),
+    5: (8 * 60, 18 * 60),
 }
 
 CATEGORIAS = rotulos.CATEGORIAS_SERVICO

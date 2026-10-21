@@ -461,6 +461,11 @@ class AuthState(rx.State):
         perfil_equipe = await self.get_state(PerfilEquipeState)
         perfil_equipe.limpar_dados()
 
+        from petbits.states.historico_state import HistoricoEquipeState, HistoricoTutorState
+
+        for estado in (HistoricoEquipeState, HistoricoTutorState):
+            (await self.get_state(estado)).limpar_dados()
+
         pet = await self.get_state(PetState)
         pet.limpar_dados()
 

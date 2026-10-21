@@ -41,6 +41,7 @@ query "equipe/servicos/{servico_id}" verb=PATCH {
     decimal preco?
     int duracao_minutos?
     text categoria? filters=trim
+    bool ativo?
   }
 
   stack {
@@ -154,5 +155,6 @@ query "equipe/servicos/{servico_id}" verb=PATCH {
     preco          : $atualizado.preco
     duracao_minutos: $atualizado.duracao_minutos
     categoria      : $atualizado.categoria
+    ativo          : $atualizado.ativo
   }
 }

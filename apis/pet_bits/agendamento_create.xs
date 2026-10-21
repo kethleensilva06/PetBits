@@ -45,7 +45,7 @@ query agendamentos verb=POST {
     db.get servico {
       field_name = "id"
       field_value = $input.servico_id
-      output = ["id", "categoria", "duracao_minutos"]
+      output = ["id", "categoria", "duracao_minutos", "ativo"]
     } as $servico
 
     precondition ($servico != null) {
@@ -61,6 +61,13 @@ query agendamentos verb=POST {
     }
 
     precondition ($servico.duracao_minutos > 0) {
+      error_type = "inputerror"
+      error = "Este servico nao esta disponivel para agendamento."
+    }
+
+    // Servico desligado nao e oferecido (change `desligar-servico`, D2).
+    // Vazio vale como ativo: e o que os servicos anteriores a coluna tem.
+    precondition ($servico.ativo != false) {
       error_type = "inputerror"
       error = "Este servico nao esta disponivel para agendamento."
     }
@@ -97,16 +104,10 @@ query agendamentos verb=POST {
       value = ($fim|format_timestamp:"Hi":"America/Sao_Paulo")|to_int
     }
 
+    // Segunda a sabado, das 8h as 18h (change `horario-e-contato`; antes o
+    // sabado fechava as 12h). O mesmo `EXPEDIENTE` de `petbits/agenda.py`.
     var $fecha_as {
       value = 1800
-    }
-
-    conditional {
-      if ($dia_semana == 6) {
-        var.update $fecha_as {
-          value = 1200
-        }
-      }
     }
 
     precondition ($dia_semana != 7) {

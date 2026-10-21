@@ -1,33 +1,35 @@
-// O resumo da clinica numa requisicao so: quatro contagens, nenhuma linha.
+// O painel da clinica numa requisicao so: quatro contagens, a agenda do dia e
+// os pedidos que esperam a equipe (change `painel-do-dia`).
 //
 // REGISTRO HONESTO, para quem for mexer: este endpoint e concessao a
-// plataforma, nao boa arquitetura (design.md, D7). Ele existe porque o plano
-// gratuito da 10 requisicoes a cada 20 segundos POR INSTANCIA. As quatro
-// listas no on_load do painel custariam 4 requisicoes em navegacao quente e 5
-// na carga fria -- metade do orcamento numa unica abertura de tela. Dois
-// colaboradores abrindo o painel ao mesmo tempo zeram a janela, e um F5 dentro
-// dos 20 segundos derrubaria o painel E a tela dos tutores junto, porque o
-// limite e por instancia.
+// plataforma, nao boa arquitetura (change `operacao-da-clinica`, D7). Ele
+// existe porque o plano gratuito da 10 requisicoes a cada 20 segundos POR
+// INSTANCIA, e o painel e a tela inicial da equipe: cada chamada a mais aqui
+// sai de toda abertura de painel, de todo colaborador, o dia todo.
 //
-// O preco de existir assim e que ele TENDE A VIRAR ENDPOINT-DEUS: cada widget
-// novo acrescenta uma consulta aqui e nada o limita. Quem vier acrescentar a
-// quinta contagem precisa decidir se ela paga o proprio custo, em vez de somar
-// mais um db.query ao fim da pilha porque "ja que estamos aqui".
+// O preco de existir assim e que ele TENDE A VIRAR ENDPOINT-DEUS. A change
+// `painel-do-dia` acrescentou duas coisas, e cada uma paga o proprio custo
+// (design.md, D1): a agenda do dia, que e a pergunta que o painel existe para
+// responder, e tres contagens de pedido, sem linha. Quem vier acrescentar a
+// proxima precisa fazer a mesma conta, em vez de somar mais um db.query ao fim
+// da pilha porque "ja que estamos aqui".
 //
-// So contagens, de proposito. Mostrar tambem as primeiras linhas de cada lista
-// custaria exatamente as 4 requisicoes que este endpoint existe para evitar, e
-// no caso de `tutor` poria documento e contato de clientes numa tela de
-// recepcao que fica aberta o dia todo.
+// O que continua PROIBIDO aqui: telefone, documento e endereco de tutor. Esta
+// e uma tela de recepcao que fica aberta o dia todo (design.md, D3). Quem
+// precisa ligar abre a Agenda, que tem o telefone.
 //
-// Ganho secundario que vale registrar: a prova de equipe e UMA para as quatro
-// leituras. Nao ha como uma das quatro ter sido publicada sem prova, porque so
+// Ganho secundario que vale registrar: a prova de equipe e UMA para todas as
+// leituras. Nao ha como uma delas ter sido publicada sem prova, porque so
 // existe uma.
 query "equipe/painel" verb=GET {
   api_group = "PetBits"
   auth = "user"
-  description = "Contagens da visao da clinica para o painel da equipe"
+  description = "Contagens, agenda do dia e pedidos esperando, para o painel da equipe"
 
   input {
+    // Inicio do dia (meia-noite em Sao Paulo), em ms UTC, como em
+    // `equipe/agenda`: a tela ja calcula o dia (design.md, D2).
+    timestamp dia
   }
 
   stack {
@@ -89,15 +91,78 @@ query "equipe/painel" verb=GET {
     db.query pet {
       return = {type: "count"}
     } as $total_animais
+
+    var $fim_do_dia {
+      value = $input.dia + 86400000
+    }
+
+    // Quem vem hoje (design.md, D3). Os cancelados ficam de fora: o painel
+    // responde "quem vem hoje", e a Agenda continua mostrando todos. Sem o
+    // telefone do tutor, que `equipe/agenda` devolve.
+    db.query agendamento {
+      join = {
+        pet        : {type: "left", table: "pet", where: $db.agendamento.id_pet == $db.pet.id}
+        tutor      : {type: "left", table: "tutor", where: $db.pet.id_tutor == $db.tutor.id}
+        servico    : {type: "left", table: "servico", where: $db.agendamento.id_servico == $db.servico.id}
+        colaborador: {type: "left", table: "colaborador", where: $db.agendamento.id_colaborador == $db.colaborador.id}
+      }
+
+      where = (($db.agendamento.inicio > $input.dia) || ($db.agendamento.inicio == $input.dia)) && ($fim_do_dia > $db.agendamento.inicio) && ($db.agendamento.situacao != "cancelado")
+      eval = {
+        pet_nome         : $db.pet.nome
+        pet_especie      : $db.pet.especie
+        tutor_nome       : $db.tutor.nome
+        servico_nome     : $db.servico.nome
+        profissional_nome: $db.colaborador.nome
+      }
+
+      sort = {inicio: "asc"}
+      output = ["id", "inicio", "fim", "situacao", "pet_nome", "pet_especie", "tutor_nome", "servico_nome", "profissional_nome"]
+      return = {type: "list"}
+    } as $agenda_do_dia
+
+    // Os pedidos que esperam a equipe (design.md, D4). `enviado` nao entra:
+    // esta com a entrega, nao com a clinica. So contagens, sem linha.
+    db.query pedido {
+      where = $db.pedido.situacao == "pendente"
+      return = {type: "count"}
+    } as $pedidos_pendentes
+
+    db.query pedido {
+      where = $db.pedido.situacao == "pago"
+      return = {type: "count"}
+    } as $pedidos_pagos
+
+    db.query pedido {
+      where = $db.pedido.situacao == "pronto_retirada"
+      return = {type: "count"}
+    } as $pedidos_prontos
+
+    // Estoque (change `estoque-baixo`, D1): so contagens, de produto ATIVO
+    // (D3). O limite 5 e o `ESTOQUE_BAIXO` de `petbits/painel.py` (D2).
+    db.query produto {
+      where = ($db.produto.ativo == true) && ($db.produto.estoque < 1)
+      return = {type: "count"}
+    } as $produtos_esgotados
+
+    db.query produto {
+      where = ($db.produto.ativo == true) && ($db.produto.estoque > 0) && ($db.produto.estoque < 6)
+      return = {type: "count"}
+    } as $produtos_acabando
   }
 
-  // So numeros. Nenhuma linha de nenhuma lista sai daqui -- nem "as tres
-  // ultimas", nem "o proximo agendamento". Quem precisar de linha abre a
-  // listagem, que custa a propria requisicao e tem o proprio `output`.
+  // Contagens, a agenda do dia e as contagens de pedido. Nenhum contato de
+  // tutor sai daqui.
   response = {
-    colaboradores: $total_colaboradores
-    servicos     : $total_servicos
-    tutores      : $total_tutores
-    animais      : $total_animais
+    colaboradores  : $total_colaboradores
+    servicos       : $total_servicos
+    tutores        : $total_tutores
+    animais        : $total_animais
+    agenda         : $agenda_do_dia
+    pedidos_pendentes: $pedidos_pendentes
+    pedidos_pagos  : $pedidos_pagos
+    pedidos_prontos: $pedidos_prontos
+    produtos_esgotados: $produtos_esgotados
+    produtos_acabando: $produtos_acabando
   }
 }

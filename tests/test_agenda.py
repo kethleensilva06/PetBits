@@ -40,8 +40,9 @@ class HorariosLivres(unittest.TestCase):
         self.assertEqual(len(livres), 20)
 
     def test_o_fim_do_atendimento_precisa_caber_no_expediente(self):
+        # Sábado até as 18h (change `horario-e-contato`; antes, 12h e 10:30).
         livres = horas(horarios_livres(SABADO, 90, [1], [], ANTES))
-        self.assertEqual(livres[-1], "10:30")
+        self.assertEqual(livres[-1], "16:30")
 
     def test_domingo(self):
         self.assertEqual(horarios_livres(DOMINGO, 30, [1], [], ANTES), [])

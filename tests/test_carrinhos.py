@@ -12,14 +12,21 @@ from petbits.states.equipe_state import EquipeState
 from petbits.states.loja_state import LojaState, reais
 
 
+class _LojaFalsa(SimpleNamespace):
+    """O carrinho guardado no navegador e o derivado (change `carrinho-guardado`)."""
+
+    carrinho = property(LojaState.computed_vars["carrinho"].fget)
+    _gravar = LojaState._gravar
+
+
 class CarrinhoDaLoja(unittest.TestCase):
     def setUp(self):
-        self.s = SimpleNamespace(
+        self.s = _LojaFalsa(
             produtos=[
                 {"id": 1, "nome": "Ração", "_preco": 49.9, "_estoque": 2},
                 {"id": 2, "nome": "Bolinha", "_preco": 12.5, "_estoque": 10},
             ],
-            carrinho={},
+            carrinho_salvo="",
             aviso="",
         )
 
@@ -44,6 +51,10 @@ class CarrinhoDaLoja(unittest.TestCase):
         LojaState.adicionar.fn(self.s, 1)
         LojaState.adicionar.fn(self.s, 2)
         self.assertEqual(LojaState.total_estimado.fget(self.s), "R$ 112,30")
+
+    def test_fica_guardado(self):
+        LojaState.adicionar.fn(self.s, 2)
+        self.assertEqual(self.s.carrinho_salvo, '{"2":1}')
 
 
 class CarrinhoDoBalcao(unittest.TestCase):

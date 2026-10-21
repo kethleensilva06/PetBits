@@ -23,7 +23,8 @@ que encaixa o profissional livre.
 O tutor SHALL poder consultar, para um serviço e um dia, os horários de início
 em que existe pelo menos um profissional compatível livre durante toda a
 duração do serviço. Os horários MUST ser múltiplos de 30 minutos, MUST estar
-no futuro e o atendimento inteiro MUST caber no horário de funcionamento.
+no futuro e o atendimento inteiro MUST caber no horário de funcionamento:
+segunda a sábado, das 8h às 18h.
 
 #### Scenario: Dia útil sem agendamentos
 
@@ -34,7 +35,7 @@ no futuro e o atendimento inteiro MUST caber no horário de funcionamento.
 #### Scenario: O fim do atendimento precisa caber no expediente
 
 - **WHEN** o tutor consulta um sábado para um serviço de 90 minutos
-- **THEN** o último horário oferecido é 10h30, porque o sábado fecha às 12h
+- **THEN** o último horário oferecido é 16h30, porque o sábado fecha às 18h
 
 #### Scenario: Domingo
 
@@ -177,3 +178,118 @@ exclusiva da equipe.
 
 - **WHEN** uma conta de tutor pede a agenda da clínica, fora da interface
 - **THEN** o backend recusa
+
+### Requirement: Atendimento conclui o agendamento
+
+Quando a equipe registra um atendimento a partir de um agendamento, o
+agendamento SHALL passar a concluído. O agendamento MUST ser do mesmo animal
+e MUST NOT estar cancelado nem já concluído; o profissional do agendamento
+SHALL vir preenchido como quem atendeu.
+
+#### Scenario: Concluir pela agenda
+
+- **WHEN** a equipe registra o atendimento a partir do agendamento das 10h da Mel
+- **THEN** o atendimento entra no histórico da Mel e o agendamento aparece como concluído na agenda
+
+#### Scenario: Agendamento cancelado
+
+- **WHEN** o agendamento indicado está cancelado
+- **THEN** o registro é recusado e nada é gravado
+
+### Requirement: A tela de agendar guia o tutor
+
+A tela de agendar SHALL mostrar os passos Serviço, Animal, Horário e
+Confirmar, com os feitos marcados e o atual destacado, e um resumo do que vai
+ser marcado — serviço, duração, preço, animal, dia e horário —, em que o que
+falta escolher aparece como "a escolher". O botão de confirmar SHALL ficar no
+resumo.
+
+#### Scenario: Começo
+
+- **WHEN** o tutor abre Agendar sem nada escolhido
+- **THEN** o passo atual é Serviço e o resumo diz "a escolher" em todas as linhas
+
+#### Scenario: Faltando o horário
+
+- **WHEN** o tutor escolheu o serviço e o animal
+- **THEN** Serviço e Animal aparecem feitos, Horário é o atual, e o resumo mostra o serviço, a duração, o preço e o animal
+
+### Requirement: Compromisso na agenda do celular
+
+Depois de marcar, a tela SHALL oferecer um arquivo de calendário (`.ics`) com
+o serviço, o animal, o início e o fim do agendamento. O arquivo MUST ser
+montado na própria tela, sem requisição ao backend.
+
+#### Scenario: Adicionar à agenda
+
+- **WHEN** a tutora marca uma consulta e toca em "Adicionar à agenda do celular"
+- **THEN** recebe um arquivo `.ics` com a consulta, do horário marcado até o fim pela duração do serviço
+
+### Requirement: A casa mostra o próximo agendamento
+
+A casa do cliente SHALL mostrar o próximo agendamento ainda não terminado
+(marcado ou em andamento), com serviço, animal, dia, hora e profissional, e
+quantos outros há depois dele. Sem agendamento futuro, SHALL oferecer
+Agendar. Se a lista de agendamentos falhar, a casa MUST continuar mostrando
+os animais, sem o cartão.
+
+#### Scenario: Consulta amanhã
+
+- **WHEN** a tutora tem uma consulta da Mel amanhã às 10h e um banho depois
+- **THEN** a casa mostra "Consulta clínica · Mel", "Amanhã, 10:00", o profissional e "mais 1 agendamento"
+
+#### Scenario: Nada marcado
+
+- **WHEN** a tutora não tem agendamento futuro
+- **THEN** a casa diz que não há nada marcado e oferece Agendar
+
+#### Scenario: Cancelado não conta
+
+- **WHEN** o único agendamento futuro foi cancelado
+- **THEN** a casa diz que não há nada marcado
+
+### Requirement: Não compareceu
+
+A equipe SHALL poder registrar que o animal não compareceu a um agendamento
+marcado cujo horário já começou. O agendamento SHALL passar à situação "Não
+compareceu", visível para a equipe e para o tutor. Agendamento futuro,
+cancelado, concluído ou já com falta MUST ser recusado sem mudança, e a
+operação MUST ser exclusiva da equipe. Um agendamento com falta MUST NOT
+virar atendimento.
+
+#### Scenario: Animal não veio
+
+- **WHEN** a consulta das 9h passou e a equipe marca Não compareceu
+- **THEN** o agendamento aparece como "Não compareceu" na agenda da clínica e em Meus agendamentos
+
+#### Scenario: Antes do horário
+
+- **WHEN** a equipe tenta marcar falta num agendamento de amanhã, fora da interface
+- **THEN** o backend recusa e nada muda
+
+#### Scenario: Tutor tenta marcar falta
+
+- **WHEN** uma conta de tutor chama a marcação de falta, fora da interface
+- **THEN** o backend recusa
+
+#### Scenario: Atendimento de agendamento com falta
+
+- **WHEN** a equipe tenta registrar atendimento a partir de um agendamento com falta
+- **THEN** o backend recusa
+
+### Requirement: Próximos e anteriores
+
+Meus agendamentos SHALL separar os próximos — marcados ou em andamento que
+ainda não terminaram, do mais perto para o mais longe — dos anteriores —
+todos os outros, do mais recente para o mais antigo. Os anteriores SHALL ficar
+fechados por padrão, com a quantidade à vista.
+
+#### Scenario: Consulta amanhã e banho concluído
+
+- **WHEN** a tutora tem uma consulta marcada amanhã e um banho concluído ontem
+- **THEN** a consulta aparece em Próximos e o banho em Anteriores, que começa fechado
+
+#### Scenario: Agendamento que já passou sem conclusão
+
+- **WHEN** um agendamento marcado já terminou e ninguém o concluiu
+- **THEN** ele aparece em Anteriores, e não em Próximos

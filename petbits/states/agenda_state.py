@@ -18,7 +18,7 @@ from typing import Any
 
 import reflex as rx
 
-from petbits import agenda, rotulos, xano
+from petbits import agenda, agenda_guiada, calendario, proximo, rotulos, xano
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
 from petbits.states.sessao import SemSessao
@@ -40,6 +40,11 @@ class AgendaState(rx.State):
     servicos: list[dict] = []
     animais: list[dict] = []
     agendamentos: list[dict] = []
+    # Próximos e anteriores (change `proximos-e-anteriores`); os anteriores
+    # começam fechados.
+    proximos: list[dict] = []
+    anteriores: list[dict] = []
+    mostrar_anteriores: bool = False
 
     categoria: str = "clinica"
     servico_id: str = ""
@@ -59,6 +64,8 @@ class AgendaState(rx.State):
     erro: str = ""
     erro_lista: str = ""
     aviso: str = ""
+    # O último agendamento marcado, como .ics (change `agenda-guiada`, D4).
+    ultimo_ics: str = ""
 
     # --- campos ---------------------------------------------------------
 
@@ -149,14 +156,47 @@ class AgendaState(rx.State):
         )
 
     @rx.var
+    def passos(self) -> list[dict]:
+        """A faixa de progresso (change `agenda-guiada`, D1)."""
+        return agenda_guiada.passos(self.servico_id, self.pet_id, self.horario_ms)
+
+    @rx.var
+    def linhas_do_resumo(self) -> list[dict]:
+        """O resumo ao lado (change `agenda-guiada`, D2)."""
+        animal = next((a["nome"] for a in self.animais if str(a["id"]) == self.pet_id), "")
+        return agenda_guiada.linhas_do_resumo(self.servico_escolhido, animal,
+                                              self.horario_ms, self.dia_por_extenso)
+
+    def alternar_anteriores(self):
+        self.mostrar_anteriores = not self.mostrar_anteriores
+
+    @rx.var
     def tem_agendamentos(self) -> bool:
         return len(self.agendamentos) > 0
+
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self.erro_lista = ""
+        self.carregando = True
+        self.ja_carregou = False
+
+    @rx.var
+    def mostrar_carregando(self) -> bool:
+        return self.carregando or (not self.ja_carregou and not self.erro_lista)
 
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
         self.servicos = []
         self.animais = []
         self.agendamentos = []
+        self.proximos = []
+        self.anteriores = []
+        self.mostrar_anteriores = False
         self.categoria = "clinica"
         self.servico_id = ""
         self.pet_id = ""
@@ -170,6 +210,7 @@ class AgendaState(rx.State):
         self.enviando = False
         self.erro_lista = ""
         self.aviso = ""
+        self.ultimo_ics = ""
 
     # --- sessão -----------------------------------------------------------
 
@@ -191,6 +232,8 @@ class AgendaState(rx.State):
         self.servicos = []
         self.animais = []
         self.agendamentos = []
+        self.proximos = []
+        self.anteriores = []
         if not self.mes:
             atual = agenda.hoje()
             self.ano, self.mes = atual.year, atual.month
@@ -228,30 +271,35 @@ class AgendaState(rx.State):
 
     def _guardar_agendamentos(self, registros: list[dict]):
         agora = agenda.agora_ms()
-        self.agendamentos = [
-            {
-                "id": a.get("id"),
-                "quando": f"{agenda.data_curta(a.get('inicio'))}, "
-                          f"{agenda.hora(a.get('inicio'))}–{agenda.hora(a.get('fim'))}",
-                "animal": a.get("pet_nome") or "-",
-                "servico": a.get("servico_nome") or "-",
-                "categoria": CATEGORIAS.get(a.get("servico_categoria") or "", ""),
-                "profissional": " · ".join(filter(None, [
-                    a.get("profissional_nome") or "",
-                    FUNCOES.get(a.get("profissional_funcao") or "", ""),
-                ])) or "-",
-                "situacao": SITUACOES.get(a.get("situacao") or "", "-"),
-                "cancelado": a.get("situacao") == "cancelado",
-                # O botão só aparece quando o backend aceitaria. Se o relógio
-                # da máquina divergir do Xano, a recusa dele aparece na tela.
-                "pode_cancelar": a.get("situacao") == "marcado"
-                                 and agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
-                "dentro_do_prazo": a.get("situacao") == "marcado"
-                                   and int(a.get("inicio") or 0) > agora
-                                   and not agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
-            }
-            for a in registros
-        ]
+        # Próximos e anteriores (change `proximos-e-anteriores`).
+        proximos, anteriores = proximo.separar_agendamentos(registros, agora)
+        self.proximos = [self._linha_de_agendamento(a, agora) for a in proximos]
+        self.anteriores = [self._linha_de_agendamento(a, agora) for a in anteriores]
+        self.agendamentos = self.proximos + self.anteriores
+
+    @staticmethod
+    def _linha_de_agendamento(a: dict, agora: int) -> dict:
+        return {
+            "id": a.get("id"),
+            "quando": f"{agenda.data_curta(a.get('inicio'))}, "
+                      f"{agenda.hora(a.get('inicio'))}–{agenda.hora(a.get('fim'))}",
+            "animal": a.get("pet_nome") or "-",
+            "servico": a.get("servico_nome") or "-",
+            "categoria": CATEGORIAS.get(a.get("servico_categoria") or "", ""),
+            "profissional": " · ".join(filter(None, [
+                a.get("profissional_nome") or "",
+                FUNCOES.get(a.get("profissional_funcao") or "", ""),
+            ])) or "-",
+            "situacao": SITUACOES.get(a.get("situacao") or "", "-"),
+            "cancelado": a.get("situacao") == "cancelado",
+            # O botão só aparece quando o backend aceitaria. Se o relógio
+            # da máquina divergir do Xano, a recusa dele aparece na tela.
+            "pode_cancelar": a.get("situacao") == "marcado"
+                             and agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
+            "dentro_do_prazo": a.get("situacao") == "marcado"
+                               and int(a.get("inicio") or 0) > agora
+                               and not agenda.pode_cancelar(int(a.get("inicio") or 0), agora),
+        }
 
     # --- calendário --------------------------------------------------------
 
@@ -332,7 +380,7 @@ class AgendaState(rx.State):
             }
             if self.observacoes.strip():
                 dados["observacoes"] = self.observacoes.strip()
-            await xano.criar_agendamento(dados, token=token)
+            criado = await xano.criar_agendamento(dados, token=token)
             registros = await xano.listar_agendamentos(token=token)
         except (SemSessao, SessaoExpirada) as erro:
             yield await self._encerrar(erro)
@@ -346,9 +394,34 @@ class AgendaState(rx.State):
             self.enviando = False
 
         self.aviso = f"Agendado: {self.resumo}."
+        self.ultimo_ics = self._ics_do_marcado(criado)
         self.observacoes = ""
         self._limpar_escolha_de_horario()
         self._guardar_agendamentos(registros)
+
+    def _ics_do_marcado(self, criado) -> str:
+        """O compromisso que acabou de ser marcado, para a agenda do celular.
+        O fim vem da duração do serviço; só dado do próprio tutor."""
+        servico = self.servico_escolhido
+        animal = next((a["nome"] for a in self.animais if str(a["id"]) == self.pet_id), "")
+        inicio = self.horario_ms
+        fim = inicio + int(servico.get("duracao") or 30) * 60 * 1000
+        ident = criado.get("id") if isinstance(criado, dict) else None
+        return calendario.ics(
+            uid=f"agendamento-{ident or inicio}@petbits",
+            titulo=f"{servico.get('nome', 'Atendimento')} · {animal}",
+            inicio_ms=inicio,
+            fim_ms=fim,
+            descricao=self.observacoes.strip(),
+            agora_ms=agenda.agora_ms(),
+        )
+
+    def baixar_ics(self):
+        """Baixa o .ics montado ao marcar (D4). Sem requisição."""
+        if not self.ultimo_ics:
+            return
+        return rx.download(data=self.ultimo_ics, filename="agendamento-petbits.ics",
+                           mime_type="text/calendar")
 
     async def cancelar(self, agendamento_id: int):
         self.aviso = ""

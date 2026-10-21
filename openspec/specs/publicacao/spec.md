@@ -56,3 +56,39 @@ repositório: quando um endpoint sai do ar, o arquivo sai na mesma change.
 - **WHEN** um endpoint é despublicado no Xano
 - **THEN** o `.xs` dele é removido do repositório na mesma change, e a
   guarda `verificar_equipe.py` não o acusa mais
+
+### Requirement: Publicar o site sem segredo nem conta de teste
+
+A publicação do site no Reflex Cloud SHALL mandar só os arquivos que o site
+usa e só as variáveis `XANO_BASE_URL` e `XANO_AUTH_BASE_URL`. O `.env`, o
+arquivo de contas de teste, o `XANO_META_TOKEN` e o export do Xano MUST NOT
+ser enviados. Por padrão, a publicação SHALL só mostrar o plano, sem enviar
+nada.
+
+#### Scenario: Prévia
+
+- **WHEN** alguém roda `scripts/publicar_no_reflex.py` sem `--publicar`
+- **THEN** vê os arquivos que iriam e os nomes das variáveis, sem valores, e nada é enviado
+
+#### Scenario: Arquivo proibido no pacote
+
+- **WHEN** o arquivo de contas de teste entraria no pacote
+- **THEN** o script para antes de chamar o `reflex deploy`
+
+### Requirement: O site também no GitHub Pages
+
+A parte visual do site SHALL poder ser publicada no GitHub Pages do repositório,
+em https://kethleensilva06.github.io/PetBits/, ligada ao servidor do Reflex
+Cloud. Abrir qualquer endereço do site direto SHALL funcionar, e as imagens do
+app MUST carregar sob o prefixo `/PetBits/`. Nada do `.env` MUST ir para o
+GitHub Pages.
+
+#### Scenario: Abrir a loja direto
+
+- **WHEN** alguém sem sessão abre https://kethleensilva06.github.io/PetBits/loja
+- **THEN** o servidor do Reflex Cloud responde e leva à entrada de clientes
+
+#### Scenario: Fotos da página inicial
+
+- **WHEN** a página inicial abre no GitHub Pages
+- **THEN** as fotos carregam de `/PetBits/fotos/`

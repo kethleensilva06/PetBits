@@ -1,6 +1,7 @@
 """Estado da loja do cliente (change `loja`).
 
-O carrinho mora só no estado do Reflex: produto e quantidade. Preço, linha e
+O carrinho guarda só produto e quantidade, no navegador, para sobreviver ao F5
+(change `carrinho-guardado`). Preço, linha e
 total que a tela mostra são **estimativas** a partir do catálogo carregado; o
 valor que vale é o que o `POST pedidos` calcula no servidor e devolve.
 
@@ -10,7 +11,7 @@ requisição sai (change `porta-de-entrada`, D5).
 
 import reflex as rx
 
-from petbits import agenda, rotulos, xano
+from petbits import agenda, carrinho as carrinho_guardado, etapas_do_pedido, rotulos, xano
 from petbits.ilustracoes import imagem_do_produto, normalizar
 from petbits.states.auth_state import AuthState
 from petbits.states import sessao
@@ -32,6 +33,20 @@ def reais(valor) -> str:
     return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+# A ordem da loja (change `ordenar-a-loja`). "Em destaque" é a do catálogo.
+ORDENS = ["Em destaque", "Menor preço", "Maior preço", "Nome (A–Z)"]
+
+
+def ordenar_produtos(produtos: list[dict], ordem: str) -> list[dict]:
+    if ordem == "Menor preço":
+        return sorted(produtos, key=lambda p: p.get("_preco") or 0)
+    if ordem == "Maior preço":
+        return sorted(produtos, key=lambda p: p.get("_preco") or 0, reverse=True)
+    if ordem == "Nome (A–Z)":
+        return sorted(produtos, key=lambda p: normalizar(p.get("nome")))
+    return list(produtos)
+
+
 def filtrar_produtos(produtos: list[dict], busca: str, categoria: str) -> list[dict]:
     """Busca pelo nome (sem acento nem maiúscula) e filtro pelo rótulo da
     categoria; "" é "todas" (change `acabamentos-de-tela`, D4)."""
@@ -47,7 +62,12 @@ class LojaState(rx.State):
     produtos: list[dict] = []
     # produto_id (texto) -> quantidade. Chave texto porque o estado do Reflex
     # vai ao navegador como JSON.
-    carrinho: dict[str, int] = {}
+    # No navegador, como a sessão (change `carrinho-guardado`, D1): sobrevive
+    # ao F5, à aba nova e ao reinício do servidor. `carrinho` é derivado daqui.
+    carrinho_salvo: str = rx.LocalStorage("", name="petbits_carrinho", sync=True)
+    # O que a conferência com o estoque mudou no carrinho (change
+    # `comprar-de-novo`, D2). Some na próxima mudança do carrinho.
+    ajuste_carrinho: str = ""
 
     entrega: str = "retirada"
     forma_pagamento: str = "na_loja"
@@ -55,6 +75,8 @@ class LojaState(rx.State):
     enviando: bool = False
 
     pedidos: list[dict] = []
+    # Os finalizados começam fechados (change `pedidos-em-andamento`).
+    mostrar_finalizados: bool = False
 
     # Detalhe do produto (change `fotos-realistas`): o item vem da lista que
     # a loja já tem — abrir o detalhe não faz requisição.
@@ -66,6 +88,7 @@ class LojaState(rx.State):
     # loja já carregou, sem requisição.
     busca: str = ""
     categoria_filtro: str = ""
+    ordem: str = ORDENS[0]
 
     def set_busca(self, v: str):
         self.busca = v
@@ -73,13 +96,18 @@ class LojaState(rx.State):
     def set_categoria_filtro(self, v: str):
         self.categoria_filtro = "" if v == "Todas" else v
 
+    def set_ordem(self, v: str):
+        self.ordem = v if v in ORDENS else ORDENS[0]
+
     def limpar_filtros(self):
         self.busca = ""
         self.categoria_filtro = ""
+        self.ordem = ORDENS[0]
 
     @rx.var
     def produtos_visiveis(self) -> list[dict]:
-        return filtrar_produtos(self.produtos, self.busca, self.categoria_filtro)
+        return ordenar_produtos(
+            filtrar_produtos(self.produtos, self.busca, self.categoria_filtro), self.ordem)
 
     @rx.var
     def categorias_da_loja(self) -> list[str]:
@@ -124,7 +152,7 @@ class LojaState(rx.State):
         pid = str(self.produto_aberto.get("id", ""))
         quantos = min(self.qtd_detalhe, self.pode_por_mais_no_aberto)
         if pid and quantos > 0:
-            self.carrinho = {**self.carrinho, pid: self.carrinho.get(pid, 0) + quantos}
+            self._gravar({**self.carrinho, pid: self.carrinho.get(pid, 0) + quantos})
             self.aviso = ""
             self.qtd_detalhe = 1
             return rx.toast.success(f"{quantos} no carrinho.")
@@ -133,6 +161,16 @@ class LojaState(rx.State):
         self.detalhe_aberto = value
 
     # --- derivados -------------------------------------------------------
+
+    @rx.var
+    def carrinho(self) -> dict[str, int]:
+        """{id do produto: quantidade}, lido com desconfiança do navegador (D2)."""
+        return carrinho_guardado.ler(self.carrinho_salvo)
+
+    def _gravar(self, novo: dict[str, int]):
+        """Toda mudança do carrinho passa por aqui (D1)."""
+        self.carrinho_salvo = carrinho_guardado.escrever(novo)
+        self.ajuste_carrinho = ""
 
     @rx.var
     def itens_do_carrinho(self) -> list[dict]:
@@ -145,6 +183,7 @@ class LojaState(rx.State):
                     "id": pid,
                     "nome": p["nome"],
                     "quantidade": qtd,
+                    "preco": reais(p["_preco"]),
                     "linha": reais(p["_preco"] * qtd),
                     "pode_mais": qtd < p["_estoque"],
                 })
@@ -164,10 +203,27 @@ class LojaState(rx.State):
     def quantidade_do_aberto(self) -> int:
         return self.carrinho.get(str(self.produto_aberto.get("id", "")), 0)
 
+    def preparar_carga(self):
+        """Primeiro evento do `on_load` (change `esqueletos-de-carregamento`).
+
+        O carregador só manda o estado à tela quando termina; sem este passo,
+        o "carregando" nunca chegava, e a tela mostrava o vazio até os dados
+        virem. Sem requisição: só avisa a tela de que a carga começou.
+        """
+        self.erro = ""
+        self.carregando = True
+        self.ja_carregou = False
+
+    @rx.var
+    def mostrar_carregando(self) -> bool:
+        """O mesmo de `PetState.mostrar_carregando`: carregando, ou ainda não
+        carregado e sem erro."""
+        return self.carregando or (not self.ja_carregou and not self.erro)
+
     def limpar_dados(self):
         """Apaga tudo o que pertence a uma pessoa. Chamado pelo `sair`."""
         self.produtos = []
-        self.carrinho = {}
+        self._gravar({})
         self.entrega = "retirada"
         self.forma_pagamento = "na_loja"
         self.finalizando = False
@@ -218,7 +274,8 @@ class LojaState(rx.State):
                 "marca": p.get("marca") or "",
                 "unidade": p.get("unidade") or "",
                 "preco": reais(p.get("preco")),
-                "disponivel": f"{int(p.get('estoque') or 0)} disponível(is)",
+                # "28 em estoque", e não "28 disponível(is)" (change `loja-organizada`).
+                "disponivel": f"{int(p.get('estoque') or 0)} em estoque",
                 "_preco": float(p.get("preco") or 0),
                 "_estoque": int(p.get("estoque") or 0),
             }
@@ -227,8 +284,12 @@ class LojaState(rx.State):
         # O carrinho não pode apontar para produto que saiu da loja nem pedir
         # mais do que o estoque que acabou de chegar.
         estoque = {str(p["id"]): p["_estoque"] for p in self.produtos}
-        self.carrinho = {pid: min(q, estoque[pid]) for pid, q in self.carrinho.items()
-                         if estoque.get(pid, 0) > 0}
+        # Vale também para o carrinho guardado, que pode ter dias (D3), e para
+        # o pedido repetido, que pode ser antigo (change `comprar-de-novo`, D2).
+        ajustado, aviso = carrinho_guardado.ajustar_ao_estoque(self.carrinho, estoque)
+        if ajustado != self.carrinho:
+            self._gravar(ajustado)
+        self.ajuste_carrinho = aviso
         self.carregando = False
         self.ja_carregou = True
 
@@ -237,15 +298,50 @@ class LojaState(rx.State):
         estoque = next((p["_estoque"] for p in self.produtos if str(p["id"]) == pid), 0)
         atual = self.carrinho.get(pid, 0)
         if atual < estoque:
-            self.carrinho = {**self.carrinho, pid: atual + 1}
+            self._gravar({**self.carrinho, pid: atual + 1})
         self.aviso = ""
+
+    def comprar_de_novo(self, pedido_id: int):
+        """Os itens do pedido somados ao carrinho, e a loja (change
+        `comprar-de-novo`). A loja confere o estoque ao abrir."""
+        pedido = next((p for p in self.pedidos if p["id"] == pedido_id), None)
+        if not pedido:
+            return
+        self._gravar(carrinho_guardado.somar(self.carrinho, pedido["_repetir"]))
+        return [rx.redirect("/loja"),
+                rx.toast.success(f"Itens do pedido nº {pedido_id} no carrinho.")]
+
+    @rx.var
+    def pedidos_em_andamento(self) -> list[dict]:
+        return [p for p in self.pedidos if not p["finalizado"]]
+
+    @rx.var
+    def pedidos_finalizados(self) -> list[dict]:
+        return [p for p in self.pedidos if p["finalizado"]]
+
+    def alternar_finalizados(self):
+        self.mostrar_finalizados = not self.mostrar_finalizados
+
+    async def cancelar_pedido(self, pedido_id: int):
+        """Cancela o próprio pedido; quem decide se pode é o backend."""
+        self.erro = ""
+        try:
+            token = await self._token()
+            await xano.cancelar_pedido(pedido_id, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            return await self._encerrar(erro)
+        except XanoError as erro:
+            self.erro = str(erro)
+            return
+        await self.carregar_pedidos()
+        return rx.toast.success(f"Pedido nº {pedido_id} cancelado. Os itens voltaram ao estoque.")
 
     def tirar(self, produto_id: str):
         atual = self.carrinho.get(produto_id, 0)
         resto = {k: v for k, v in self.carrinho.items() if k != produto_id}
         if atual > 1:
             resto[produto_id] = atual - 1
-        self.carrinho = resto
+        self._gravar(resto)
 
     def abrir_finalizacao(self):
         if self.carrinho:
@@ -274,7 +370,7 @@ class LojaState(rx.State):
             # Mesmo motivo da change `entrada-sem-trava`.
             self.enviando = False
 
-        self.carrinho = {}
+        self._gravar({})
         self.finalizando = False
         self.aviso = (
             f"Pedido nº {pedido.get('id')} feito: {reais(pedido.get('total'))} — "
@@ -303,7 +399,11 @@ class LojaState(rx.State):
             self.ja_carregou = True
             return
         itens_por_pedido: dict[int, list[dict]] = {}
+        # Produto e quantidade de cada item, para o Comprar de novo.
+        repetir: dict[int, list[dict]] = {}
         for i in dados.get("itens") or []:
+            repetir.setdefault(i.get("id_pedido"), []).append(
+                {"id_produto": i.get("id_produto") or 0, "quantidade": i.get("quantidade") or 0})
             itens_por_pedido.setdefault(i.get("id_pedido"), []).append({
                 "texto": f"{int(i.get('quantidade') or 0)} × {i.get('produto_nome') or '-'}",
                 "linha": reais(i.get("valor_linha")),
@@ -320,6 +420,16 @@ class LojaState(rx.State):
                 "origem": ORIGENS.get(p.get("origem") or "site", ""),
                 "total": reais(p.get("total")),
                 "itens": itens_por_pedido.get(p.get("id"), []),
+                "_repetir": repetir.get(p.get("id"), []),
+                # O botão só quando o backend aceitaria (change
+                # `cliente-cancela-pedido`, D4): aguardando e sem pagamento.
+                "pode_cancelar": p.get("situacao") == "pendente" and not p.get("pago_em"),
+                "finalizado": etapas_do_pedido.finalizado(p.get("situacao") or ""),
+                # As etapas do caminho (change `linha-do-tempo-do-pedido`).
+                "etapas": etapas_do_pedido.etapas(p.get("situacao") or "",
+                                                  p.get("entrega") or "",
+                                                  p.get("forma_pagamento") or "",
+                                                  p.get("pago_em")),
             }
             for p in dados.get("pedidos") or []
         ]
