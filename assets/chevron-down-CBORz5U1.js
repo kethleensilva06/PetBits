@@ -1,0 +1,1 @@
+import{Q as e}from"./errorBoundaries-NAvjhY-S.js";import{t}from"./createLucideIcon-DZ4r_ckm.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`m6 9 6 6 6-6`,key:`qrunsl`}]],i=t(`chevron-down`,r);export{n,i as t};
