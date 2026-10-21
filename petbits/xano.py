@@ -777,6 +777,15 @@ async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str
     return resposta.get("foto") or {}
 
 
+async def remover_foto_do_produto(produto_id: int, *, token: str) -> dict:
+    """Tira a foto enviada; a loja volta à automática (change
+    `foto-do-produto-na-mao`, D1)."""
+    resposta = await _requisitar("DELETE", f"/equipe/produtos/{produto_id}/foto", token=token)
+    if resposta is None:
+        raise NaoEncontrado("Este produto não está mais disponível.", status=404)
+    return resposta
+
+
 async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
     """Altera só os campos informados; os ausentes permanecem."""
     atualizado = await _requisitar(

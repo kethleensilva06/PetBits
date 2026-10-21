@@ -223,6 +223,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `site-no-github-pages` ✓ | A parte visual também em kethleensilva06.github.io/PetBits, ligada ao servidor do Reflex Cloud |
 | `agendar-retorno` ✓ | O histórico do tutor sugere o retorno marcado pelo veterinário e abre a Agenda com o animal |
 | `editar-tutor` ✓ | A equipe edita nome, CPF, telefone, e-mail e endereço do tutor; o e-mail de entrada muda junto |
+| `foto-do-produto-na-mao` ✓ | Foto do produto pela miniatura do cartão, já no cadastro, e removível |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

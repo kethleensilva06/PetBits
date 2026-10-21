@@ -19,6 +19,7 @@ segundos, compartilhadas por todo mundo) numa única abertura de tela — e um
 F5 derrubaria o painel e a tela dos tutores junto.
 """
 
+import base64
 from datetime import date, timedelta
 from typing import Optional
 
@@ -144,6 +145,11 @@ class EquipeState(rx.State):
     prd_tem_foto: bool = False
     prd_enviando_foto: bool = False
     prd_erro_foto: str = ""
+    # A foto escolhida no cadastro, esperando o id do produto (change
+    # `foto-do-produto-na-mao`, D2). Com `_`, fica no servidor e não vai ao
+    # navegador.
+    _foto_pendente: bytes = b""
+    _extensao_pendente: str = ""
 
     # Pedidos da loja (change `pedidos-da-equipe`).
     pedidos_clinica: list[dict] = []
@@ -275,6 +281,9 @@ class EquipeState(rx.State):
 
     def set_prd_categoria(self, v: str):
         self.prd_categoria = v
+        # Sem foto enviada nem escolhida, a prévia segue a categoria.
+        if not self.prd_tem_foto:
+            self.prd_imagem = imagem_do_produto(self.prd_nome, v, None)
 
     def set_prd_marca(self, v: str):
         self.prd_marca = v
@@ -1013,9 +1022,12 @@ class EquipeState(rx.State):
         self.prd_unidade = ""
         self.prd_preco = ""
         self.prd_estoque = ""
-        self.prd_imagem = ""
+        # A prévia começa na foto automática (change `foto-do-produto-na-mao`).
+        self.prd_imagem = imagem_do_produto("", self.prd_categoria, None)
         self.prd_tem_foto = False
         self.prd_erro_foto = ""
+        self._foto_pendente = b""
+        self._extensao_pendente = ""
         self.prd_dialogo = True
 
     def editar_produto(self, registro: dict):
@@ -1031,13 +1043,17 @@ class EquipeState(rx.State):
         self.prd_imagem = registro["imagem"]
         self.prd_tem_foto = registro["tem_foto"]
         self.prd_erro_foto = ""
+        self._foto_pendente = b""
+        self._extensao_pendente = ""
         self.prd_dialogo = True
 
     async def enviar_foto_produto(self, arquivos: list[rx.UploadFile]):
-        """Só para produto que já existe: a foto é gravada pelo id dele, e a
-        prova de equipe é do backend (change `foto-do-produto`, D5)."""
+        """A foto é gravada pelo id do produto, e a prova de equipe é do
+        backend (change `foto-do-produto`, D5). No cadastro ainda não há id: a
+        foto fica guardada e vai depois de salvar (change
+        `foto-do-produto-na-mao`, D2)."""
         self.prd_erro_foto = ""
-        if self.prd_editando is None or not arquivos:
+        if not arquivos:
             return
         arquivo = arquivos[0]
         conteudo = await arquivo.read()
@@ -1045,6 +1061,14 @@ class EquipeState(rx.State):
             extensao = extensao_da_foto(arquivo.name, len(conteudo))
         except FotoRecusada as motivo:
             self.prd_erro_foto = str(motivo)
+            return
+        if self.prd_editando is None:
+            self._foto_pendente = conteudo
+            self._extensao_pendente = extensao
+            tipo = "jpeg" if extensao in ("jpg", "jpeg") else extensao
+            self.prd_imagem = f"data:image/{tipo};base64," + base64.b64encode(conteudo).decode()
+            self.prd_tem_foto = True
+            yield rx.clear_selected_files(ID_UPLOAD_PRODUTO)
             return
         self.prd_enviando_foto = True
         yield
@@ -1071,6 +1095,37 @@ class EquipeState(rx.State):
             for p in self.produtos
         ]
         yield rx.clear_selected_files(ID_UPLOAD_PRODUTO)
+
+    async def remover_foto_produto(self):
+        """Volta à foto automática (change `foto-do-produto-na-mao`, D1)."""
+        self.prd_erro_foto = ""
+        automatica = imagem_do_produto(self.prd_nome, self.prd_categoria, None)
+        if self.prd_editando is None:
+            self._foto_pendente = b""
+            self._extensao_pendente = ""
+            self.prd_imagem = automatica
+            self.prd_tem_foto = False
+            return
+        self.prd_enviando_foto = True
+        yield
+        try:
+            token = await self._token_de_equipe()
+            await xano.remover_foto_do_produto(self.prd_editando, token=token)
+        except (SemSessao, SessaoExpirada) as erro:
+            self.prd_enviando_foto = False
+            yield await self._encerrar(erro)
+            return
+        except (NaoEncontrado, XanoError) as erro:
+            self.prd_enviando_foto = False
+            self.prd_erro_foto = str(erro)
+            return
+        self.prd_enviando_foto = False
+        self.prd_imagem = automatica
+        self.prd_tem_foto = False
+        self.produtos = [
+            {**p, "imagem": automatica, "tem_foto": False} if p["id"] == self.prd_editando else p
+            for p in self.produtos
+        ]
 
     async def salvar_produto(self):
         if not self.prd_nome.strip():
@@ -1106,7 +1161,18 @@ class EquipeState(rx.State):
         try:
             token = await self._token_de_equipe()
             if self.prd_editando is None:
-                await xano.criar_produto(dados, token=token)
+                criado = await xano.criar_produto(dados, token=token)
+                # A foto escolhida no cadastro vai agora, com o id (D2). Se
+                # falhar, o produto fica com a foto automática e o erro aparece.
+                if self._foto_pendente and criado.get("id"):
+                    try:
+                        await xano.enviar_foto_do_produto(
+                            criado["id"], self._foto_pendente, self._extensao_pendente,
+                            token=token)
+                    except XanoError as erro:
+                        yield rx.toast.error(f"Produto salvo, mas a foto não foi: {erro}")
+                    self._foto_pendente = b""
+                    self._extensao_pendente = ""
             else:
                 await xano.atualizar_produto(self.prd_editando, dados, token=token)
         except (SemSessao, SessaoExpirada) as erro:

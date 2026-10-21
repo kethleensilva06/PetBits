@@ -710,8 +710,22 @@ def _cartao_produto(p: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
             # A mesma imagem que o cliente vê na loja (change `foto-do-produto`, D4).
-            rx.image(src=no_site(p["imagem"]), alt=p["nome"], width="3.5rem", height="3.5rem",
-                     object_fit="cover", border_radius="0.75rem", flex_shrink="0"),
+            # A miniatura abre a edição, onde a foto mora (change
+            # `foto-do-produto-na-mao`, D3).
+            rx.box(
+                rx.image(src=no_site(p["imagem"]), alt=p["nome"], width="3.5rem",
+                         height="3.5rem", object_fit="cover", border_radius="0.75rem"),
+                rx.center(rx.icon("camera", size=12, color="white"), position="absolute",
+                          right="-0.2rem", bottom="-0.2rem", width="1.3rem", height="1.3rem",
+                          border_radius="9999px", background=rx.color("teal", 9)),
+                position="relative",
+                flex_shrink="0",
+                cursor="pointer",
+                title="Trocar foto",
+                aria_label="Trocar a foto",
+                role="button",
+                on_click=lambda: EquipeState.editar_produto(p),
+            ),
             rx.vstack(
                 rx.hstack(
                     rx.heading(p["nome"], size="4"),
@@ -745,16 +759,16 @@ def _cartao_produto(p: dict) -> rx.Component:
 
 
 def _foto_do_produto() -> rx.Component:
-    """Foto do produto (change `foto-do-produto`, D5). Só na edição, porque a
-    foto é gravada pelo id. O seletor não filtra por tipo: com `accept` e
-    `max_size`, o arquivo recusado sumia sem aviso (change `perfil-e-fotos`)."""
-    return rx.cond(
-        EquipeState.prd_editando,
-        rx.hstack(
-            rx.image(src=no_site(EquipeState.prd_imagem), alt="Foto do produto",
-                     width="5.5rem", height="5.5rem", object_fit="cover",
-                     border_radius="1rem", flex_shrink="0"),
-            rx.vstack(
+    """Foto do produto (changes `foto-do-produto` e `foto-do-produto-na-mao`).
+    No cadastro também: a foto escolhida vai logo depois de salvar. O seletor
+    não filtra por tipo: com `accept` e `max_size`, o arquivo recusado sumia
+    sem aviso (change `perfil-e-fotos`)."""
+    return rx.hstack(
+        rx.image(src=no_site(EquipeState.prd_imagem), alt="Foto do produto",
+                 width="5.5rem", height="5.5rem", object_fit="cover",
+                 border_radius="1rem", flex_shrink="0"),
+        rx.vstack(
+            rx.hstack(
                 rx.upload.root(
                     rx.button(
                         rx.cond(EquipeState.prd_enviando_foto, rx.spinner(size="2"),
@@ -770,22 +784,31 @@ def _foto_do_produto() -> rx.Component:
                     on_drop=EquipeState.enviar_foto_produto(
                         rx.upload_files(upload_id=ID_UPLOAD_PRODUTO)),
                 ),
-                rx.text(rx.cond(EquipeState.prd_tem_foto,
-                                "Foto enviada pela equipe. JPG, PNG ou WebP, até 5 MB.",
-                                "Foto automática. JPG, PNG ou WebP, até 5 MB."),
-                        size="1", color=rx.color("gray", 11)),
-                rx.cond(EquipeState.prd_erro_foto,
-                        rx.text(EquipeState.prd_erro_foto, size="1",
-                                color=rx.color("red", 11))),
-                spacing="1",
-                align_items="start",
+                # Volta à foto automática (change `foto-do-produto-na-mao`).
+                rx.cond(
+                    EquipeState.prd_tem_foto,
+                    rx.button(rx.icon("image-off", size=16), "Remover foto", variant="soft",
+                              color_scheme="gray", disabled=EquipeState.prd_enviando_foto,
+                              on_click=EquipeState.remover_foto_produto),
+                ),
+                spacing="2",
+                wrap="wrap",
             ),
-            spacing="3",
-            align="center",
-            width="100%",
+            rx.text(rx.cond(EquipeState.prd_tem_foto,
+                            rx.cond(EquipeState.prd_editando,
+                                    "Foto enviada pela equipe. JPG, PNG ou WebP, até 5 MB.",
+                                    "Esta foto vai junto quando você salvar."),
+                            "Foto automática. JPG, PNG ou WebP, até 5 MB."),
+                    size="1", color=rx.color("gray", 11)),
+            rx.cond(EquipeState.prd_erro_foto,
+                    rx.text(EquipeState.prd_erro_foto, size="1",
+                            color=rx.color("red", 11))),
+            spacing="1",
+            align_items="start",
         ),
-        rx.text("Depois de cadastrar, edite o produto para pôr a foto dele.",
-                size="1", color=rx.color("gray", 11)),
+        spacing="3",
+        align="center",
+        width="100%",
     )
 
 
