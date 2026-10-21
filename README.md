@@ -187,6 +187,23 @@ O primeiro mostra o que iria, sem valores; o segundo publica. Só sobem
 pasta inteira — inclusive `contas-de-teste.local.txt` —, e `--envfile .env`
 mandaria o `XANO_META_TOKEN`.
 
+O site está em https://petbits-blue-grass.reflex.run.
+
+### Também no GitHub Pages
+
+A parte visual também fica em https://kethleensilva06.github.io/PetBits/,
+falando com o mesmo servidor do Reflex Cloud. Com o servidor de
+desenvolvimento parado (os dois usam `.web/`):
+
+```bash
+python scripts/publicar_no_github_pages.py
+python scripts/publicar_no_github_pages.py --publicar
+```
+
+O primeiro compila e mostra o plano; o segundo envia a branch `gh-pages`, que
+o GitHub Pages serve. Se o endereço do servidor do Reflex Cloud mudar, troque
+`SERVIDOR` no script.
+
 ## Ciclo de desenvolvimento
 
 ```text

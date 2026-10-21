@@ -7,6 +7,7 @@ gastaria orçamento da instância do Xano a cada clique no menu.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
 from petbits.clinica import EMAIL, HORARIO
 from petbits.states.auth_state import AuthState
 from petbits.states.loja_state import LojaState
@@ -235,7 +236,7 @@ def tela_vazia(imagem: str, titulo: str, texto: str, acao: rx.Component) -> rx.C
     """
     return rx.card(
         rx.vstack(
-            rx.image(src=imagem, alt="", width="15rem", max_width="80%", height="10rem",
+            rx.image(src=no_site(imagem), alt="", width="15rem", max_width="80%", height="10rem",
                      object_fit="cover", border_radius="1.25rem"),
             rx.heading(titulo, size="5", weight="bold", text_align="center"),
             rx.text(texto, size="2", color=rx.color("gray", 11), text_align="center",

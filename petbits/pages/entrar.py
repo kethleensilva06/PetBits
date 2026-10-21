@@ -8,6 +8,7 @@ como defeito mas todo mundo sente.
 import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
+from petbits.caminhos import no_site
 from petbits.states.auth_state import AuthState
 from petbits.visual import campo, horario_e_contato, marca
 
@@ -325,7 +326,7 @@ def _capa() -> rx.Component:
         height="100%",
     )
     foto = rx.image(
-        src=FOTO_DA_CAPA[0],
+        src=no_site(FOTO_DA_CAPA[0]),
         alt=FOTO_DA_CAPA[1],
         width="100%",
         height=rx.breakpoints(initial="13rem", md="24rem"),
@@ -346,7 +347,7 @@ def _capa() -> rx.Component:
 def _servico(foto: str, alt: str, icone: str, titulo: str, texto: str) -> rx.Component:
     return rx.card(
         rx.vstack(
-            rx.image(src=foto, alt=alt, width="100%", height="11rem", object_fit="cover",
+            rx.image(src=no_site(foto), alt=alt, width="100%", height="11rem", object_fit="cover",
                      border_radius="0.9rem"),
             rx.hstack(
                 rx.icon(icone, size=18, color=rx.color("teal", 10)),

@@ -6,6 +6,7 @@ no `POST pedidos`, com o preço do catálogo naquele instante.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
 from petbits import esqueletos
 from petbits.states.loja_state import ORDENS, LojaState
 from petbits.visual import (LARGURA_DO_CLIENTE, rodape_do_cliente, tela_vazia, titulo_de_pagina,
@@ -27,7 +28,7 @@ def _produto(p: rx.Var) -> rx.Component:
     return rx.card(
         rx.vstack(
             # A foto e o nome abrem o detalhe, como numa loja de verdade.
-            rx.image(src=p["imagem"], alt=p["nome"], width="100%", height="10rem",
+            rx.image(src=no_site(p["imagem"]), alt=p["nome"], width="100%", height="10rem",
                      object_fit="cover", border_radius="0.9rem", cursor="zoom-in",
                      on_click=LojaState.abrir_produto(p)),
             rx.hstack(
@@ -69,7 +70,7 @@ def _detalhe_do_produto() -> rx.Component:
     return rx.dialog.root(
         rx.dialog.content(
             rx.grid(
-                rx.image(src=p["imagem"], alt=p["nome"], width="100%",
+                rx.image(src=no_site(p["imagem"]), alt=p["nome"], width="100%",
                          height=rx.breakpoints(initial="15rem", sm="22rem"),
                          object_fit="cover", border_radius="1rem"),
                 rx.vstack(

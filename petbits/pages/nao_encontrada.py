@@ -5,6 +5,7 @@ Sem `on_load` e sem requisição: só a marca, a foto e os caminhos de volta.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
 from petbits.visual import marca
 
 FOTO = ("/fotos/outro.webp", "Um coelho branco olhando para o lado, curioso")
@@ -14,7 +15,7 @@ def nao_encontrada_page() -> rx.Component:
     return rx.center(
         rx.vstack(
             marca("/", tamanho="6"),
-            rx.image(src=FOTO[0], alt=FOTO[1], width="14rem", height="14rem",
+            rx.image(src=no_site(FOTO[0]), alt=FOTO[1], width="14rem", height="14rem",
                      object_fit="cover", border_radius="2rem",
                      box_shadow=f"0 18px 40px -20px {rx.color('teal', 9)}"),
             rx.heading("Página não encontrada", size="7", weight="bold",

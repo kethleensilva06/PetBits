@@ -7,6 +7,7 @@ animais de quem perguntou.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
 from petbits import esqueletos
 from petbits.pages.historico import dialogo_historico_tutor
 from petbits.states.auth_state import AuthState
@@ -21,7 +22,7 @@ from petbits.states.pet_state import ID_UPLOAD_ANIMAL, PetState
 def _cartao(animal: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
-            rx.image(src=rx.cond(animal["foto"], animal["foto"], animal["imagem"]),
+            rx.image(src=no_site(rx.cond(animal["foto"], animal["foto"], animal["imagem"])),
                      alt=animal["nome"], width="4.5rem",
                      height="4.5rem", border_radius="1.1rem", flex_shrink="0",
                      object_fit="cover"),
@@ -91,8 +92,8 @@ def _dialogo() -> rx.Component:
                 rx.cond(
                     PetState.editando_id,
                     rx.hstack(
-                        rx.image(src=rx.cond(PetState.f_foto, PetState.f_foto,
-                                             PetState.f_imagem),
+                        rx.image(src=no_site(rx.cond(PetState.f_foto, PetState.f_foto,
+                                                     PetState.f_imagem)),
                                  alt="Foto do animal", width="5.5rem", height="5.5rem",
                                  object_fit="cover", border_radius="1.25rem",
                                  flex_shrink="0"),
@@ -268,7 +269,7 @@ def _banner() -> rx.Component:
                 align_items="start",
                 flex="1",
             ),
-            rx.image(src="/fotos/banner.webp", alt="Um cão e um gato abraçados",
+            rx.image(src=no_site("/fotos/banner.webp"), alt="Um cão e um gato abraçados",
                      width="17rem", height="11.5rem", object_fit="cover",
                      border_radius="1.25rem", flex_shrink="0",
                      display=rx.breakpoints(initial="none", sm="block")),

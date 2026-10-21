@@ -13,6 +13,7 @@ tutor e animal não foi desenhada nesta change.
 
 import reflex as rx
 
+from petbits.caminhos import no_site
 from petbits import esqueletos
 from petbits.states.auth_state import AuthState
 from petbits.painel import ESTOQUE_BAIXO, PEDIDOS_ESPERANDO
@@ -709,7 +710,7 @@ def _cartao_produto(p: dict) -> rx.Component:
     return rx.card(
         rx.hstack(
             # A mesma imagem que o cliente vê na loja (change `foto-do-produto`, D4).
-            rx.image(src=p["imagem"], alt=p["nome"], width="3.5rem", height="3.5rem",
+            rx.image(src=no_site(p["imagem"]), alt=p["nome"], width="3.5rem", height="3.5rem",
                      object_fit="cover", border_radius="0.75rem", flex_shrink="0"),
             rx.vstack(
                 rx.hstack(
@@ -750,7 +751,7 @@ def _foto_do_produto() -> rx.Component:
     return rx.cond(
         EquipeState.prd_editando,
         rx.hstack(
-            rx.image(src=EquipeState.prd_imagem, alt="Foto do produto",
+            rx.image(src=no_site(EquipeState.prd_imagem), alt="Foto do produto",
                      width="5.5rem", height="5.5rem", object_fit="cover",
                      border_radius="1rem", flex_shrink="0"),
             rx.vstack(
