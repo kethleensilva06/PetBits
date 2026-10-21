@@ -1178,6 +1178,9 @@ def _cartao_tutor(t: dict) -> rx.Component:
                 spacing="4", wrap="wrap",
             ),
             rx.text(t["endereco"], size="1", color=rx.color("gray", 11)),
+            # Corrigir o cadastro (change `editar-tutor`).
+            rx.button(rx.icon("pencil", size=14), "Editar", variant="soft", size="1",
+                      on_click=EquipeState.editar_tutor(t), margin_top="0.25rem"),
             spacing="1", align_items="start", width="100%",
         ),
         width="100%",
@@ -1187,7 +1190,7 @@ def _cartao_tutor(t: dict) -> rx.Component:
 def _dialogo_tutor() -> rx.Component:
     return rx.dialog.root(
         rx.dialog.content(
-            rx.dialog.title("Novo tutor"),
+            rx.dialog.title(EquipeState.titulo_tut),
             rx.vstack(
                 campo("Nome", rx.input(placeholder="Nome completo",
                                         value=EquipeState.tut_nome,
@@ -1217,12 +1220,21 @@ def _dialogo_tutor() -> rx.Component:
                 # pessoa sem lhe dar acesso -- descobrir isso depois, quando ela
                 # tentar se cadastrar e for recusada sem explicacao, e o que
                 # este texto existe para evitar.
-                rx.callout(
-                    "Este tutor nao tera acesso ao aplicativo. O documento fica "
-                    "reservado para ele, entao, se a pessoa tentar se cadastrar "
-                    "sozinha depois, o cadastro sera recusado ate a clinica ligar "
-                    "uma conta a ficha.",
-                    icon="info", size="1", width="100%",
+                rx.cond(
+                    EquipeState.tut_editando,
+                    # Na edição, o que muda para o cliente (change `editar-tutor`, D4).
+                    rx.callout(
+                        "Se o tutor tem conta no site, o e-mail novo passa a ser o de "
+                        "entrada dele. A senha não muda.",
+                        icon="info", size="1", width="100%",
+                    ),
+                    rx.callout(
+                        "Este tutor nao tera acesso ao aplicativo. O documento fica "
+                        "reservado para ele, entao, se a pessoa tentar se cadastrar "
+                        "sozinha depois, o cadastro sera recusado ate a clinica ligar "
+                        "uma conta a ficha.",
+                        icon="info", size="1", width="100%",
+                    ),
                 ),
                 rx.cond(
                     EquipeState.tut_erro,

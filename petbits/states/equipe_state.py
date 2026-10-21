@@ -167,6 +167,9 @@ class EquipeState(rx.State):
     tut_telefone: str = ""
     tut_email: str = ""
     tut_endereco: str = ""
+    # Editando um tutor existente (change `editar-tutor`); None é cadastro novo.
+    tut_editando: Optional[int] = None
+    tut_original: dict[str, str] = {}
 
     # --- formulário de animal da clínica ---
     ani_dialogo: bool = False
@@ -414,6 +417,8 @@ class EquipeState(rx.State):
         self.srv_erro = ""
         self.salvando = False
         self.tut_dialogo = False
+        self.tut_editando = None
+        self.tut_original = {}
         self.tut_erro = ""
         self.ani_dialogo = False
         self.ani_erro = ""
@@ -768,7 +773,34 @@ class EquipeState(rx.State):
     def novo_tutor(self):
         self.tut_erro = ""
         self._limpar_form_tut()
+        self.tut_editando = None
+        self.tut_original = {}
         self.tut_dialogo = True
+
+    def editar_tutor(self, registro: dict):
+        """O mesmo formulário, preenchido (change `editar-tutor`)."""
+        self.tut_erro = ""
+        self.tut_editando = registro.get("id")
+        self.tut_nome = registro.get("nome") or ""
+        self.tut_documento = registro.get("_documento") or ""
+        self.tut_telefone = registro.get("_telefone") or ""
+        self.tut_email = registro.get("_email") or ""
+        self.tut_endereco = registro.get("_endereco") or ""
+        self.tut_original = self._dados_do_form_tut()
+        self.tut_dialogo = True
+
+    def _dados_do_form_tut(self) -> dict[str, str]:
+        return {
+            "nome": self.tut_nome.strip(),
+            "documento": so_digitos(self.tut_documento),
+            "telefone": self.tut_telefone.strip(),
+            "email": self.tut_email.strip().lower(),
+            "endereco": self.tut_endereco.strip(),
+        }
+
+    @rx.var
+    def titulo_tut(self) -> str:
+        return "Editar tutor" if self.tut_editando is not None else "Novo tutor"
 
     def fechar_tutor(self):
         self.tut_dialogo = False
@@ -779,26 +811,41 @@ class EquipeState(rx.State):
             self.tut_erro = "Informe o nome do tutor."
             return
         documento = so_digitos(self.tut_documento)
-        # Só aviso: a regra é do backend (change `cpf-valido`, D3).
-        if not cpf_valido(documento):
+        # Só aviso: a regra é do backend (change `cpf-valido`, D3). Na edição,
+        # só quando o CPF mudou: há fichas antigas com CPF inválido, e elas não
+        # podem travar a correção do telefone (change `editar-tutor`).
+        cpf_mudou = self.tut_editando is None or documento != self.tut_original.get("documento")
+        if cpf_mudou and not cpf_valido(documento):
             self.tut_erro = "CPF inválido. Confira os números."
             return
 
-        dados = {
-            "nome": self.tut_nome.strip(),
-            "documento": documento,
-            "telefone": self.tut_telefone.strip(),
-            "endereco": self.tut_endereco.strip(),
-        }
-        if self.tut_email.strip():
-            dados["email"] = self.tut_email.strip().lower()
+        if self.tut_editando is not None:
+            # Só o que mudou (change `editar-tutor`, D2): salvar sem mexer no
+            # e-mail não pode cair nas regras do e-mail.
+            atual = self._dados_do_form_tut()
+            dados = {k: v for k, v in atual.items() if v != self.tut_original.get(k)}
+            if not dados:
+                self.tut_dialogo = False
+                return
+        else:
+            dados = {
+                "nome": self.tut_nome.strip(),
+                "documento": documento,
+                "telefone": self.tut_telefone.strip(),
+                "endereco": self.tut_endereco.strip(),
+            }
+            if self.tut_email.strip():
+                dados["email"] = self.tut_email.strip().lower()
 
         self.salvando = True
         yield
 
         try:
             token = await self._token_de_equipe()
-            await xano.criar_tutor_de_balcao(dados, token=token)
+            if self.tut_editando is not None:
+                await xano.alterar_tutor(self.tut_editando, dados, token=token)
+            else:
+                await xano.criar_tutor_de_balcao(dados, token=token)
         except (SemSessao, SessaoExpirada) as erro:
             self.salvando = False
             yield await self._encerrar(erro)
@@ -1410,6 +1457,11 @@ class EquipeState(rx.State):
                 "telefone": t.get("telefone") or "-",
                 "email": t.get("email") or "-",
                 "endereco": t.get("endereco") or "-",
+                # Crus, para o formulário de edição (change `editar-tutor`).
+                "_documento": mascaras.cpf(t.get("documento") or ""),
+                "_telefone": mascaras.telefone(t.get("telefone") or ""),
+                "_email": t.get("email") or "",
+                "_endereco": t.get("endereco") or "",
             }
             for t in registros
         ]

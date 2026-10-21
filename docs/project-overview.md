@@ -222,6 +222,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `publicacao-no-reflex-cloud` ✓ | Site no ar em petbits-blue-grass.reflex.run, por um script que só manda o site e as duas variáveis do Xano |
 | `site-no-github-pages` ✓ | A parte visual também em kethleensilva06.github.io/PetBits, ligada ao servidor do Reflex Cloud |
 | `agendar-retorno` ✓ | O histórico do tutor sugere o retorno marcado pelo veterinário e abre a Agenda com o animal |
+| `editar-tutor` ✓ | A equipe edita nome, CPF, telefone, e-mail e endereço do tutor; o e-mail de entrada muda junto |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

@@ -618,6 +618,15 @@ async def criar_tutor_de_balcao(dados: dict, *, token: str) -> dict:
     return criado
 
 
+async def alterar_tutor(tutor_id: int, dados: dict, *, token: str) -> dict:
+    """Altera os dados de um tutor (change `editar-tutor`). Só vão os campos que
+    mudaram. Inexistente chega como 404, que vira `NaoEncontrado`."""
+    alterado = await _requisitar("PATCH", f"/equipe/tutores/{tutor_id}", token=token, json=dados)
+    if alterado is None:
+        raise NaoEncontrado("Este tutor não está mais disponível.", status=404)
+    return alterado
+
+
 async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
     """Cadastra um animal para um tutor existente. `dados` leva `id_tutor`."""
     criado = await _requisitar("POST", "/equipe/animais", token=token, json=dados)
