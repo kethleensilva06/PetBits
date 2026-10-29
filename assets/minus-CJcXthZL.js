@@ -1,0 +1,1 @@
+import{Q as e}from"./errorBoundaries-NAvjhY-S.js";import{t}from"./createLucideIcon-DZ4r_ckm.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`M5 12h14`,key:`1ays0h`}]],i=t(`minus`,r);export{n,i as t};

@@ -1,0 +1,1 @@
+import{Q as e}from"./errorBoundaries-NAvjhY-S.js";import{t}from"./createLucideIcon-DZ4r_ckm.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`m13.5 8.5-5 5`,key:`1cs55j`}],[`path`,{d:`m8.5 8.5 5 5`,key:`a8mexj`}],[`circle`,{cx:`11`,cy:`11`,r:`8`,key:`4ej97u`}],[`path`,{d:`m21 21-4.3-4.3`,key:`1qie3q`}]],i=t(`search-x`,r);export{n,i as t};
