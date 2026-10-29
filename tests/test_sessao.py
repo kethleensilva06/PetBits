@@ -71,3 +71,36 @@ class Saudacao(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FimDaSessao(unittest.TestCase):
+    """A validade de 12 horas e o "Manter conectado" (change
+    `sessao-lembrada`, D3)."""
+
+    def fim(self, token="t", expira_em="1000", lembrar="1", aberto="", agora=500):
+        from petbits.states.auth_state import fim_da_sessao
+        return fim_da_sessao(token, expira_em, lembrar, aberto, agora)
+
+    def test_mantendo_conectado_vale_mesmo_sem_o_cookie(self):
+        self.assertEqual(self.fim(), "")
+
+    def test_passou_da_validade(self):
+        self.assertEqual(self.fim(agora=1000), "venceu")
+        self.assertEqual(self.fim(lembrar="", aberto="1", agora=2000), "venceu")
+
+    def test_sem_manter_vale_enquanto_o_navegador_esta_aberto(self):
+        self.assertEqual(self.fim(lembrar="", aberto="1"), "")
+
+    def test_sem_manter_navegador_fechado(self):
+        self.assertEqual(self.fim(lembrar="", aberto=""), "fechou")
+
+    def test_sessao_antiga_sem_validade(self):
+        self.assertEqual(self.fim(expira_em=""), "fechou")
+        self.assertEqual(self.fim(expira_em="lixo"), "fechou")
+
+    def test_sem_token_nada_a_encerrar(self):
+        self.assertEqual(self.fim(token="", expira_em=""), "")
+
+    def test_doze_horas(self):
+        from petbits.states.auth_state import DURACAO_DA_SESSAO
+        self.assertEqual(DURACAO_DA_SESSAO, 12 * 60 * 60)

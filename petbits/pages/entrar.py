@@ -458,6 +458,14 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
             AuthState.icone_senha,
             AuthState.alternar_senha,
         ),
+        # Change `sessao-lembrada`, D5: marcada de início; desmarcada, a
+        # sessão acaba ao fechar o navegador.
+        rx.checkbox(
+            "Manter conectado por 12 horas",
+            checked=AuthState.manter_conectado,
+            on_change=AuthState.set_manter_conectado,
+            size="2",
+        ),
         titulo=titulo,
         subtitulo=subtitulo,
         rotulo_envio="Entrar",

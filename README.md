@@ -77,7 +77,10 @@ cadastro ser público. O acesso da equipe da clínica chega numa change
 própria.
 
 A sessão sobrevive a recarregar a página, a abrir outra aba e a reiniciar o
-`reflex run`. Sair limpa tudo.
+`reflex run`, e vale por 12 horas a partir da entrada. Com **Manter
+conectado** (marcado de início) ela sobrevive também a fechar o navegador;
+desmarcado, acaba ao fechar. Cada endereço do site (local, Reflex Cloud,
+GitHub Pages) tem a sua própria sessão. Sair limpa tudo.
 
 ## Contas de teste (Alt+1 e Alt+2)
 

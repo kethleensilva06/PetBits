@@ -18,9 +18,11 @@ def entrar(aba: str, papel: str, senha_certa: bool = True) -> SimpleNamespace:
     s = SimpleNamespace(
         aba=aba, login_email="a@b.com", login_senha="x", erro="", enviando=False,
         token="", usuario_nome="", usuario_papel="", sessao_validada=False,
-        sessao_expirou=False, redirecionou=None,
+        sessao_expirou=False, redirecionou=None, manter_conectado=True,
+        expira_em="", lembrar="", navegador_aberto="",
     )
     s._guardar = lambda token, perfil: AuthState._guardar(s, token, perfil)
+    s._marcar_validade = lambda manter: AuthState._marcar_validade(s, manter)
 
     async def falso_entrar(email, senha):
         if not senha_certa:
@@ -46,6 +48,9 @@ class Entrada(unittest.TestCase):
     def test_cliente_pela_entrada_de_clientes(self):
         s = entrar("cliente", "member")
         self.assertEqual((s.token, s.redirecionou), ("t", "/animais"))
+        # A validade das 12 horas fica marcada (change `sessao-lembrada`).
+        self.assertTrue(s.expira_em)
+        self.assertEqual((s.lembrar, s.navegador_aberto), ("1", ""))
 
     def test_gerencia_e_equipe_pela_entrada_da_equipe(self):
         for papel in ("admin", "staff"):
@@ -74,6 +79,7 @@ class Entrada(unittest.TestCase):
 
     def test_cada_pagina_define_a_aba(self):
         s = SimpleNamespace(aba="", enviando=True, token="", usuario_papel="")
+        s._fim = lambda: ""
         s.redirecionar_se_logado = lambda: AuthState.redirecionar_se_logado.fn(s)
         AuthState.abrir_entrada_da_equipe.fn(s)
         self.assertEqual(s.aba, "colaborador")
