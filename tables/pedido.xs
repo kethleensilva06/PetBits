@@ -48,5 +48,6 @@ table pedido {
     {type: "primary", field: [{name: "id"}]}
     {type: "btree", field: [{name: "id_tutor", op: "asc"}, {name: "created_at", op: "desc"}]}
     {type: "btree", field: [{name: "situacao", op: "asc"}]}
+    {type: "btree", field: [{name: "created_at", op: "desc"}]}
   ]
 }

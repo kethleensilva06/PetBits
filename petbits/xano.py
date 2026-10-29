@@ -835,9 +835,10 @@ async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict
 # --- pedidos da equipe (change `pedidos-da-equipe`) ----------------------------
 
 
-async def pedidos_da_clinica(situacao: str = "", *, token: str) -> dict:
-    """`{pedidos, itens}` de todos os clientes; `situacao` vazia traz todos."""
-    params = {"situacao": situacao} if situacao else None
+async def pedidos_da_clinica(situacao: str = "", dias: int = 0, *, token: str) -> dict:
+    """`{pedidos, itens}` de todos os clientes; `situacao` vazia traz todas, e
+    `dias` 0 traz todo o período (change `indices-e-paginacao`, D2)."""
+    params = {k: v for k, v in (("situacao", situacao), ("dias", dias)) if v} or None
     dados = await _requisitar("GET", "/equipe/pedidos", token=token, params=params)
     return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
 

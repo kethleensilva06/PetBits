@@ -43,5 +43,6 @@ table tutor {
     {type: "btree|unique", field: [{name: "documento", op: "asc"}]}
     {type: "btree", field: [{name: "id_user", op: "asc"}]}
     {type: "btree", field: [{name: "nome", op: "asc"}]}
+    {type: "btree", field: [{name: "email", op: "asc"}]}
   ]
 }

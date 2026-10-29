@@ -12,6 +12,9 @@ query "equipe/pedidos" verb=GET {
   input {
     // Vazio traz todos.
     text situacao? filters=trim
+    // Change `indices-e-paginacao`, D2: so os ultimos `dias` dias; vazio ou 0
+    // traz todo o periodo.
+    int dias? filters=min:0
   }
 
   stack {
@@ -29,6 +32,19 @@ query "equipe/pedidos" verb=GET {
       error = "Sem permissao para esta area."
     }
 
+    // Com `dias` vazio ou 0, `desde` e 0 e a mesma consulta traz tudo.
+    var $desde {
+      value = 0
+    }
+
+    conditional {
+      if (($input.dias != null) && ($input.dias > 0)) {
+        var.update $desde {
+          value = ("now"|to_ms) - ($input.dias * 86400000)
+        }
+      }
+    }
+
     var $pedidos {
       value = []
     }
@@ -44,6 +60,7 @@ query "equipe/pedidos" verb=GET {
             tutor: {type: "left", table: "tutor", where: $db.pedido.id_tutor == $db.tutor.id}
           }
 
+          where = $db.pedido.created_at >= $desde
           eval = {cliente_nome: $db.tutor.nome, cliente_telefone: $db.tutor.telefone}
           sort = {created_at: "desc"}
           output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "origem", "cliente_nome", "cliente_telefone"]
@@ -51,6 +68,11 @@ query "equipe/pedidos" verb=GET {
         } as $todos
 
         db.query pedido_item {
+          join = {
+            pedido: {type: "inner", table: "pedido", where: $db.pedido_item.id_pedido == $db.pedido.id}
+          }
+
+          where = $db.pedido.created_at >= $desde
           output = ["id_pedido", "produto_nome", "quantidade", "preco_unitario", "valor_linha"]
           return = {type: "list"}
         } as $todos_itens
@@ -70,7 +92,7 @@ query "equipe/pedidos" verb=GET {
             tutor: {type: "left", table: "tutor", where: $db.pedido.id_tutor == $db.tutor.id}
           }
 
-          where = $db.pedido.situacao == $input.situacao
+          where = ($db.pedido.situacao == $input.situacao) && ($db.pedido.created_at >= $desde)
           eval = {cliente_nome: $db.tutor.nome, cliente_telefone: $db.tutor.telefone}
           sort = {created_at: "desc"}
           output = ["id", "created_at", "situacao", "forma_pagamento", "entrega", "endereco_entrega", "total", "pago_em", "origem", "cliente_nome", "cliente_telefone"]
@@ -82,7 +104,7 @@ query "equipe/pedidos" verb=GET {
             pedido: {type: "inner", table: "pedido", where: $db.pedido_item.id_pedido == $db.pedido.id}
           }
 
-          where = $db.pedido.situacao == $input.situacao
+          where = ($db.pedido.situacao == $input.situacao) && ($db.pedido.created_at >= $desde)
           output = ["id_pedido", "produto_nome", "quantidade", "preco_unitario", "valor_linha"]
           return = {type: "list"}
         } as $filtrados_itens

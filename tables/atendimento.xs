@@ -50,5 +50,6 @@ table atendimento {
   index = [
     {type: "primary", field: [{name: "id"}]}
     {type: "btree", field: [{name: "id_pet", op: "asc"}, {name: "data_atendimento", op: "desc"}]}
+    {type: "btree", field: [{name: "id_colaborador", op: "asc"}]}
   ]
 }

@@ -50,6 +50,11 @@ FUNCOES = rotulos.FUNCOES
 
 FUNCAO_LEGIVEL = rotulos.FUNCAO_LEGIVEL
 
+# O período da lista de Pedidos, em dias; "0" é todo o período (change
+# `indices-e-paginacao`, D2).
+PERIODOS = ("90", "30", "0")
+PERIODO_PADRAO = "90"
+
 
 def _funcao_legivel(valor: str) -> str:
     return FUNCAO_LEGIVEL.get(valor or "", valor or "-")
@@ -154,6 +159,8 @@ class EquipeState(rx.State):
     # Pedidos da loja (change `pedidos-da-equipe`).
     pedidos_clinica: list[dict] = []
     filtro_pedidos: str = "todos"
+    # Últimos quantos dias; "0" é todo o período (change `indices-e-paginacao`).
+    periodo_pedidos: str = PERIODO_PADRAO
 
     # Venda no balcão (change `venda-no-balcao`).
     balcao_cliente: str = ""
@@ -404,6 +411,7 @@ class EquipeState(rx.State):
         self.produtos = []
         self.pedidos_clinica = []
         self.filtro_pedidos = "todos"
+        self.periodo_pedidos = PERIODO_PADRAO
         self.balcao_cliente = ""
         self.balcao_carrinho = {}
         self.balcao_aviso = ""
@@ -1259,10 +1267,16 @@ class EquipeState(rx.State):
         """Do painel para Pedidos já filtrado (change `painel-do-dia`, D4). O
         `on_load` de Pedidos carrega com este filtro."""
         self.filtro_pedidos = situacao
+        # O painel conta sem período: a lista tem de bater com a contagem (D3).
+        self.periodo_pedidos = "0"
         return rx.redirect("/equipe/pedidos")
 
     async def set_filtro_pedidos(self, valor: str):
         self.filtro_pedidos = valor
+        return await self.carregar_pedidos_clinica()
+
+    async def set_periodo_pedidos(self, valor: str):
+        self.periodo_pedidos = valor if valor in PERIODOS else PERIODO_PADRAO
         return await self.carregar_pedidos_clinica()
 
     async def carregar_pedidos_clinica(self):
@@ -1271,7 +1285,8 @@ class EquipeState(rx.State):
         filtro = "" if self.filtro_pedidos == "todos" else self.filtro_pedidos
         try:
             token = await self._token_de_equipe()
-            dados = await xano.pedidos_da_clinica(filtro, token=token)
+            dados = await xano.pedidos_da_clinica(filtro, int(self.periodo_pedidos),
+                                                  token=token)
         except (SemSessao, SessaoExpirada) as erro:
             self.carregando = False
             return await self._encerrar(erro)

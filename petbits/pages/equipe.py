@@ -958,19 +958,35 @@ def _cartao_pedido(p: dict) -> rx.Component:
 
 def pedidos_equipe_page() -> rx.Component:
     return _casca(
-        rx.select.root(
-            rx.select.trigger(),
-            rx.select.content(
-                rx.select.item("Todos", value="todos"),
-                rx.select.item("Aguardando pagamento", value="pendente"),
-                rx.select.item("Pagos", value="pago"),
-                rx.select.item("Prontos para retirada", value="pronto_retirada"),
-                rx.select.item("Enviados", value="enviado"),
-                rx.select.item("Entregues", value="entregue"),
-                rx.select.item("Cancelados", value="cancelado"),
+        rx.hstack(
+            rx.select.root(
+                rx.select.trigger(aria_label="Situação"),
+                rx.select.content(
+                    rx.select.item("Todos", value="todos"),
+                    rx.select.item("Aguardando pagamento", value="pendente"),
+                    rx.select.item("Pagos", value="pago"),
+                    rx.select.item("Prontos para retirada", value="pronto_retirada"),
+                    rx.select.item("Enviados", value="enviado"),
+                    rx.select.item("Entregues", value="entregue"),
+                    rx.select.item("Cancelados", value="cancelado"),
+                ),
+                value=EquipeState.filtro_pedidos,
+                on_change=EquipeState.set_filtro_pedidos,
             ),
-            value=EquipeState.filtro_pedidos,
-            on_change=EquipeState.set_filtro_pedidos,
+            # Change `indices-e-paginacao`: a lista que cresce sem parar vem por
+            # período; o resumo e o CSV seguem o que está na tela.
+            rx.select.root(
+                rx.select.trigger(aria_label="Período"),
+                rx.select.content(
+                    rx.select.item("Últimos 90 dias", value="90"),
+                    rx.select.item("Últimos 30 dias", value="30"),
+                    rx.select.item("Todo o período", value="0"),
+                ),
+                value=EquipeState.periodo_pedidos,
+                on_change=EquipeState.set_periodo_pedidos,
+            ),
+            spacing="2",
+            wrap="wrap",
         ),
         # O que está na tela, somado, e para planilha (change `resumo-dos-pedidos`).
         rx.cond(

@@ -461,7 +461,7 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
         # Change `sessao-lembrada`, D5: marcada de início; desmarcada, a
         # sessão acaba ao fechar o navegador.
         rx.checkbox(
-            "Manter conectado por 12 horas",
+            "Manter conectado",
             checked=AuthState.manter_conectado,
             on_change=AuthState.set_manter_conectado,
             size="2",
