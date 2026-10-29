@@ -109,6 +109,14 @@ def sair() -> rx.Component:
                      aria_label="Sair")
 
 
+def atualizar() -> rx.Component:
+    # Busca tudo de novo, sem o que estava guardado (change `telas-guardadas`,
+    # D5). Só o ícone, como o Sair no celular; o nome vai para o leitor de tela.
+    return rx.icon_button(rx.icon("refresh-cw", size=16), on_click=AuthState.atualizar,
+                          variant="soft", color_scheme="gray", size="2",
+                          aria_label="Atualizar", title="Atualizar")
+
+
 def topo_do_cliente(atual: str) -> rx.Component:
     """O cabeçalho único da área do cliente (casa, agenda, loja, pedidos)."""
     return rx.vstack(
@@ -146,6 +154,7 @@ def topo_do_cliente(atual: str) -> rx.Component:
                 box_shadow=(f"0 0 0 2px {rx.color('teal', 8)}" if atual == "/perfil"
                             else "none"),
             ),
+            atualizar(),
             sair(),
         ),
         rx.hstack(

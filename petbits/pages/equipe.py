@@ -22,7 +22,7 @@ from petbits.states.historico_state import HistoricoEquipeState
 from petbits.states.equipe_state import (FUNCAO_LEGIVEL, FUNCOES, ID_UPLOAD_PRODUTO,
                                          EquipeState)
 from petbits.states.loja_state import CATEGORIAS as CATEGORIAS_PRODUTO
-from petbits.visual import barra, campo, marca, pilula, sair, titulo_de_pagina
+from petbits.visual import atualizar, barra, campo, marca, pilula, sair, titulo_de_pagina
 
 AREAS = [
     ("/equipe", "Painel", "layout-dashboard"),
@@ -127,6 +127,7 @@ def _casca(
                     title="Meu perfil",
                     underline="none",
                 ),
+                atualizar(),
                 sair(),
             ),
             _navegacao(rota),

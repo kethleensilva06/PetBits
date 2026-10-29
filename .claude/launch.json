@@ -12,6 +12,19 @@
         "PYTHONUTF8": "1",
         "PYTHONIOENCODING": "utf-8"
       }
+    },
+    {
+      "name": "petbits-medindo",
+      "runtimeExecutable": ".venv/Scripts/reflex.exe",
+      "runtimeArgs": [
+        "run"
+      ],
+      "port": 3000,
+      "env": {
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "PETBITS_MEDIR": ".web/medicao.txt"
+      }
     }
   ]
 }

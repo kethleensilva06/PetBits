@@ -20,7 +20,11 @@ from typing import Any, Optional
 import httpx
 from dotenv import load_dotenv
 
+from petbits.guardados import guardado, renova
 from petbits.mensagens import acentuar
+
+# Os tempos das leituras guardadas (change `telas-guardadas`, D3).
+MINUTO = 60
 
 load_dotenv()
 
@@ -358,6 +362,7 @@ async def cadastrar_tutor(
     return await _requisitar("POST", "/tutor/cadastro", json=dados)
 
 
+@guardado("ficha", 30 * MINUTO)
 async def minha_ficha(token: str) -> Optional[dict]:
     """A ficha de tutor de quem está logado, ou None se a conta não tiver."""
     return await _requisitar("GET", "/me/tutor", token=token)
@@ -374,6 +379,7 @@ async def minha_ficha(token: str) -> Optional[dict]:
 # backend, a partir da credencial.
 
 
+@guardado("animais", 10 * MINUTO)
 async def listar_animais(*, token: str) -> list[dict]:
     """Os animais do tutor autenticado. Lista vazia quando nao ha nenhum."""
     dados = await _requisitar("GET", "/pet", token=token)
@@ -394,6 +400,7 @@ class NaoEncontrado(XanoError):
     """
 
 
+@renova("animais")
 async def criar_animal(dados: dict, *, token: str) -> dict:
     """Cria um animal para o tutor autenticado."""
     criado = await _requisitar("POST", "/pet", token=token, json=dados)
@@ -402,6 +409,7 @@ async def criar_animal(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("animais")
 async def atualizar_animal(animal_id: int, dados: dict, *, token: str) -> dict:
     """Altera os campos informados de um animal do tutor.
 
@@ -438,6 +446,7 @@ def _arquivo_de_foto(conteudo: bytes, extensao: str) -> tuple[dict, dict]:
     return {"foto": (f"foto.{extensao}", conteudo, mime)}, {"extensao": extensao}
 
 
+@renova("ficha")
 async def alterar_minha_ficha(dados: dict, *, token: str) -> dict:
     """Altera nome, telefone e endereco da ficha do token. CPF e e-mail nao
     estao no `input` do endpoint: mesmo enviados, nao mudariam."""
@@ -452,12 +461,14 @@ async def trocar_senha(atual: str, nova: str, confirmar: str, *, token: str) -> 
                       json={"senha_atual": atual, "nova_senha": nova, "confirmar": confirmar})
 
 
+@renova("ficha")
 async def enviar_foto_de_perfil(conteudo: bytes, extensao: str, *, token: str) -> dict:
     files, data = _arquivo_de_foto(conteudo, extensao)
     resposta = await _requisitar("POST", "/me/tutor/foto", token=token, files=files, data=data)
     return (resposta or {}).get("foto") or {}
 
 
+@renova("animais")
 async def enviar_foto_do_animal(animal_id: int, conteudo: bytes, extensao: str, *,
                                 token: str) -> dict:
     files, data = _arquivo_de_foto(conteudo, extensao)
@@ -504,6 +515,7 @@ async def painel_equipe(dia_ms: int, *, token: str) -> dict:
 # --- colaboradores ---
 
 
+@guardado("colaboradores", 10 * MINUTO)
 async def listar_colaboradores(*, token: str) -> list[dict]:
     dados = await _requisitar("GET", "/equipe/colaboradores", token=token)
     return dados if isinstance(dados, list) else []
@@ -515,6 +527,7 @@ async def obter_colaborador(colaborador_id: int, *, token: str) -> Optional[dict
     )
 
 
+@renova("colaboradores")
 async def criar_colaborador(dados: dict, *, token: str) -> dict:
     criado = await _requisitar("POST", "/equipe/colaboradores", token=token, json=dados)
     if criado is None:
@@ -522,6 +535,7 @@ async def criar_colaborador(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("colaboradores")
 async def atualizar_colaborador(
     colaborador_id: int, dados: dict, *, token: str
 ) -> dict:
@@ -542,6 +556,7 @@ async def atualizar_colaborador(
 # --- serviços ---
 
 
+@guardado("servicos", 10 * MINUTO)
 async def listar_servicos(*, token: str) -> list[dict]:
     dados = await _requisitar("GET", "/equipe/servicos", token=token)
     return dados if isinstance(dados, list) else []
@@ -551,6 +566,7 @@ async def obter_servico(servico_id: int, *, token: str) -> Optional[dict]:
     return await _requisitar("GET", f"/equipe/servicos/{servico_id}", token=token)
 
 
+@renova("servicos", "catalogo")
 async def criar_servico(dados: dict, *, token: str) -> dict:
     criado = await _requisitar("POST", "/equipe/servicos", token=token, json=dados)
     if criado is None:
@@ -558,6 +574,7 @@ async def criar_servico(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("servicos", "catalogo")
 async def atualizar_servico(servico_id: int, dados: dict, *, token: str) -> dict:
     atualizado = await _requisitar(
         "PATCH", f"/equipe/servicos/{servico_id}", token=token, json=dados
@@ -574,6 +591,7 @@ async def atualizar_servico(servico_id: int, dados: dict, *, token: str) -> dict
 # consulta-prova da equipe não tem cláusula de dono e vira apenas "existe?".
 
 
+@guardado("tutores", 5 * MINUTO)
 async def listar_tutores_da_clinica(*, token: str) -> list[dict]:
     """Todos os tutores, inclusive os de balcão, que não têm conta de acesso.
 
@@ -585,6 +603,7 @@ async def listar_tutores_da_clinica(*, token: str) -> list[dict]:
     return dados if isinstance(dados, list) else []
 
 
+@guardado("animais_clinica", 5 * MINUTO)
 async def listar_animais_da_clinica(*, token: str) -> list[dict]:
     """Todos os animais, com o tutor responsável de cada um.
 
@@ -604,6 +623,7 @@ async def listar_animais_da_clinica(*, token: str) -> list[dict]:
 # o banco antes de gravar.
 
 
+@renova("tutores", "animais_clinica")
 async def criar_tutor_de_balcao(dados: dict, *, token: str) -> dict:
     """Cadastra quem chegou no balcão, **sem** conta de acesso.
 
@@ -619,6 +639,7 @@ async def criar_tutor_de_balcao(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("tutores", "animais_clinica")
 async def alterar_tutor(tutor_id: int, dados: dict, *, token: str) -> dict:
     """Altera os dados de um tutor (change `editar-tutor`). Só vão os campos que
     mudaram. Inexistente chega como 404, que vira `NaoEncontrado`."""
@@ -628,6 +649,7 @@ async def alterar_tutor(tutor_id: int, dados: dict, *, token: str) -> dict:
     return alterado
 
 
+@renova("animais_clinica")
 async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
     """Cadastra um animal para um tutor existente. `dados` leva `id_tutor`."""
     criado = await _requisitar("POST", "/equipe/animais", token=token, json=dados)
@@ -643,6 +665,7 @@ async def criar_animal_da_clinica(dados: dict, *, token: str) -> dict:
 # grade, profissional livre (design.md da change, D2).
 
 
+@guardado("catalogo", 10 * MINUTO)
 async def listar_servicos_agendaveis(*, token: str) -> list[dict]:
     """O catálogo que o tutor vê: só serviços com categoria."""
     dados = await _requisitar("GET", "/servicos", token=token)
@@ -663,12 +686,14 @@ async def ocupacao_do_dia(servico_id: int, dia_ms: int, *, token: str) -> dict:
     return dados if isinstance(dados, dict) else {}
 
 
+@guardado("agendamentos", 90)
 async def listar_agendamentos(*, token: str) -> list[dict]:
     """Os agendamentos dos animais do tutor, do mais recente para o mais antigo."""
     dados = await _requisitar("GET", "/agendamentos", token=token)
     return dados if isinstance(dados, list) else []
 
 
+@renova("agendamentos")
 async def criar_agendamento(dados: dict, *, token: str) -> dict:
     """Marca um agendamento. O profissional é escolhido pelo backend."""
     criado = await _requisitar("POST", "/agendamentos", token=token, json=dados)
@@ -677,6 +702,7 @@ async def criar_agendamento(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("agendamentos")
 async def cancelar_agendamento(agendamento_id: int, *, token: str) -> dict:
     """Cancela um agendamento do tutor, até 24 h antes.
 
@@ -716,12 +742,14 @@ async def agenda_da_clinica(dia_ms: int, *, token: str) -> list[dict]:
 # no servidor, que também baixa o estoque numa transação com trava (D2).
 
 
+@guardado("loja", 2 * MINUTO)
 async def produtos_da_loja(*, token: str) -> list[dict]:
     """Produtos ativos com estoque, para o cliente."""
     dados = await _requisitar("GET", "/loja/produtos", token=token)
     return dados if isinstance(dados, list) else []
 
 
+@renova("loja", "meus_pedidos", "produtos")
 async def cancelar_pedido(pedido_id: int, *, token: str) -> dict:
     """Cancela um pedido do tutor enquanto aguarda pagamento (change
     `cliente-cancela-pedido`). Alheio e inexistente chegam como 404, que vira
@@ -732,6 +760,7 @@ async def cancelar_pedido(pedido_id: int, *, token: str) -> dict:
     return cancelado
 
 
+@renova("loja", "meus_pedidos", "produtos")
 async def fazer_pedido(
     itens: list[dict], entrega: str, forma_pagamento: str, *, token: str
 ) -> dict:
@@ -747,18 +776,21 @@ async def fazer_pedido(
     return criado
 
 
+@guardado("meus_pedidos", MINUTO)
 async def meus_pedidos(*, token: str) -> dict:
     """`{pedidos, itens}` do cliente; os itens são agrupados pela tela."""
     dados = await _requisitar("GET", "/pedidos", token=token)
     return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
 
 
+@guardado("produtos", 5 * MINUTO)
 async def listar_produtos(*, token: str) -> list[dict]:
     """O catálogo inteiro, ativos e inativos, para a equipe."""
     dados = await _requisitar("GET", "/equipe/produtos", token=token)
     return dados if isinstance(dados, list) else []
 
 
+@renova("produtos", "loja")
 async def criar_produto(dados: dict, *, token: str) -> dict:
     criado = await _requisitar("POST", "/equipe/produtos", token=token, json=dados)
     if criado is None:
@@ -766,6 +798,7 @@ async def criar_produto(dados: dict, *, token: str) -> dict:
     return criado
 
 
+@renova("produtos", "loja")
 async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str, *,
                                  token: str) -> dict:
     """Grava a foto do produto (change `foto-do-produto`); devolve o objeto
@@ -778,6 +811,7 @@ async def enviar_foto_do_produto(produto_id: int, conteudo: bytes, extensao: str
     return resposta.get("foto") or {}
 
 
+@renova("produtos", "loja")
 async def remover_foto_do_produto(produto_id: int, *, token: str) -> dict:
     """Tira a foto enviada; a loja volta à automática (change
     `foto-do-produto-na-mao`, D1)."""
@@ -787,6 +821,7 @@ async def remover_foto_do_produto(produto_id: int, *, token: str) -> dict:
     return resposta
 
 
+@renova("produtos", "loja")
 async def atualizar_produto(produto_id: int, dados: dict, *, token: str) -> dict:
     """Altera só os campos informados; os ausentes permanecem."""
     atualizado = await _requisitar(
@@ -807,6 +842,7 @@ async def pedidos_da_clinica(situacao: str = "", *, token: str) -> dict:
     return dados if isinstance(dados, dict) else {"pedidos": [], "itens": []}
 
 
+@renova("produtos", "loja")
 async def mudar_situacao_do_pedido(pedido_id: int, situacao: str, *, token: str) -> dict:
     """O backend confere o caminho (D2); um caminho inválido volta como recusa."""
     feito = await _requisitar(
@@ -821,6 +857,7 @@ async def mudar_situacao_do_pedido(pedido_id: int, situacao: str, *, token: str)
 # --- venda no balcão (change `venda-no-balcao`) ---------------------------------
 
 
+@renova("produtos", "loja")
 async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> dict:
     """Venda presencial na conta de um cliente. `itens`: `{produto_id, quantidade}`."""
     feita = await _requisitar(
@@ -835,12 +872,14 @@ async def vender_no_balcao(tutor_id: int, itens: list[dict], *, token: str) -> d
 # --- perfil de quem é da equipe (change `perfil-do-colaborador`) -------------
 
 
+@guardado("perfil_equipe", 30 * MINUTO)
 async def meu_perfil_de_equipe(*, token: str) -> dict:
     """`{conta: {nome, email}, ficha: {...} | None}`: a ficha de colaborador
     com o mesmo e-mail da conta do token, quando há uma."""
     return await _requisitar("GET", "/equipe/meu-perfil", token=token) or {}
 
 
+@renova("perfil_equipe")
 async def alterar_meu_perfil_de_equipe(dados: dict, *, token: str) -> dict:
     """Nome e telefone. Função, e-mail, entrada e ativo nem estão no `input`."""
     ficha = await _requisitar("PATCH", "/equipe/meu-perfil", token=token, json=dados)
@@ -849,6 +888,7 @@ async def alterar_meu_perfil_de_equipe(dados: dict, *, token: str) -> dict:
     return ficha
 
 
+@renova("perfil_equipe")
 async def enviar_minha_foto_de_equipe(conteudo: bytes, extensao: str, *, token: str) -> dict:
     files, data = _arquivo_de_foto(conteudo, extensao)
     resposta = await _requisitar("POST", "/equipe/meu-perfil/foto", token=token,

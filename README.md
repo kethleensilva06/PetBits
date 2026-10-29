@@ -82,6 +82,14 @@ conectado** (marcado de início) ela sobrevive também a fechar o navegador;
 desmarcado, acaba ao fechar. Cada endereço do site (local, Reflex Cloud,
 GitHub Pages) tem a sua própria sessão. Sair limpa tudo.
 
+As listas que mudam pouco (animais, serviços, perfil, colaboradores...) ficam
+guardadas por alguns minutos na memória do servidor do site, separadas por
+sessão; voltar a uma tela não consulta o Xano de novo. O que a própria pessoa
+salva aparece na hora. O botão **Atualizar** (o ícone ao lado de Sair) busca
+tudo de novo. Para medir as chamadas ao Xano no site local, use o servidor
+`petbits-medindo` do `.claude/launch.json`: cada chamada vai para
+`.web/medicao.txt`.
+
 ## Contas de teste (Alt+1 e Alt+2)
 
 Em desenvolvimento (`reflex run`), na tela de entrada, **Alt+1** abre no

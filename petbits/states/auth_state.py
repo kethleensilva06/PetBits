@@ -18,7 +18,7 @@ from typing import Optional
 import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
-from petbits import contas_de_teste, xano
+from petbits import contas_de_teste, guardados, xano
 from petbits.documentos import cpf_valido
 from petbits import mascaras
 from petbits.fotos_enviadas import url_da_foto
@@ -339,6 +339,8 @@ class AuthState(rx.State):
         `expirou=True` distingue "a credencial venceu" de "a pessoa clicou em
         Sair" — só o primeiro merece aviso na tela de entrada.
         """
+        # O guardado desta credencial vai junto (change `telas-guardadas`, D4).
+        guardados.esquecer(self.token)
         self.token = ""
         self.usuario_nome = ""
         self.usuario_papel = ""
@@ -539,6 +541,12 @@ class AuthState(rx.State):
 
         self._limpar()
         return rx.redirect("/entrar")
+
+    def atualizar(self):
+        """O botão Atualizar (change `telas-guardadas`, D5): apaga o guardado
+        desta credencial e recarrega a página, que roda os `on_load` de novo."""
+        guardados.esquecer(self.token)
+        return rx.call_script("window.location.reload()")
 
     # --- a guarda ---------------------------------------------------------
 
