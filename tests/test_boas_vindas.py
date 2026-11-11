@@ -27,7 +27,7 @@ class FotosTest(unittest.TestCase):
 class CaminhosTest(unittest.TestCase):
     def test_os_tres_caminhos_continuam(self):
         fonte = inspect.getsource(entrar.boas_vindas_page)
-        for destino in ('"/entrar/cliente"', '"/entrar/equipe"', '"/cadastro"'):
+        for destino in ('"/entrar"', '"/entrar/equipe"', '"/cadastro"'):
             self.assertIn(destino, fonte)
 
 

@@ -44,7 +44,7 @@ marca SHALL levar à tela inicial da área.
 #### Scenario: Marca na área do cliente
 
 - **WHEN** o tutor clica na marca em qualquer tela da área do cliente
-- **THEN** vai para a casa (`/`)
+- **THEN** vai para a casa (`/animais`)
 
 #### Scenario: Marca na área da clínica
 

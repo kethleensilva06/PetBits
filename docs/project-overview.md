@@ -224,6 +224,7 @@ clínica, mas passam pelo mesmo fluxo.
 | `agendar-retorno` ✓ | O histórico do tutor sugere o retorno marcado pelo veterinário e abre a Agenda com o animal |
 | `editar-tutor` ✓ | A equipe edita nome, CPF, telefone, e-mail e endereço do tutor; o e-mail de entrada muda junto |
 | `foto-do-produto-na-mao` ✓ | Foto do produto pela miniatura do cartão, já no cadastro, e removível |
+| `boas-vindas-primeiro` ✓ | A página inicial no endereço principal (`/`); a casa do cliente em `/animais` |
 
 O roteiro é revisado conforme o sistema cresce — ele registra a intenção
 atual, não um compromisso.

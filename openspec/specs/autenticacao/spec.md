@@ -53,7 +53,10 @@ letra ou sem ao menos um dígito, informando o motivo da recusa em português.
 
 Uma sessão iniciada SHALL permanecer válida enquanto a pessoa não sair e a
 credencial não expirar, sobrevivendo a recarregamentos da página, a abas
-novas e a reinícios do servidor de aplicação.
+novas e a reinícios do servidor de aplicação. A sessão SHALL valer por no
+máximo 12 horas a partir da entrada. Na entrada, a pessoa SHALL poder escolher
+**Manter conectado** (marcado de início): marcado, a sessão sobrevive a fechar
+o navegador; desmarcado, a sessão acaba ao fechar o navegador.
 
 #### Scenario: Recarregar a página
 
@@ -69,6 +72,25 @@ novas e a reinícios do servidor de aplicação.
 
 - **WHEN** a pessoa abre o sistema numa aba nova do mesmo navegador
 - **THEN** ela continua autenticada
+
+#### Scenario: Fechar e abrir o navegador mantendo conectado
+
+- **GIVEN** a pessoa entrou com "Manter conectado" marcado há menos de 12 horas
+- **WHEN** ela fecha o navegador e abre o sistema de novo
+- **THEN** ela vai direto para a sua área, sem informar as credenciais
+
+#### Scenario: Fechar o navegador sem manter conectado
+
+- **GIVEN** a pessoa entrou com "Manter conectado" desmarcado
+- **WHEN** ela fecha o navegador e abre o sistema de novo
+- **THEN** ela não está mais autenticada
+- **AND** a tela de entrada não mostra aviso de sessão expirada
+
+#### Scenario: Passaram 12 horas
+
+- **WHEN** a pessoa abre qualquer página mais de 12 horas depois de entrar
+- **THEN** a sessão é encerrada sem consultar o backend
+- **AND** a tela de entrada informa que a sessão expirou
 
 ### Requirement: Encerramento da sessão
 
@@ -199,11 +221,12 @@ títulos no começo do nome (Dr., Dra., Sr., Sra.).
 
 ### Requirement: Página inicial pública
 
-O sistema SHALL ter uma página inicial pública, no endereço principal do
-sistema, que apresenta o PetBits e leva à entrada de clientes, à entrada da
-equipe e à criação de conta. A página SHALL apresentar a clínica e seus
-serviços com as fotos que acompanham o app, e MUST NOT fazer requisição ao
-Xano.
+O sistema SHALL ter uma página inicial pública que apresenta o PetBits e leva
+à entrada de clientes, à entrada da equipe e à criação de conta, no endereço
+principal do sistema (`/`). Quem abre o endereço principal sem sessão SHALL
+ver essa página primeiro, antes de qualquer tela de cliente. A página SHALL
+apresentar a clínica e seus serviços com as fotos que acompanham o app, e MUST
+NOT fazer requisição ao Xano.
 
 #### Scenario: Visitante abre o sistema
 
@@ -297,32 +320,9 @@ Uma conta de equipe que abre um endereço da área de cliente SHALL ser levada
 
 #### Scenario: Funcionário abre a área de cliente pelo endereço
 
-- **WHEN** uma conta de equipe com sessão abre `/inicio` ou `/agenda`
+- **WHEN** uma conta de equipe com sessão abre `/animais` ou `/agenda`
 - **THEN** ela é levada à gerência
 - **AND** nenhuma requisição de dados de cliente é feita
-
-### Requirement: Cada entrada tem endereço próprio
-
-A entrada de clientes SHALL ficar em `/entrar/cliente` e a da equipe em
-`/entrar/equipe`. A área do cliente logado SHALL ficar em `/inicio`. Os
-endereços antigos `/entrar` e `/boas-vindas` MUST continuar levando às
-páginas que os substituíram.
-
-#### Scenario: Cliente abre a entrada de clientes
-
-- **WHEN** alguém sem sessão abre `/entrar/cliente`
-- **THEN** vê o formulário da entrada de clientes, com o caminho para criar
-  conta
-
-#### Scenario: Cliente entra e chega à sua área
-
-- **WHEN** uma conta de cliente acerta a senha em `/entrar/cliente`
-- **THEN** vai para `/inicio`
-
-#### Scenario: Link antigo
-
-- **WHEN** alguém abre `/entrar` ou `/boas-vindas`
-- **THEN** é levado a `/entrar/cliente` ou a `/`, respectivamente
 
 ### Requirement: Troca de senha pelo tutor
 

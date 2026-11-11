@@ -54,10 +54,10 @@ A aplicação fica em http://localhost:3000.
 
 ## Primeiro acesso
 
-A primeira tela é a página inicial (`/`), com três caminhos:
-**Sou cliente** (`/entrar/cliente`), **Sou da equipe** (`/entrar/equipe`) e
-**Criar conta** (`/cadastro`). Os endereços antigos `/entrar` e `/boas-vindas`
-continuam funcionando e levam às páginas novas.
+A primeira tela é a página inicial (`/`; também em `/boas-vindas`), com três
+caminhos:
+**Sou cliente** (`/entrar`), **Sou da equipe** (`/entrar/equipe`) e
+**Criar conta** (`/cadastro`).
 
 1. Clique em **Criar conta** e preencha nome, e-mail, documento e senha.
    A senha precisa de pelo menos 8 caracteres, com uma letra e um número.
@@ -67,9 +67,9 @@ continuam funcionando e levam às páginas novas.
 Funcionários entram por **Sou da equipe** e vão para a gerência (`/equipe`).
 Contas `staff` (equipe comum) e `admin` (gerência) entram por ela; uma conta de
 cliente nessa entrada é recusada, assim como uma conta de equipe na entrada de
-clientes.
+clientes (change `papeis-e-abas`).
 
-Na área do cliente (`/inicio`) ficam os seus animais. Use **Cadastrar animal** para o
+Na casa do cliente (`/animais`) ficam os seus animais. Use **Cadastrar animal** para o
 primeiro, e **Editar** para alterar qualquer um deles. Você vê apenas os seus:
 quem decide isso é o backend, a partir de quem está autenticado.
 
@@ -78,7 +78,18 @@ cadastro ser público. O acesso da equipe da clínica chega numa change
 própria.
 
 A sessão sobrevive a recarregar a página, a abrir outra aba e a reiniciar o
-`reflex run`. Sair limpa tudo.
+`reflex run`, e vale por 12 horas a partir da entrada. Com **Manter
+conectado** (marcado de início) ela sobrevive também a fechar o navegador;
+desmarcado, acaba ao fechar. Cada endereço do site (local, Reflex Cloud,
+GitHub Pages) tem a sua própria sessão. Sair limpa tudo.
+
+As listas que mudam pouco (animais, serviços, perfil, colaboradores...) ficam
+guardadas por alguns minutos na memória do servidor do site, separadas por
+sessão; voltar a uma tela não consulta o Xano de novo. O que a própria pessoa
+salva aparece na hora. O botão **Atualizar** (o ícone ao lado de Sair) busca
+tudo de novo. Para medir as chamadas ao Xano no site local, use o servidor
+`petbits-medindo` do `.claude/launch.json`: cada chamada vai para
+`.web/medicao.txt`.
 
 ## Contas de teste (Alt+1 e Alt+2)
 

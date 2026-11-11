@@ -1,3 +1,11 @@
+> **Substituída em 2026-11-11 pela change `boas-vindas-primeiro`, do `main`.**
+> As duas fizeram a mesma mudança em paralelo, com endereços diferentes. Ao
+> juntar as branches, a equipe escolheu os endereços do `main`, que já estavam
+> publicados: a página de boas-vindas em `/`, a área do cliente em `/animais` e
+> a entrada de clientes em `/entrar`. Os endereços `/inicio` e `/entrar/cliente`
+> descritos abaixo **não existem** no código, e o requisito "Cada entrada tem
+> endereço próprio" não está na spec `autenticacao`.
+
 ## Why
 
 O endereço principal (`/`) é hoje a área do cliente logado, e quem chega sem

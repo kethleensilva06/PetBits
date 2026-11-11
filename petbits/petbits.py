@@ -58,8 +58,9 @@ app = rx.App(
 # frontend e não cancela o que já está na fila do backend.
 app.add_page(
     inicio_page,
-    route="/inicio",
-    title="PetBits",
+    # `/animais`, e não `/` (change `boas-vindas-primeiro`, D2).
+    route="/animais",
+    title="PetBits | Meus animais",
     on_load=[PetState.preparar_carga, AuthState.carregar_sessao_da_casa, PetState.carregar,
              PetState.carregar_proximo],
 )
@@ -128,18 +129,19 @@ for rota, pagina, titulo, carregar in (
 # Página inicial pública e as duas entradas (change `porta-de-entrada`). As
 # duas entradas são o mesmo formulário; o `on_load` de cada uma define a aba,
 # que só vale depois da senha confirmada (change `papeis-e-abas`).
-#
-# A página inicial mora no endereço principal, e cada entrada tem o seu
-# (change `boas-vindas-na-raiz`, D1).
-app.add_page(
-    boas_vindas_page,
-    route="/",
-    title="PetBits",
-    on_load=AuthState.redirecionar_se_logado,
-)
+# A página inicial no endereço principal (change `boas-vindas-primeiro`, D1):
+# o HTML que o visitante recebe primeiro já é a vitrine. `/boas-vindas`
+# continua, para os links antigos (D3).
+for rota_inicial in ("/", "/boas-vindas"):
+    app.add_page(
+        boas_vindas_page,
+        route=rota_inicial,
+        title="PetBits",
+        on_load=AuthState.redirecionar_se_logado,
+    )
 app.add_page(
     entrar_page,
-    route="/entrar/cliente",
+    route="/entrar",
     title="PetBits | Entrar",
     on_load=AuthState.abrir_entrada_de_clientes,
 )
@@ -149,10 +151,6 @@ app.add_page(
     title="PetBits | Entrada da equipe",
     on_load=AuthState.abrir_entrada_da_equipe,
 )
-# Endereços antigos: só redirecionam, para um link guardado não virar 404
-# (change `boas-vindas-na-raiz`, D2).
-for antigo, novo in (("/entrar", "/entrar/cliente"), ("/boas-vindas", "/")):
-    app.add_page(rx.fragment(), route=antigo, title="PetBits", on_load=rx.redirect(novo))
 app.add_page(
     cadastro_page,
     route="/cadastro",

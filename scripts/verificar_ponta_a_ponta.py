@@ -31,7 +31,10 @@ PROJETO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJETO))
 load_dotenv(PROJETO / ".env", override=True)
 
-from petbits import agenda, contas_de_teste, xano  # noqa: E402
+from petbits import agenda, contas_de_teste, guardados, xano  # noqa: E402
+
+# Sempre o backend, nunca o guardado (change `telas-guardadas`).
+guardados.ligado = False
 
 PAUSA = 2.2  # limite de 10 requisições a cada 20 s da instância
 

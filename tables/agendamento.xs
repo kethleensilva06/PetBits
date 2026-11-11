@@ -57,5 +57,6 @@ table agendamento {
     {type: "btree", field: [{name: "id_colaborador", op: "asc"}, {name: "inicio", op: "asc"}]}
     {type: "btree", field: [{name: "id_pet", op: "asc"}]}
     {type: "btree", field: [{name: "inicio", op: "asc"}]}
+    {type: "btree", field: [{name: "id_servico", op: "asc"}]}
   ]
 }

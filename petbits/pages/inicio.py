@@ -291,7 +291,7 @@ def _carregando() -> rx.Component:
 def inicio_page() -> rx.Component:
     return rx.container(
         rx.vstack(
-            topo_do_cliente("/inicio"),
+            topo_do_cliente("/animais"),
             _banner(),
             _proximo(),
             rx.hstack(

@@ -12,12 +12,13 @@ qualquer pessoa edita o armazenamento local pelo DevTools. Quem protege é o
 Xano.
 """
 
+import time
 from typing import Optional
 
 import reflex as rx
 from reflex.utils.exec import is_prod_mode
 
-from petbits import contas_de_teste, xano
+from petbits import contas_de_teste, guardados, xano
 from petbits.documentos import cpf_valido
 from petbits import mascaras
 from petbits.fotos_enviadas import url_da_foto
@@ -30,6 +31,33 @@ SENHA_MINIMA = 8
 
 # Títulos que não são nome: a saudação pula para o primeiro nome de verdade.
 TITULOS = {"dr", "dra", "sr", "sra"}
+
+# Quanto a sessão vale a partir da entrada (change `sessao-lembrada`, D1).
+# Menos que as 24 h do token do Xano, que continua decidindo de verdade.
+DURACAO_DA_SESSAO = 12 * 60 * 60
+
+
+def fim_da_sessao(token: str, expira_em: str, lembrar: str, aberto: str,
+                  agora: float) -> str:
+    """`""` se a sessão vale; `"venceu"` ou `"fechou"` (change
+    `sessao-lembrada`, D3).
+
+    Só `"venceu"` merece o aviso na entrada. `"fechou"` é o navegador fechado
+    no modo "não manter" — a marca `aberto` é um cookie de sessão, que o
+    navegador apaga ao fechar — ou uma sessão de antes desta change, sem
+    validade.
+    """
+    if not token:
+        return ""
+    try:
+        limite = float(expira_em)
+    except ValueError:
+        return "fechou"
+    if agora >= limite:
+        return "venceu"
+    if lembrar != "1" and not aberto:
+        return "fechou"
+    return ""
 
 
 def _senha_fraca(senha: str) -> Optional[str]:
@@ -51,6 +79,17 @@ class AuthState(rx.State):
     # URL pública da foto de perfil do tutor (change `perfil-e-fotos`, D6):
     # guardada ao ler a ficha, para o cabeçalho não pedir a ficha em toda tela.
     usuario_foto: str = rx.LocalStorage("", name="petbits_foto", sync=True)
+
+    # A validade da sessão (change `sessao-lembrada`): o instante, em
+    # segundos, em que ela acaba; "1" se a pessoa marcou "Manter conectado";
+    # e, no modo contrário, a marca que o navegador apaga ao fechar — um
+    # cookie sem `max_age`, visto por todas as abas (D2).
+    expira_em: str = rx.LocalStorage("", name="petbits_expira", sync=True)
+    lembrar: str = rx.LocalStorage("", name="petbits_lembrar", sync=True)
+    navegador_aberto: str = rx.Cookie("", name="petbits_aberto")
+
+    # A caixa da tela de entrada. Começa marcada (D5).
+    manter_conectado: bool = True
 
     # Deliberadamente NÃO persistida. Quando o backend não lembra mais deste
     # navegador (aba nova, servidor reiniciado), ela volta a False e forçamos
@@ -130,6 +169,9 @@ class AuthState(rx.State):
 
     def set_login_senha(self, value: str):
         self.login_senha = value
+
+    def set_manter_conectado(self, value: bool):
+        self.manter_conectado = bool(value)
 
     # --- atalho de contas de teste ---------------------------------------
     #
@@ -297,10 +339,16 @@ class AuthState(rx.State):
         `expirou=True` distingue "a credencial venceu" de "a pessoa clicou em
         Sair" — só o primeiro merece aviso na tela de entrada.
         """
+        # O guardado desta credencial vai junto (change `telas-guardadas`, D4).
+        guardados.esquecer(self.token)
         self.token = ""
         self.usuario_nome = ""
         self.usuario_papel = ""
         self.usuario_foto = ""
+        self.expira_em = ""
+        self.lembrar = ""
+        self.navegador_aberto = ""
+        self.manter_conectado = True
         self.sessao_validada = False
         self.sessao_expirou = expirou
         # O formulário também: sem isto, sair deixa o e-mail de quem saiu
@@ -312,6 +360,17 @@ class AuthState(rx.State):
         self.cad_senha_visivel = False
         self.aba = "cliente"
         self.erro = ""
+
+    def _marcar_validade(self, manter: bool):
+        """Conta as 12 horas a partir de agora. Só a entrada e o cadastro
+        chamam: revalidar no Xano não estende a sessão (D1)."""
+        self.expira_em = str(int(time.time()) + DURACAO_DA_SESSAO)
+        self.lembrar = "1" if manter else ""
+        self.navegador_aberto = "" if manter else "1"
+
+    def _fim(self) -> str:
+        return fim_da_sessao(self.token, self.expira_em, self.lembrar,
+                             self.navegador_aberto, time.time())
 
     # --- ações ------------------------------------------------------------
 
@@ -369,6 +428,7 @@ class AuthState(rx.State):
             return
 
         self._guardar(sessao["authToken"], perfil)
+        self._marcar_validade(self.manter_conectado)
         self.login_senha = ""
         # A foto do cabeçalho do tutor (change `perfil-e-fotos`, D6): uma
         # requisição a mais, só na entrada e só para tutor, para o cabeçalho
@@ -430,6 +490,7 @@ class AuthState(rx.State):
             self.enviando = False
 
         self._guardar(sessao["authToken"], perfil)
+        self._marcar_validade(True)
         self.cad_senha = ""
         self.cad_confirmar = ""
         yield rx.redirect(xano.rota_do_papel(self.usuario_papel))
@@ -479,7 +540,13 @@ class AuthState(rx.State):
         loja.limpar_dados()
 
         self._limpar()
-        return rx.redirect("/entrar/cliente")
+        return rx.redirect("/entrar")
+
+    def atualizar(self):
+        """O botão Atualizar (change `telas-guardadas`, D5): apaga o guardado
+        desta credencial e recarrega a página, que roda os `on_load` de novo."""
+        guardados.esquecer(self.token)
+        return rx.call_script("window.location.reload()")
 
     # --- a guarda ---------------------------------------------------------
 
@@ -495,7 +562,7 @@ class AuthState(rx.State):
         deste navegador. Uma falha de rede aqui **não** desloga: só o 401
         desloga.
         """
-        return await self._validar_sessao("/entrar/cliente")
+        return await self._validar_sessao("/entrar")
 
     async def carregar_sessao_da_casa(self):
         """O mesmo, para o endereço principal: quem chega sem sessão vê a
@@ -505,6 +572,12 @@ class AuthState(rx.State):
         return await self._validar_sessao("/")
 
     async def _validar_sessao(self, destino_sem_sessao: str):
+        # A validade antes do atalho de `sessao_validada`: ela é conferida em
+        # toda página, sem requisição (change `sessao-lembrada`, D1).
+        fim = self._fim()
+        if fim:
+            self._limpar(expirou=fim == "venceu")
+            return rx.redirect("/entrar" if fim == "venceu" else destino_sem_sessao)
         if not self.token:
             self.sessao_validada = False
             return rx.redirect(destino_sem_sessao)
@@ -514,7 +587,7 @@ class AuthState(rx.State):
             perfil = await xano.usuario_atual(self.token)
         except SessaoExpirada:
             self._limpar(expirou=True)
-            return rx.redirect("/entrar/cliente")
+            return rx.redirect("/entrar")
         except FalhaDeComunicacao as erro:
             # A sessão permanece. Quem está sem rede não está deslogado.
             self.erro = str(erro)
@@ -526,7 +599,7 @@ class AuthState(rx.State):
         return None
 
     def abrir_entrada_de_clientes(self):
-        """`on_load` de `/entrar/cliente`: a página faz o papel da aba Cliente."""
+        """`on_load` de `/entrar`: a página faz o papel da aba Cliente."""
         self.aba = "cliente"
         return self.redirecionar_se_logado()
 
@@ -545,6 +618,12 @@ class AuthState(rx.State):
         sobrevive ao recarregamento: sem isto, um `enviando` esquecido deixa a
         porta trancada naquele navegador."""
         self.enviando = False
+        # Sessão vencida só é limpa: quem está na entrada vê o aviso, e a
+        # página inicial e o cadastro ficam como estão (D4).
+        fim = self._fim()
+        if fim:
+            self._limpar(expirou=fim == "venceu")
+            return None
         if self.token:
             # Para a área do PAPEL, não para `/` sempre. Com `/` fixo, uma
             # conta de equipe que voltasse à porta caía na lista de animais e

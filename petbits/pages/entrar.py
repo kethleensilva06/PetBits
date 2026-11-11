@@ -250,7 +250,7 @@ def entrar_equipe_page() -> rx.Component:
                         color=rx.color("gray", 11)),
                 rx.hstack(
                     rx.text("É cliente?", size="2", color=rx.color("gray", 11)),
-                    rx.link("Entrada de clientes", href="/entrar/cliente", size="2",
+                    rx.link("Entrada de clientes", href="/entrar", size="2",
                             weight="medium"),
                     spacing="2",
                 ),
@@ -313,7 +313,7 @@ def _capa() -> rx.Component:
         ),
         rx.hstack(
             rx.link(rx.button(rx.icon("log-in", size=16), "Entrar", size="3"),
-                    href="/entrar/cliente"),
+                    href="/entrar"),
             rx.link(rx.button(rx.icon("user-plus", size=16), "Criar conta", size="3",
                               variant="outline"),
                     href="/cadastro"),
@@ -389,7 +389,7 @@ def boas_vindas_page() -> rx.Component:
                 rx.grid(
                     _caminho("heart", "Sou cliente",
                              "Veja seus animais e marque atendimentos.",
-                             "Entrar", "/entrar/cliente"),
+                             "Entrar", "/entrar"),
                     _caminho("stethoscope", "Sou da equipe",
                              "Agenda do dia, serviços, colaboradores e clientes.",
                              "Entrada da equipe", "/entrar/equipe", "soft"),
@@ -457,6 +457,14 @@ def _formulario_de_entrada(*, titulo: str, subtitulo: str,
             AuthState.tipo_senha,
             AuthState.icone_senha,
             AuthState.alternar_senha,
+        ),
+        # Change `sessao-lembrada`, D5: marcada de início; desmarcada, a
+        # sessão acaba ao fechar o navegador.
+        rx.checkbox(
+            "Manter conectado",
+            checked=AuthState.manter_conectado,
+            on_change=AuthState.set_manter_conectado,
+            size="2",
         ),
         titulo=titulo,
         subtitulo=subtitulo,
@@ -568,7 +576,7 @@ def cadastro_page() -> rx.Component:
         on_submit=AuthState.cadastrar,
         rodape=rx.hstack(
             rx.text("Já tem conta?", size="2", color=rx.color("gray", 11)),
-            rx.link("Entrar", href="/entrar/cliente", size="2", weight="medium"),
+            rx.link("Entrar", href="/entrar", size="2", weight="medium"),
             spacing="2",
         ),
     )
