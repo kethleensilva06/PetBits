@@ -1,0 +1,1 @@
+import{$ as e}from"./errorBoundaries-D9EZtFRF.js";import{t}from"./createLucideIcon-DXz3Zw9b.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7`,key:`132q7q`}],[`rect`,{x:`2`,y:`4`,width:`20`,height:`16`,rx:`2`,key:`izxlao`}]],i=t(`mail`,r);export{n,i as t};

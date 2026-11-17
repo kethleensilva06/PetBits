@@ -1,0 +1,1 @@
+import{$ as e}from"./errorBoundaries-D9EZtFRF.js";import{t}from"./createLucideIcon-DXz3Zw9b.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`m15 18-6-6 6-6`,key:`1wnfg3`}]],i=t(`chevron-left`,r);export{n,i as t};

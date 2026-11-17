@@ -1,0 +1,1 @@
+import{$ as e}from"./errorBoundaries-D9EZtFRF.js";import{t}from"./createLucideIcon-DXz3Zw9b.js";var n=e({__iconNode:()=>r,default:()=>i}),r=[[`path`,{d:`m21 21-4.34-4.34`,key:`14j7rj`}],[`circle`,{cx:`11`,cy:`11`,r:`8`,key:`4ej97u`}]],i=t(`search`,r);export{n,i as t};

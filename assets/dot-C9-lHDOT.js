@@ -1,0 +1,1 @@
+import{t as e}from"./createLucideIcon-DXz3Zw9b.js";var t=[[`circle`,{cx:`12`,cy:`12`,r:`1`,key:`41hilf`}]],n=e(`dot`,t);export{t as __iconNode,n as default};
